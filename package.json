@@ -1,0 +1,47 @@
+{
+  "name": "adara-web",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server/index.js",
+    "admin:password": "node --env-file-if-exists=.env server/admin-password.js",
+    "backup": "node --env-file-if-exists=.env server/backup.js",
+    "dev": "concurrently \"vite\" \"node --env-file-if-exists=.env --watch server/index.js\"",
+    "build": "tsc -b && vite build",
+    "server": "node --env-file-if-exists=.env server/index.js",
+    "db:seed": "node --env-file-if-exists=.env server/seed.js",
+    "test": "node tests/features.integration.mjs && node tests/platform-billing.integration.mjs && node tests/deployment.integration.mjs"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "bcryptjs": "^3.0.2",
+    "better-sqlite3": "^12.11.1",
+    "concurrently": "^9.2.1",
+    "cookie-parser": "^1.4.7",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "latest",
+    "multer": "^2.0.2",
+    "qrcode": "^1.5.4",
+    "react": "latest",
+    "react-dom": "latest",
+    "typescript": "latest",
+    "vite": "latest"
+  },
+  "devDependencies": {
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "jsqr": "^1.4.0",
+    "pngjs": "^7.0.0"
+  },
+  "overrides": {
+    "shell-quote": "1.11.0"
+  },
+  "engines": {
+    "node": ">=24.19.0 <25"
+  },
+  "allowScripts": {
+    "better-sqlite3@12.11.1": true
+  }
+}
