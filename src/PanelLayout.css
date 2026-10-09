@@ -1,0 +1,61 @@
+.panelLayout.admin,.panelLayout.superLayout{grid-template-columns:255px minmax(0,1fr)}
+.panelLayout .panelMobileHeader,.panelLayout .panelMenuClose{display:none}
+.panelLayout .panelSidebar{display:flex;flex-direction:column;gap:7px}
+.panelLayout .panelSidebar[hidden]{display:none!important}
+.panelLayout .panelSidebarHeading{display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.panelLayout .panelSidebarHeading .brand{margin:4px 10px 28px}
+.panelLayout .panelNavigation{display:flex;flex-direction:column;gap:7px}
+.panelLayout .panelNavigation button{width:100%;flex-shrink:0}
+.panelLayout .panelSidebar .panelLogout{margin-top:14px;flex-shrink:0}
+.panelLayout .panelContent:focus{outline:none}
+.panelLayout .designerLayout{grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr)}
+.panelLayout .designerLayout>*,.panelLayout .settingsGrid>*,.panelLayout .two>*,.panelLayout .three>*{min-width:0}
+.panelLayout .form input,.panelLayout .form select,.panelLayout .form textarea{min-width:0;max-width:100%}
+.panelLayout .designerPreviewPanel{min-width:0}
+.panelLayout .designerPreviewViewport{width:100%;min-width:0;overflow-x:auto;overscroll-behavior-x:contain;border-radius:14px}
+.panelLayout .previewScrollHint{display:none}
+
+@media(max-width:1100px){
+  .panelLayout .designerLayout{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:900px){
+  .panelLayout.admin,.panelLayout.superLayout{display:block}
+  .panelLayout .panelMobileHeader{position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px;background:#f8f4ef;border-bottom:1px solid #e5dad2}
+  .panelLayout .panelMobileIdentity{display:grid;gap:3px;min-width:0}
+  .panelLayout .panelMobileIdentity .brand{font-size:22px;line-height:1.2;margin:0}
+  .panelLayout .panelMobileIdentity>span{font-size:12px;color:#786a60;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .panelLayout .panelMenuTrigger{display:flex;align-items:center;gap:8px;min-height:44px;padding:10px 13px;border:1px solid #d8c9bd;border-radius:11px;color:#2d2723;background:#fff;flex-shrink:0;font-weight:600}
+  .panelLayout .panelMenuBackdrop{position:fixed;inset:0;z-index:70;background:rgba(25,20,17,.5)}
+  .panelLayout .panelSidebar{position:fixed;inset:0 auto 0 0;z-index:80;width:min(320px,calc(100% - 40px));height:100vh;height:100dvh;padding:22px 16px;display:flex;overflow-y:auto;overscroll-behavior:contain;box-shadow:16px 0 45px rgba(25,20,17,.2)}
+  .panelLayout .panelSidebarHeading .brand{margin:0 4px}
+  .panelLayout .panelSidebar .panelMenuClose{display:flex;justify-content:center;align-items:center;min-width:44px;min-height:44px;padding:8px;color:#f8f4ef;border:1px solid #62544a;background:transparent}
+  .panelLayout .panelSidebar .business{margin:20px 4px}
+  .panelLayout .panelSidebar .business b{overflow-wrap:anywhere}
+  .panelLayout .panelSidebar .superTag{margin:18px 4px}
+  .panelLayout .panelNavigation button,.panelLayout .panelSidebar .panelLogout{min-height:44px}
+  .panelLayout .dash{padding:28px 20px}
+}
+@media(max-width:700px){
+  .panelLayout .dash{padding:26px 16px}
+  .panelLayout .panel{padding:20px 16px}
+  .panelLayout .two,.panelLayout .three{grid-template-columns:minmax(0,1fr)}
+  .panelLayout .previewToolbar{flex-wrap:wrap;gap:12px}
+  .panelLayout .livePreview.desktop{width:700px;min-width:700px;transform:none;margin-bottom:0}
+  .panelLayout .livePreview.mobile{width:320px;max-width:100%}
+  .panelLayout .previewScrollHint{display:block;color:#e7d8ca;font-size:12px;margin:12px 0 0}
+  .panelLayout .designerPreviewPanel{padding:12px}
+  .panelLayout .dash h1{font-size:34px;overflow-wrap:anywhere}
+  .panelLayout .dash h2{font-size:27px;overflow-wrap:anywhere}
+  .panelLayout .row{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-items:start}
+  .panelLayout .row>*{min-width:0;overflow-wrap:anywhere}
+  .panelLayout .row>.status{justify-self:start}
+  .panelLayout .bookingRow{grid-template-columns:48px minmax(0,1fr);gap:12px}
+  .panelLayout .bookingRow>div{min-width:0;overflow-wrap:anywhere}
+  .panelLayout .bookingRow>div:nth-child(3),.panelLayout .bookingRow>.status{grid-column:2;justify-self:start}
+  .panelLayout .panelTitle,.panelLayout .planActions,.panelLayout .quickLinks{flex-wrap:wrap}
+  .panelLayout .businessMain{min-width:0;align-items:flex-start}
+  .panelLayout .businessMain>div:last-child{min-width:0;overflow-wrap:anywhere}
+  .panelLayout .cardsList article{grid-template-columns:70px minmax(0,1fr) auto}
+  .panelLayout .cardsList img,.panelLayout .cardsList .imagePlaceholder{width:70px;height:84px}
+  .panelLayout .cardsList article>div{min-width:0;overflow-wrap:anywhere}
+}
