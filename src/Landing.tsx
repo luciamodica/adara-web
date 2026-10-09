@@ -1,4 +1,5 @@
 import {useEffect,useState} from 'react';
+import {usePublicLegal,contactEmail} from './Legal';
 import {ArrowRight,ArrowUpRight,Bell,CalendarDays,Check,CheckCircle2,ChevronDown,ChevronLeft,ChevronRight,Clock3,CreditCard,Globe,Heart,LayoutDashboard,Menu,Palette,QrCode,ShieldCheck,Sparkles,Users,WalletCards,X} from 'lucide-react';
 import {api,money} from './api';
 import {BRAND} from './brand';
@@ -18,6 +19,7 @@ const productViews=[
  {id:'payments',icon:CreditCard,label:'Señas & pagos',title:'Confirmá tus turnos con más tranquilidad.',text:'Ofrecé Mercado Pago o transferencia a tu alias. Elegí seña, pago completo o sin anticipo. El plazo de pago lo decidís vos.',items:['Cobro directo a tu cuenta','Seña fija o porcentaje del servicio','Plazo de pago configurable por negocio']}
 ];
 export default function Landing(){
+ const {legal}=usePublicLegal();
  const[faqs,setFaqs]=useState<any[]>([]);
  const[plans,setPlans]=useState<any[]>([]),[annual,setAnnual]=useState(false),[trialDays,setTrialDays]=useState<number>(BRAND.trialDays),[error,setError]=useState(''),[menu,setMenu]=useState(false),[view,setView]=useState('agenda');
  const loadPlans=()=>{setError('');api('/public/plans').then(setPlans).catch(()=>setError('No pudimos cargar los planes. Intentá nuevamente.'))};
@@ -38,6 +40,6 @@ export default function Landing(){
    {faqs.length>0&&<section id="preguntas" className="platformFaq"><div><span className="platformEyebrow">ANTES DE DAR EL PRIMER PASO</span><h2>Resolvemos tus dudas.</h2><p>Una plataforma simple empieza con información clara.</p></div><div>{faqs.map(f=><details key={f.id}><summary>{f.question}<ChevronDown size={17}/></summary><p>{f.answer}</p></details>)}</div></section>}
    <section className="platformFinal"><span className="platformEyebrow">TU NEGOCIO, A SU PRÓXIMA ETAPA</span><h2>Menos vueltas.<br/>Más espacio para tu talento.</h2><p>Creá tu página y organizá tus reservas con Adara Web.</p><button className="platformButton" onClick={()=>go('/registro')}>Empezar mi prueba gratis <ArrowRight size={17}/></button><small>{trialDays} días gratis · Sin tarjeta para comenzar</small></section>
   </main>
-  <footer className="platformHomeFooter"><div className="platformFooterGrid"><div><Wordmark/><p>Web, reservas y gestión<br/>para negocios de belleza.</p></div><div><b>PRODUCTO</b><a href="#funciones">Cómo funciona</a><a href="#ejemplos">Plantillas</a><a href="#planes">Planes</a></div><div><b>TU ESPACIO</b><a href="/login">Ingresar</a><a href="/registro">Crear cuenta</a><a href="#preguntas">Preguntas frecuentes</a></div><div><b>CONTACTO & LEGAL</b><a href="mailto:contacto@adaraweb.com.ar">Contacto</a><a href="/privacidad">Privacidad</a><a href="/terminos">Términos y condiciones</a></div></div><div className="platformFooterBottom"><span>© {new Date().getFullYear()} Adara Web</span><span>Hecha para tu negocio de belleza.</span></div></footer>
+  <footer className="platformHomeFooter"><div className="platformFooterGrid"><div><Wordmark/><p>Web, reservas y gestión<br/>para negocios de belleza.</p></div><div><b>PRODUCTO</b><a href="#funciones">Cómo funciona</a><a href="#ejemplos">Plantillas</a><a href="#planes">Planes</a></div><div><b>TU ESPACIO</b><a href="/login">Ingresar</a><a href="/registro">Crear cuenta</a><a href="#preguntas">Preguntas frecuentes</a></div><div><b>CONTACTO & LEGAL</b><a href={'mailto:'+(legal?.profile?.email||contactEmail)}>Contacto</a><a href="/privacidad">Privacidad</a><a href="/terminos">Términos y condiciones</a><a href="/condiciones-de-suscripcion">Condiciones de suscripción</a></div></div><div className="platformFooterBottom"><span>© {new Date().getFullYear()} Adara Web</span><span>Hecha para tu negocio de belleza.</span></div></footer>
  </div>;
 }

@@ -1,4 +1,5 @@
 import './production-env.js';
+import {registerPlatformLegal,legalConsent,recordLegalAcceptance} from './platform-legal.js';
 import {registerPlatformBilling,billingAccess,billingSummary,billingConfiguration,refreshBillingState} from './platform-billing.js';
 import {paymentMethods,bankDetails,decoratePayment,validatePaymentSettings,registerManualPayments} from './manual-payments.js';
 import {registerPlatformFaqs} from './platform-faqs.js';
@@ -184,11 +185,13 @@ async function emailProfessional(booking,event='new'){
 app.get('/api/public/plans',(_req,res)=>res.json(db.prepare('SELECT * FROM plans WHERE active=1 AND public_enabled=1 ORDER BY display_order,id').all().map(publicPlan)));
 app.get('/api/public/config',(_req,res)=>res.json({trial_days:Number(getSetting('trial_days','15'))}));
 registerPlatformFaqs(app,{auth,superOnly});
+registerPlatformLegal(app,{auth,superOnly});
 app.get('/api/public/templates',(_req,res)=>res.json(TEMPLATES));
 
 // ---------- Autenticación y verificación ----------
 app.post('/api/auth/register',async(req,res)=>{
   if(PRODUCTION&&!process.env.RESEND_API_KEY)return res.status(503).json({error:'El registro estará disponible cuando se configure el envío de emails.'});
+  let consent;try{consent=legalConsent(req.body)}catch(e){return res.status(e.status||400).json({error:e.message})}
   const{name,email,password,businessName,category,plan,billingCycle='monthly'}=req.body||{};
   if(!name||!email||!password||!businessName)return res.status(400).json({error:'Completá todos los campos obligatorios'});
   if(String(password).length<8)return res.status(400).json({error:'La contraseña debe tener al menos 8 caracteres'});
@@ -202,6 +205,7 @@ app.post('/api/auth/register',async(req,res)=>{
     const trialEnd=new Date(Date.now()+trialDays*86400000).toISOString();
     const b=db.prepare(`INSERT INTO businesses(owner_id,name,slug,category,trial_ends_at,plan_slug,billing_cycle) VALUES(?,?,?,?,?,?,?)`).run(u.lastInsertRowid,String(businessName).trim(),uniqueSlug(businessName),category||'Belleza',trialEnd,selectedPlan.slug,billingCycle);
     for(let d=0;d<7;d++)db.prepare('INSERT INTO schedules(business_id,weekday,start_time,end_time,active) VALUES(?,?,?,?,?)').run(b.lastInsertRowid,d,d===0?'10:00':'09:00',d===0?'14:00':'18:00',d===0?0:1);
+    recordLegalAcceptance(consent,u.lastInsertRowid,b.lastInsertRowid,'registration');
     return {userId:u.lastInsertRowid,businessId:b.lastInsertRowid,token:vt};
   });
   let created;

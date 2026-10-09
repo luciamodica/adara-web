@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import {legalConsent,recordLegalAcceptance} from './platform-legal.js';
 import {db,getSetting} from './db.js';
 
 for(const [name,definition] of Object.entries({subscription_paid_until:'TEXT',subscription_managed:'INTEGER NOT NULL DEFAULT 0'}))if(!db.prepare('PRAGMA table_info(businesses)').all().some(c=>c.name===name))db.exec(`ALTER TABLE businesses ADD COLUMN ${name} ${definition}`);
@@ -75,11 +76,12 @@ export function billingSummary(id){refreshBillingState(id);const b=db.prepare('S
 export function registerPlatformBilling(app,{auth,own,superOnly,getBusinessPlan,publicPlan}){
  // Reading records and managing existing appointments remain available after expiration.
  app.use('/api/businesses/:id',auth,(req,res,next)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.status(403).json({error:'Acceso no autorizado'});refreshBillingState(b.id);if(['GET','HEAD'].includes(req.method)||req.path.startsWith('/subscription')||req.path.startsWith('/bookings/'))return next();if(!billingAccess(own(req.user.sub,b.id)))return res.status(402).json({error:'Tu prueba o período de Adara terminó. Abrí Plan para renovar. Tus datos y turnos existentes se conservan.'});next()});
- const guarded=fn=>async(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.status(403).json({error:'Acceso no autorizado'});try{await lock(b.id,()=>fn(req,res,b))}catch(e){res.status(400).json({error:e.message})}};
+ const guarded=fn=>async(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.status(403).json({error:'Acceso no autorizado'});try{await lock(b.id,()=>fn(req,res,b))}catch(e){res.status(e.status||400).json({error:e.message})}};
  app.get('/api/businesses/:id/subscription',auth,(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.status(403).json({error:'Acceso no autorizado'});res.json(billingSummary(b.id))});
  app.post('/api/businesses/:id/subscription',auth,guarded(async(req,res,b)=>{
  if(b.status!=='active')return res.status(403).json({error:'La cuenta está suspendida. Contactá a Adara.'});
  if(req.body?.authorize_recurring!==true)throw Error('Aceptá el importe y la renovación automática para continuar');
+ const consent=legalConsent(req.body);
  const user=db.prepare('SELECT email,email_verified FROM users WHERE id=?').get(b.owner_id);if(!user.email_verified)throw Error('Verificá tu email antes de suscribirte');
  const payerEmail=String(req.body.payer_email||user.email).trim();if(payerEmail.length>254||!/^\S+@\S+\.\S+$/.test(payerEmail))throw Error('Ingresá el email de la cuenta con la que vas a autorizar la suscripción');
  const cycle=req.body.billing_cycle||b.billing_cycle;if(!['monthly','annual'].includes(cycle))throw Error('Elegí mensual o anual');
@@ -94,7 +96,7 @@ export function registerPlatformBilling(app,{auth,own,superOnly,getBusinessPlan,
  db.prepare('INSERT INTO platform_subscriptions(id,business_id,plan_slug,plan_name,billing_cycle,amount_cents,payer_email,provider,start_date,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)').run(id,b.id,p.slug,p.name,cycle,amount,payerEmail,provider,start,iso(),iso());
  try{let remote=provider==='demo'?{id:null,status:'pending',init_point:null}:await mp('/preapproval','POST',{reason:`Adara Web · ${p.name} · ${cycle==='annual'?'anual':'mensual'}`,external_reference:id,payer_email:payerEmail,auto_recurring:{frequency:cycle==='annual'?12:1,frequency_type:'months',transaction_amount:amount/100,currency_id:'ARS',start_date:start},back_url:(process.env.FRONTEND_URL||'http://localhost:5173')+'/admin?tab=Plan&subscription='+encodeURIComponent(id),status:'pending'},id);
  if(provider!=='demo'&&(!remote.id||!validCheckout(remote.init_point)))throw Error('Mercado Pago no devolvió un enlace de suscripción válido');
- db.prepare('UPDATE platform_subscriptions SET mp_id=?,status=?,checkout_url=?,updated_at=? WHERE id=?').run(remote.id?String(remote.id):null,'pending',remote.init_point||null,iso(),id);db.prepare('UPDATE businesses SET subscription_managed=1 WHERE id=?').run(b.id);res.json({subscription:publicSubscription(latest(b.id)),checkout_url:remote.init_point||null});
+ db.transaction(()=>{db.prepare('UPDATE platform_subscriptions SET mp_id=?,status=?,checkout_url=?,updated_at=? WHERE id=?').run(remote.id?String(remote.id):null,'pending',remote.init_point||null,iso(),id);db.prepare('UPDATE businesses SET subscription_managed=1 WHERE id=?').run(b.id);recordLegalAcceptance(consent,b.owner_id,b.id,'subscription',id)})();res.json({subscription:publicSubscription(latest(b.id)),checkout_url:remote.init_point||null});
  }catch(e){db.prepare("UPDATE platform_subscriptions SET status='failed',last_error=?,updated_at=? WHERE id=?").run(e.message,iso(),id);throw e}
  }));
  async function cancel(s){if(!s||s.status==='cancelled')return;if(s.provider==='mercadopago'){if(!s.mp_id)throw Error('No se conoce el contrato. Revisá la cuenta de Mercado Pago antes de crear otro.');await mp('/preapproval/'+encodeURIComponent(s.mp_id),'PUT',{status:'cancelled'})}db.prepare("UPDATE platform_subscriptions SET status='cancelled',next_payment_date=NULL,updated_at=? WHERE id=?").run(iso(),s.id);refreshBillingState(s.business_id);notice('cancel:'+s.id,s.business_id,'Cancelaste la renovación de Adara','No se generarán nuevas renovaciones de este contrato. El período ya pagado y tus datos se conservan. Cancelar no realiza un reintegro.');}

@@ -1,0 +1,35 @@
+import {useEffect,useState} from 'react';
+import {CheckCircle2,FileText} from 'lucide-react';
+import {api} from './api';
+import {LegalText,legalLinks,type LegalKind,type LegalProfile,type LegalDocumentData} from './Legal';
+
+type Draft={profile:LegalProfile;documents:Record<LegalKind,LegalDocumentData>};
+type State={draft:Draft;revision:string;publication:{version:number;published_at:string}|null};
+export default function LegalAdmin(){
+ const[data,setData]=useState<State>(),[saved,setSaved]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState(''),[active,setActive]=useState<LegalKind>('terms'),[preview,setPreview]=useState(false),[reviewed,setReviewed]=useState(false),[acceptances,setAcceptances]=useState<any[]>([]);
+ const load=async()=>{const value=await api('/admin/legal');setData(value);setSaved(JSON.stringify(value.draft));setReviewed(false);setError('');};
+ useEffect(()=>{load().catch(e=>setError(e.message));api('/admin/legal/acceptances').then(setAcceptances).catch(()=>{})},[]);
+ const edit=(draft:Draft)=>{setData(old=>old?{...old,draft}:old);setReviewed(false);setMessage('');};
+ const run=async(fn:()=>Promise<State>,success:string)=>{setBusy(true);setError('');setMessage('');try{const value=await fn();setData(value);setSaved(JSON.stringify(value.draft));setReviewed(false);setMessage(success)}catch(e:any){setError(e.message)}finally{setBusy(false)}};
+ if(!data)return <><h1>Textos legales</h1>{error?<div role="alert" className="error">{error}<button className="outline" onClick={()=>load().catch(e=>setError(e.message))}>Reintentar</button></div>:<p>Cargando documentos…</p>}</>;
+ const dirty=JSON.stringify(data.draft)!==saved,p=data.draft.profile,doc=data.draft.documents[active];
+ const tokens:Record<string,string>={titular:p.name,email:p.email,domicilio:[p.street,p.city,p.province,p.country].filter(Boolean).join(', '),datos_fiscales:p.tax_id?'CUIT: '+p.tax_id+'.':''};
+ const previewDocument={...doc,body:doc.body.replace(/\{\{([^{}]+)\}\}/g,(match,token)=>Object.hasOwn(tokens,token)?tokens[token]:match)};
+ return <><span className="kicker">PLATAFORMA</span><h1>Textos legales</h1><p className="lead">Editá los datos del titular y los documentos públicos. Guardar un borrador permite revisarlo; publicar actualiza lo que se muestra en el sitio.</p>
+  {error&&<div role="alert" className="error">{error}</div>}{message&&<div role="status" className="successBox"><CheckCircle2 size={18}/>{message}</div>}
+  <div className="panel legalPublication"><div><b>{data.publication?'Hay una edición publicada':'Borradores sin publicar'}</b><p>{data.publication?'Última publicación: '+new Date(data.publication.published_at).toLocaleString('es-AR',{timeZone:'America/Argentina/Buenos_Aires'}):'Revisá los textos y completá la dirección antes de publicarlos.'}</p></div><FileText size={28}/></div>
+  <form className="legalAdminForm" onSubmit={event=>{event.preventDefault();run(()=>api('/admin/legal',{method:'PUT',body:JSON.stringify({draft:data.draft,expected_revision:data.revision})}),'Borrador guardado. Los documentos públicos conservan su edición anterior.')}}>
+   <fieldset disabled={busy}><div className="panel form"><h2>Datos del titular</h2><p>Estos datos se incorporan a los documentos al publicar. El CUIT queda pendiente si todavía no lo definiste.</p>
+    <div className="two">{([['name','Nombre completo o razón social'],['email','Email de atención'],['street','Calle y número'],['city','Ciudad / localidad'],['province','Provincia'],['country','País'],['tax_id','CUIT (si corresponde)']] as const).map(([key,label])=><label key={key}>{label}<input required={['name','email','street'].includes(key)} type={key==='email'?'email':'text'} maxLength={key==='email'?254:250} value={p[key]} onChange={event=>edit({...data.draft,profile:{...p,[key]:event.target.value}})}/></label>)}</div>
+    {(!p.city||!p.province)&&<p className="devNote">Falta completar ciudad y provincia para publicar.</p>}
+   </div>
+   <div className="panel form"><h2>Documentos</h2><div className="legalEditorTabs">{legalLinks.map(([key,label])=><button key={key} type="button" aria-pressed={active===key} className={active===key?'dark':'outline'} onClick={()=>setActive(key)}>{label}</button>)}</div><label>Título del documento<input required maxLength={160} value={doc.title} onChange={event=>edit({...data.draft,documents:{...data.draft.documents,[active]:{...doc,title:event.target.value}}})}/></label><label>Texto del documento<textarea required rows={18} maxLength={30000} value={doc.body} onChange={event=>edit({...data.draft,documents:{...data.draft.documents,[active]:{...doc,body:event.target.value}}})}/></label>
+    <p className="mutedText">Usá <code>## </code> al comenzar una línea para un subtítulo. Los marcadores <code>{'{{titular}}'}</code>, <code>{'{{email}}'}</code>, <code>{'{{domicilio}}'}</code> y <code>{'{{datos_fiscales}}'}</code> se completan al publicar.</p><div className="legalEditorActions"><button className="dark" disabled={busy||!dirty}>Guardar borrador</button><button type="button" className="outline" onClick={()=>setPreview(!preview)}>{preview?'Ocultar vista previa':'Ver vista previa'}</button></div>
+   </div></fieldset>
+  </form>
+  {preview&&<article className="panel legalDraftPreview"><span className="kicker">VISTA PREVIA DEL BORRADOR</span><h2>{previewDocument.title}</h2><LegalText document={previewDocument}/></article>}
+  <div className="panel form legalPublishActions"><h2>Publicar los documentos</h2><p>Revisá las políticas, los datos fiscales y las condiciones antes del lanzamiento comercial. Estos borradores necesitan revisión legal profesional; guardarlos o publicarlos no certifica el cumplimiento de todas las obligaciones de la actividad.</p><label className="switchLine"><input type="checkbox" checked={reviewed} disabled={busy||dirty} onChange={event=>setReviewed(event.target.checked)}/><span>Revisé los tres textos y los datos del titular que serán públicos.</span></label>{dirty&&<p>Guardá los cambios antes de publicar.</p>}<button className="dark" disabled={busy||dirty||!reviewed||!p.city||!p.province||!p.country} onClick={()=>run(()=>api('/admin/legal/publish',{method:'POST',body:JSON.stringify({expected_revision:data.revision,reviewed:true})}),'Documentos publicados. Las nuevas aceptaciones quedan asociadas a esta edición.')}>Publicar textos legales</button>
+  </div>
+  <div className="panel"><h2>Últimas aceptaciones</h2><p>Se registra la cuenta, el momento y la edición aceptada. Las publicaciones anteriores se conservan. Publicar una edición no cambia retroactivamente lo aceptado por otras cuentas.</p>{acceptances.length?<div className="legalAcceptanceList">{acceptances.map(item=><article key={item.id}><div><b>{item.name}</b><span>{item.email}</span><small>{item.business_name}</small></div><div><b>{item.purpose==='registration'?'Registro':'Suscripción'}</b><small>{new Date(item.accepted_at).toLocaleString('es-AR',{timeZone:'America/Argentina/Buenos_Aires'})}</small></div></article>)}</div>:<p>Todavía no hay aceptaciones registradas.</p>}</div>
+ </>;
+}
