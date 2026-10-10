@@ -1,9 +1,9 @@
 :root{--adara-primary:#58243e;--adara-accent:#c38e82;--adara-background:#fcf7f5;--adara-ink:#35212d;--adara-muted:#7b6570;--adara-line:#e8d6dc}
 body{background:var(--adara-background);color:var(--adara-ink)}
 .platformBrand{display:inline-flex;align-items:center;line-height:1;letter-spacing:normal;max-width:100%}
-.platformBrand img{display:block;width:200px;height:61px;object-fit:contain;max-width:100%}
-.platformBrand.light{background:var(--adara-background);border-radius:12px;padding:7px 9px}
-.platformBrand.light img{width:180px;height:55px}
+.platformBrand img{display:block;width:280px;height:100px;object-fit:contain;max-width:100%;mix-blend-mode:multiply}
+.platformBrand.light{background:var(--adara-background);border-radius:12px;padding:8px 9px}
+.platformBrand.light img{width:204px;height:73px}
 .platformWordmark{display:inline-flex}
 .platformHome{--ph-ink:var(--adara-ink);--ph-muted:var(--adara-muted);--ph-primary:var(--adara-primary);--ph-line:var(--adara-line);background:var(--adara-background)}
 .platformHome .platformHeader,.platformHome .platformHomeFooter{background:var(--adara-background)}
@@ -30,7 +30,7 @@ body{background:var(--adara-background);color:var(--adara-ink)}
 .admin aside,.superLayout aside{background:#3d2030;color:#fff5f6}
 .admin aside button.active,.admin aside button:hover,.superLayout aside button.active,.superLayout aside button:hover{background:#60334b;color:white}
 .panelLayout .panelMobileHeader{background:var(--adara-background);border-color:var(--adara-line)}
-.panelLayout .panelMobileIdentity .platformBrand img{width:145px;height:44px}
+.panelLayout .panelMobileIdentity .platformBrand img{width:174px;height:62px}
 .panelLayout .panelSidebarHeading .platformBrand{margin:0 0 20px}
 .panelLayout .panelMenuTrigger{color:var(--adara-primary);border-color:var(--adara-line)}
 .dark,.toolsNav button.active,.holdPresets button.active,.agendaFilters button.active{background:var(--adara-primary);color:white;border-color:var(--adara-primary)}
@@ -38,7 +38,7 @@ body{background:var(--adara-background);color:var(--adara-ink)}
 .authCard h1,.authCard h2,.dash h1,.dash h2{color:var(--adara-ink)}
 .outline{border-color:var(--adara-line);color:var(--adara-primary)}
 .panel,.cardsList article{border-color:var(--adara-line)}
-@media(max-width:1000px){.platformHome .platformHeader{position:relative;padding:18px 24px;gap:20px}.platformHome .platformMenu{display:block;color:var(--adara-primary)}.platformHome .platformHeader nav{display:none}.platformHome .platformHeader nav.open{display:flex;position:absolute;top:94px;left:16px;right:16px;background:#fff;border:1px solid var(--adara-line);box-shadow:0 15px 40px #58243e18;padding:24px;border-radius:12px;flex-direction:column;align-items:stretch;gap:20px;z-index:20}.platformHome .platformHeader nav.open a{padding:3px}.platformSupport{margin:0 24px 60px;grid-template-columns:1fr;gap:24px;padding:28px}}
-@media(max-width:700px){.platformBrand img{width:165px;height:50px}.platformSupport h2{font-size:29px!important}.platformSupportActions{width:100%}.platformSupportActions .platformButton{width:100%;justify-content:center}}
+@media(max-width:1000px){.platformHome .platformHeader{position:relative;padding:18px 24px;gap:20px}.platformHome .platformMenu{display:block;color:var(--adara-primary)}.platformHome .platformHeader nav{display:none}.platformHome .platformHeader nav.open{display:flex;position:absolute;top:calc(100% - 8px);left:16px;right:16px;background:#fff;border:1px solid var(--adara-line);box-shadow:0 15px 40px #58243e18;padding:24px;border-radius:12px;flex-direction:column;align-items:stretch;gap:20px;z-index:20}.platformHome .platformHeader nav.open a{padding:3px}.platformSupport{margin:0 24px 60px;grid-template-columns:1fr;gap:24px;padding:28px}}
+@media(max-width:700px){.platformBrand img{width:210px;height:75px}.platformSupport h2{font-size:29px!important}.platformSupportActions{width:100%}.platformSupportActions .platformButton{width:100%;justify-content:center}}
 
-.adminDemoTop .platformBrand img{width:100px;height:30px}.adaraLegalHeader .platformBrand img{width:180px;height:55px}
+.adminDemoTop .platformBrand img{width:114px;height:41px}.adaraLegalHeader .platformBrand img{width:224px;height:80px}

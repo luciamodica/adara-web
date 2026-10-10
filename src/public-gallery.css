@@ -1,5 +1,7 @@
 .imageCarousel{position:relative;min-width:0;overflow:hidden;touch-action:pan-y;isolation:isolate}
 .imageCarousel .carouselImage{display:block;width:100%;height:100%;object-fit:cover}
+.heroCarousel .carouselImage{animation:coverReveal .5s ease-out}
+@keyframes coverReveal{from{opacity:.55}to{opacity:1}}
 .imageCarousel .carouselControls{position:absolute;bottom:12px;right:12px;z-index:6;display:flex;align-items:center;gap:8px;background:#20141ec9;color:white;border:1px solid #ffffff42;border-radius:999px;padding:3px;min-height:36px}
 .imageCarousel .carouselControls button{display:grid;place-items:center;width:32px;height:32px;min-width:32px;padding:0;background:transparent;color:white;border:0;border-radius:50%;cursor:pointer;box-shadow:none}
 .imageCarousel .carouselControls span{display:block;font:500 11px/1 Arial,sans-serif;min-width:26px;color:white;margin:0;padding:0;white-space:nowrap}
@@ -67,4 +69,4 @@
  .galleryThumbs{grid-template-columns:repeat(2,minmax(0,1fr))}
  .cardsList article .serviceAdminActions{flex-direction:column;align-items:stretch}
 }
-@media(prefers-reduced-motion:reduce){.imageCarousel{scroll-behavior:auto}}
+@media(prefers-reduced-motion:reduce){.imageCarousel{scroll-behavior:auto}.heroCarousel .carouselImage{animation:none}}

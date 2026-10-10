@@ -119,6 +119,10 @@ try{
  // Personal branding, pale palettes and a real QR decoder.
  db.prepare("UPDATE businesses SET name=?,template_id='rose',primary_color='#e8c9c8',accent_color='#bb7c90',background_color='#fff9f7',logo_image=?,instagram=?,tiktok=?,phone=?,address=? WHERE id=?").run('Estudio de Lucía','/uploads/logo.png','@lucia.beauty','@lucia.tiktok','5491155559999','Av. Siempre Viva 742',b.id);
  const branded=(await request(root+'/qr','GET',undefined,cookie)).data;
+ check(()=>assert.equal(branded.brand.email,'')); // Never use the private account email as a public QR contact.
+ db.prepare('UPDATE businesses SET public_email=? WHERE id=?').run('hola@estudio.example.test',b.id);
+ const contactQr=(await request(root+'/qr','GET',undefined,cookie)).data;
+ check(()=>assert.equal(contactQr.brand.email,'hola@estudio.example.test'));
  check(()=>assert.equal(branded.brand.tagline,'Tu próximo momento empieza acá'));
  const beforeQrSettings=(await request(root,'GET',undefined,cookie)).data.settings;
  await request(root+'/qr','PUT',{tagline:'  Reservá tu momento   de bienestar  '},cookie);
@@ -132,6 +136,7 @@ try{
  await request(root+'/qr','PUT',{tagline:'Otra marca'},other.cookie,403);
  check(()=>assert.equal(db.prepare('SELECT qr_tagline FROM businesses WHERE id=?').get(b.id).qr_tagline,'Reservá tu momento de bienestar'));
  const otherQr=(await request(`/businesses/${other.b.id}/tools/qr`,'GET',undefined,other.cookie)).data;
+ check(()=>assert.equal(otherQr.brand.email,''));
  check(()=>assert.equal(otherQr.brand.tagline,'Tu próximo momento empieza acá'));
  await request(root+'/qr','PUT',{tagline:''},cookie);
  const emptyQr=(await request(root+'/qr','GET',undefined,cookie)).data;

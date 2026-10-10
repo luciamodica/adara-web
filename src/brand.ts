@@ -3,7 +3,7 @@ export const BRAND = {
   shortName: 'Adara',
   tagline: 'Tu negocio de belleza, en un solo lugar.',
   trialDays: 15,
-  logo: '/images/adara-logo.svg',
-  favicon: '/favicon.svg',
+  logo: '/images/adara-logo-horizontal.svg',
+  favicon: '/icons/adara-32.png',
   colors: {primary:'#58243e',accent:'#c38e82',background:'#fcf7f5',ink:'#35212d',muted:'#7b6570',line:'#e8d6dc'}
 } as const;

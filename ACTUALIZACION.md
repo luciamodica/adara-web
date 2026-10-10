@@ -1,5 +1,61 @@
 # Actualización de Adara Web
 
+## Logo completo, ícono de pestaña, contactos del QR y portada automática
+
+- El logo usa la nueva imagen horizontal completa en alta resolución. Se aumenta su tamaño en el home y los paneles, conservando un tamaño cómodo en celular.
+- La pestaña usa el emblema A enviado por separado. Se incluyen SVG, PNG e ICO y un ícono para accesos directos de iPhone. Las nuevas rutas evitan reutilizar el ícono anterior guardado por el navegador.
+- La tarjeta QR reemplaza los rótulos de contacto por los íconos de WhatsApp, Instagram, TikTok, ubicación y email, junto a cada dato. Mantiene los colores, la plantilla, la frase y el logo de la profesional. Se omiten los contactos vacíos; sólo se incluye el email público configurado en el negocio.
+- Las portadas con varias imágenes avanzan solas cada 5 segundos y vuelven a la primera. Conservan flechas, gesto de deslizar y un botón para pausar o reanudar. Se detienen temporalmente al interactuar con el carrusel o cambiar de pestaña. Los servicios conservan navegación manual.
+
+### Archivos que hay que reemplazar en esta entrega
+
+Copiá el contenido completo de `src`, `public` y `tests` a las carpetas del mismo nombre de tu proyecto, aceptando reemplazar. Copiá también `server/qr-brand.js`, `index.html` y este `ACTUALIZACION.md`. Conservá `.env`, `data` y `server/uploads`.
+
+```powershell
+npm run build
+npm test
+git add src public tests server/qr-brand.js index.html ACTUALIZACION.md
+git commit -m "Corregir logo, favicon, contactos QR y portada automatica"
+git push
+```
+
+Tras el despliegue de Render, recargá con Ctrl + F5. Si la pestaña conserva el ícono anterior, cerrá esa pestaña y abrí el sitio de nuevo. En **Herramientas → Compartir mi página**, generá y descargá otra tarjeta para obtener los nuevos íconos. Los PNG descargados previamente no cambian.
+
+La compilación de producción y las 992 comprobaciones de integración pasan. La revisión en navegador verifica carga de los íconos, logo completo, contactos del QR y lectura del código, cambio automático a los 5 segundos, pausa y reanudación, navegación manual, reducción de movimiento, portada anterior con una imagen y tamaños de escritorio y celular.
+
+## Logo, paleta, soporte y sitios con carruseles
+
+- El logo enviado se integra al home, ingreso, paneles, vista de ejemplo y documentos legales. El ícono de la pestaña usa la A del mismo logo. La paleta de Adara pasa a ciruela, rosa viejo y champagne.
+- El home agrega **Soporte** en la navegación, una sección de ayuda y acceso por email a la dirección de contacto de Adara.
+- Cada portada y servicio admite hasta 8 imágenes. Desde **Mi página → Imágenes de portada** o **Servicios → Imágenes del servicio** podés agregar varias fotos, cambiar su orden y quitarlas. Las portadas avanzan automáticamente cada 5 segundos; las flechas también permiten recorrerlas. La primera es la imagen principal.
+- **Servicios → Editar** permite actualizar también las fotos de servicios que ya estaban creados.
+- **Turnos** aparece inmediatamente debajo de la portada. El encabezado anterior se reemplaza por ese título y una instrucción breve. El botón de reserva de cada servicio selecciona ese servicio en el formulario.
+- La categoría se oculta inicialmente. En **Mi página**, **Mostrar texto sobre el título de portada** permite activarla y escribir una frase propia; si no hay frase, muestra el rubro del negocio.
+- Las siete variantes de tarjetas de servicios se ajustan a un formato compacto en el celular. Los colores y la identidad de cada profesional siguen siendo personalizables.
+
+### Cómo aplicar esta actualización
+
+Descargá y extraé el ZIP. Copiá el contenido de estas carpetas a tu proyecto actual, combinando los archivos con los existentes y aceptando reemplazar los archivos del mismo nombre:
+
+- `src`
+- `tests`
+- `public`
+- Los archivos `.js` de `server`, incluido el nuevo `server/image-gallery.js`.
+
+Copiá también `index.html`, `package.json` y `ACTUALIZACION.md`. Esto incluye la actualización anterior del QR, por si todavía no la habías aplicado. Conservá tu `.env`, la carpeta `data` y las imágenes de `server/uploads`.
+
+Desde tu carpeta actual `adara-web`, ejecutá en PowerShell:
+
+```powershell
+npm run build
+npm test
+git add src server tests public index.html package.json ACTUALIZACION.md
+git commit -m "Actualizar marca, carruseles y turnos de Adara"
+git push
+```
+
+Render compilará y publicará el cambio. No hace falta agregar variables de entorno ni ejecutar SQL: los campos nuevos se agregan automáticamente al iniciar. Las imágenes anteriores se siguen mostrando. Si el navegador conserva el ícono viejo, recargá con **Ctrl + F5**.
+
 ## Tarjeta QR con identidad propia y frase editable
 
 En **Herramientas → Compartir mi página**, cada profesional puede escribir la frase de su tarjeta (hasta 120 caracteres) o dejarla vacía para ocultarla. **Guardar y generar QR** guarda la frase para ese negocio y crea una nueva tarjeta descargable. Se conserva al volver a entrar.
