@@ -1,3 +1,4 @@
+import PlatformLogo from './PlatformLogo';
 import {useEffect,useId,useRef,useState,type ReactNode} from 'react';
 import {LogOut,Menu,X,type LucideIcon} from 'lucide-react';
 import './PanelLayout.css';
@@ -61,7 +62,7 @@ export default function PanelLayout({variant='admin',brand,identity,title,items,
 
   return <div className={`${variant} panelLayout`}>
     <header className="panelMobileHeader">
-      <div className="panelMobileIdentity"><div className="brand">ADARA <i>WEB</i></div><span>{active}</span></div>
+      <div className="panelMobileIdentity"><PlatformLogo/><span>{active}</span></div>
       <button ref={trigger} type="button" className="panelMenuTrigger" aria-controls={id} aria-expanded={open} onClick={()=>{restoreFocus.current=true;setOpen(true)}}><Menu size={20} aria-hidden="true"/>Menú</button>
     </header>
     {mobile&&open&&<div className="panelMenuBackdrop" aria-hidden="true" onClick={()=>setOpen(false)}/>}

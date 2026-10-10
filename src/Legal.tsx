@@ -1,3 +1,4 @@
+import PlatformLogo from './PlatformLogo';
 import {useEffect,useState} from 'react';
 import {ArrowLeft,ExternalLink,Mail} from 'lucide-react';
 import {api} from './api';
@@ -27,7 +28,7 @@ export default function LegalPage({kind}:{kind:LegalKind}){
  const {legal,error,loading,refresh}=usePublicLegal(),document=legal?.documents?.[kind];
  const title=legalLinks.find(([key])=>key===kind)![1];
  return <div className="adaraLegalPage">
-  <header className="adaraLegalHeader"><a className="brand" href="/">ADARA <i>WEB</i></a><a className="outline" href="/"><ArrowLeft size={16}/>Volver al inicio</a></header>
+  <header className="adaraLegalHeader"><a href="/" aria-label="Adara Web, inicio"><PlatformLogo/></a><a className="outline" href="/"><ArrowLeft size={16}/>Volver al inicio</a></header>
   <main className="adaraLegalMain"><div className="adaraLegalIntro"><span className="kicker">INFORMACIÓN LEGAL</span><h1>{document?.title||title}</h1>{legal?.published_at&&<p>Publicado el {new Date(legal.published_at).toLocaleDateString('es-AR',{timeZone:'America/Argentina/Buenos_Aires'})}.</p>}</div>
    <nav className="adaraLegalNav" aria-label="Documentos legales">{legalLinks.map(([key,label,path])=><a key={key} href={path} aria-current={kind===key?'page':undefined}>{label}</a>)}</nav>
    {loading?<p role="status">Cargando documento…</p>:error?<div role="alert" className="error">{error}<button className="outline" onClick={refresh}>Reintentar</button></div>:document?<article className="adaraLegalArticle"><LegalText document={document}/></article>:<div className="panel"><h2>Publicación en preparación</h2><p>Los documentos legales todavía están en revisión. Para consultas, escribí a <a href={'mailto:'+contactEmail}>{contactEmail}</a>.</p></div>}
