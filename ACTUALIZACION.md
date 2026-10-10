@@ -1,5 +1,68 @@
 # Actualización de Adara Web
 
+## Corrección de consulta de facturas de Mercado Pago
+
+La API de facturas rechazó `limit=100` y `limit=20` con HTTP 400 (`Invalid value for limit`). Se verificó con la cuenta vendedora de prueba que `limit=10` devuelve HTTP 200. Adara ahora consulta páginas de 10 tanto al actualizar el estado como al recibir avisos de pagos. Recorre las siguientes páginas para conservar el historial y verificar los pagos acreditados.
+
+Para actualizar tu instalación publicada, copiá estos archivos del ZIP a tu proyecto Git actual:
+
+- `server/platform-billing.js`
+- `tests/platform-billing.integration.mjs`
+- `ACTUALIZACION.md`
+
+Luego ejecutá en PowerShell, desde la carpeta `adara-web`:
+
+```powershell
+npm test
+git add server/platform-billing.js tests/platform-billing.integration.mjs ACTUALIZACION.md
+git commit -m "Corregir paginacion de facturas de Mercado Pago"
+git push
+```
+
+Esta corrección no modifica los datos ni las variables de Render. Una vez desplegada, entrá a **Plan → Actualizar estado** sobre la suscripción existente. La autorización y la fecha del primer cobro se conservan. Hasta que se acredite un pago, la cuenta mantiene su prueba gratuita y no muestra un período pagado.
+
+Las pruebas reproducen el rechazo de los límites anteriores y verifican 25 facturas repartidas en tres páginas, un pago aprobado en la última página, respuestas con y sin total de resultados, avisos de pagos, aislamiento entre negocios y ausencia de registros duplicados.
+
+## Documentos legales y aceptación
+
+Nueva sección **Super Admin → Textos legales** para editar y revisar los borradores de términos, privacidad y suscripción. La titular, el email y la dirección completa están cargados: Francia 3138, Mar del Plata, Buenos Aires, Argentina. Si el borrador de una instalación anterior sigue sin localidad, completá ciudad y provincia desde el panel y guardalo. Guardar no publica. Al publicar se habilita la aceptación obligatoria en los nuevos registros y se guarda la edición aceptada, también al autorizar nuevas suscripciones. Los textos necesitan revisión profesional antes del lanzamiento comercial. El detalle y los puntos pendientes están en `LEGAL.md`.
+
+**Esta actualización modifica frontend y servidor.** Si ya publicaste en Render, actualizá `src`, los archivos `.js` de `server`, `tests` y `package.json` en tu proyecto Git actual. Conservá `.env`, `data` y las imágenes de `server/uploads`. Ejecutá:
+
+```powershell
+npm run build
+npm test
+git add src server tests package.json
+git commit -m "Agregar documentos legales y aceptación de condiciones"
+git push
+```
+
+Después del despliegue, verificá la dirección y revisá los borradores desde Super Admin. La publicación se hace desde ese panel. Las tablas legales se agregan sin borrar datos existentes.
+
+## Panel en celulares
+
+El panel de la profesional y el Super Admin ahora tienen una barra compacta y un botón **Menú**. La navegación se abre sobre el contenido y se cierra al elegir una sección, tocar afuera, usar la cruz o presionar Escape. Al cambiar de sección en celular se muestra el contenido desde arriba. Abrir y cerrar el menú conserva los formularios que estás editando.
+
+También se corrigieron los anchos del editor de la página, sus campos y las filas del panel. La vista previa de escritorio se puede deslizar dentro de su recuadro en pantallas pequeñas. En computadora se mantiene el menú lateral.
+
+### Si ya publicaste en Render
+
+1. Hacé una copia de tu proyecto actual.
+2. Descomprimí esta entrega en otra carpeta.
+3. Copiá únicamente la carpeta `src` de esta entrega dentro de tu carpeta actual `adara-web`, aceptando reemplazar los archivos. Esta corrección no necesita cambios en `.env`, datos, fotos ni variables de Render.
+4. Abrí PowerShell en tu proyecto actual y ejecutá:
+
+```powershell
+npm run build
+git add src
+git commit -m "Mejorar el panel en celulares"
+git push
+```
+
+Render volverá a desplegar el sitio si tenés activado el despliegue automático de la rama `main`. Cuando termine, recargá el panel en el celular.
+
+La compilación de producción y las pruebas en navegador cubren las secciones de ambos paneles en anchos de 323, 390 y 768 px, formularios, cierre del menú, foco del teclado, vistas previas, cambio a escritorio y cierre de sesión.
+
 Esta entrega agrega las suscripciones mensuales y anuales que pagan las profesionales por usar Adara. Incluye precio especial por cuenta, autorización en Mercado Pago, períodos pagados, cancelación de futuras renovaciones, vencimientos y Super Admin → Suscripciones. Conserva la Home aprobada, su paleta y foto, FAQ, transferencias, condiciones por clienta y todas las herramientas anteriores.
 
 ## Si ya tenés datos cargados

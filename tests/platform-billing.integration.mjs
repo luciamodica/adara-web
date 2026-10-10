@@ -5,14 +5,21 @@ const NativeDate=Date;let clock=Date.now();global.Date=class extends NativeDate{
 process.env.MP_BILLING_ACCESS_TOKEN='billing-fixture-only';process.env.MP_BILLING_WEBHOOK_SECRET='billing-signature-fixture';process.env.FRONTEND_URL='https://adara.example.test';process.env.PUBLIC_API_URL='https://adara.example.test';
 const {app,billingWorker}=await import('../server/index.js'),{db}=await import('../server/db.js'),{billingAccess,addBillingMonths}=await import('../server/platform-billing.js');
 await import('../server/seed.js');
-const server=app.listen(0);await new Promise(r=>server.once('listening',r));const base=`http://127.0.0.1:${server.address().port}/api`,nativeFetch=global.fetch,contracts=new Map(),invoices=new Map(),payments=new Map();let checks=0,postCount=0,failFetch=false,failCancel=false;
+const server=app.listen(0);await new Promise(r=>server.once('listening',r));const base=`http://127.0.0.1:${server.address().port}/api`,nativeFetch=global.fetch,contracts=new Map(),invoices=new Map(),payments=new Map(),invoiceSearches=[];let checks=0,postCount=0,failFetch=false,failCancel=false,omitInvoiceTotal=false;
 const check=fn=>{fn();checks++};
 const checkAsync=async fn=>{await fn();checks++};
 global.fetch=async(url,options={})=>{const u=new URL(url);if(u.hostname!=='api.mercadopago.com')return nativeFetch(url,options);check(()=>assert.equal(options.headers.Authorization,'Bearer billing-fixture-only'));if(failFetch)return new Response('{}',{status:503});const route=u.pathname,body=options.body?JSON.parse(options.body):null;let result;
  if(route==='/preapproval'&&options.method==='POST'){postCount++;const id=crypto.randomBytes(16).toString('hex');result={...body,id,status:'pending',collector_id:555,init_point:'https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_id='+id,next_payment_date:body.auto_recurring.start_date};contracts.set(id,result)}
  else if(route.startsWith('/preapproval/')&&options.method==='PUT'){if(failCancel)return new Response('{}',{status:503});result=contracts.get(route.split('/').pop());if(result)Object.assign(result,body)}
  else if(route.startsWith('/preapproval/'))result=contracts.get(route.split('/').pop());
- else if(route==='/authorized_payments/search'){const list=[...invoices.values()].filter(x=>(!u.searchParams.has('preapproval_id')||x.preapproval_id===u.searchParams.get('preapproval_id'))&&(!u.searchParams.has('payment_id')||String(x.payment?.id)===u.searchParams.get('payment_id')));const offset=Number(u.searchParams.get('offset')||0);result={results:list.slice(offset,offset+100),paging:{total:list.length,offset,limit:100}}}
+ else if(route==='/authorized_payments/search'){
+  // Reproduce the provider responses observed with the test seller: 100 and 20 fail; 10 succeeds.
+  const limit=Number(u.searchParams.get('limit')||12),offset=Number(u.searchParams.get('offset')||0);
+  if([100,20].includes(limit))return new Response(JSON.stringify({message:'Invalid value for limit'}),{status:400});
+  invoiceSearches.push({preapproval_id:u.searchParams.get('preapproval_id'),payment_id:u.searchParams.get('payment_id'),offset,limit});
+  const list=[...invoices.values()].filter(x=>(!u.searchParams.has('preapproval_id')||x.preapproval_id===u.searchParams.get('preapproval_id'))&&(!u.searchParams.has('payment_id')||String(x.payment?.id)===u.searchParams.get('payment_id')));
+  result={results:list.slice(offset,offset+limit),paging:{...(!omitInvoiceTotal?{total:list.length}:{}),offset,limit}};
+ }
  else if(route.startsWith('/authorized_payments/'))result=invoices.get(route.split('/').pop());
  else if(route.startsWith('/v1/payments/'))result=payments.get(route.split('/').pop());
  return new Response(JSON.stringify(result||{}),{status:result?200:404,headers:{'Content-Type':'application/json'}});
@@ -82,9 +89,31 @@ try{
  await request(rr+'/subscription/demo-pay','POST',{confirm:true},renewal.cookie,404);
  const superNow=(await request('/auth/login','POST',{email:'admin@adaraweb.local',password:'admin1234'})).cookie;await request('/admin/businesses/'+renewal.b.id,'PATCH',{subscription_status:'cancelled'},superNow,409);await request('/admin/overview','GET',undefined,superNow);
  await request(rr+'/subscription/cancel','POST',{confirm:true},renewal.cookie);await request('/admin/businesses/'+renewal.b.id,'PATCH',{subscription_status:'active',custom_monthly_price:0},superNow);check(()=>assert.equal(db.prepare('SELECT subscription_managed FROM businesses WHERE id=?').get(renewal.b.id).subscription_managed,0));check(()=>assert.equal(billingAccess(db.prepare('SELECT * FROM businesses WHERE id=?').get(renewal.b.id)),true));await request(rr+'/subscription','POST',{authorize_recurring:true},renewal.cookie,400);
+ // A paid invoice on the third page must activate access, including when the provider omits the total.
+ const paged=await owner(5),pr='/businesses/'+paged.b.id;
+ db.prepare('UPDATE businesses SET trial_ends_at=? WHERE id=?').run(new Date(Date.now()-86400000).toISOString(),paged.b.id);
+ const ps=(await request(pr+'/subscription','POST',{authorize_recurring:true},paged.cookie)).d.subscription;
+ const pm=contracts.get(db.prepare('SELECT mp_id FROM platform_subscriptions WHERE id=?').get(ps.id).mp_id);
+ pm.status='authorized';clock=Date.parse(ps.start_date)+60000;
+ for(let n=0;n<25;n++)invoice(ps,500+n,n===24?'approved':'pending',ps.amount_cents,ps.start_date);
+ invoiceSearches.length=0;
+ const pagedState=(await request(pr+'/subscription/refresh','POST',{},paged.cookie)).d;
+ check(()=>assert.deepEqual(invoiceSearches.filter(x=>x.preapproval_id===pm.id).map(x=>x.offset),[0,10,20]));
+ check(()=>assert.equal(db.prepare('SELECT count(*) n FROM platform_subscription_payments WHERE subscription_id=?').get(ps.id).n,25));
+ check(()=>assert.equal(pagedState.status,'active'));
+ check(()=>assert.equal(pagedState.paid_until,addBillingMonths(ps.start_date,1)));
+ const paidNotices=db.prepare('SELECT count(*) n FROM platform_billing_notices WHERE id=?').get('paid:524').n;
+ omitInvoiceTotal=true;invoiceSearches.length=0;
+ await request(pr+'/subscription/refresh','POST',{},paged.cookie);omitInvoiceTotal=false;
+ check(()=>assert.deepEqual(invoiceSearches.filter(x=>x.preapproval_id===pm.id).map(x=>x.offset),[0,10,20]));
+ check(()=>assert.equal(db.prepare('SELECT count(*) n FROM platform_subscription_payments WHERE subscription_id=?').get(ps.id).n,25));
+ check(()=>assert.equal(db.prepare('SELECT count(*) n FROM platform_billing_notices WHERE id=?').get('paid:524').n,paidNotices));
+ check(()=>assert.equal(db.prepare('SELECT subscription_paid_until x FROM businesses WHERE id=?').get(o.b.id).x,null));
+ invoiceSearches.length=0;await webhook('payment','9524');
+ check(()=>assert.equal(invoiceSearches.find(x=>x.payment_id==='9524').limit,10));
  // Local simulation is explicit, isolated from appointment payments, and impossible in production.
  delete process.env.MP_BILLING_ACCESS_TOKEN;delete process.env.MP_BILLING_WEBHOOK_SECRET;const demo=await owner(3),dr='/businesses/'+demo.b.id;await request(dr+'/subscription','POST',{authorize_recurring:true},demo.cookie);const paidDemo=(await request(dr+'/subscription/demo-pay','POST',{confirm:true},demo.cookie)).d;check(()=>assert.equal(paidDemo.subscription.provider,'demo'));check(()=>assert.equal(paidDemo.status,'active'));await request(dr+'/subscription/demo-pay','POST',{confirm:true},demo.cookie,400);
  process.env.NODE_ENV='production';await request(dr+'/subscription/demo-pay','POST',{confirm:true},demo.cookie,404);await request(other+'/subscription','POST',{authorize_recurring:true},(await request('/auth/login','POST',{email:'billing2@example.test',password:'Password123!'})).cookie,503);delete process.env.NODE_ENV;
  await billingWorker.processJobs();check(()=>assert.ok(db.prepare("SELECT count(*) n FROM platform_billing_notices WHERE status='local'").get().n>0));
- console.log(`OK: ${checks} comprobaciones de suscripciones. Separación de cobros, consentimiento, precios especiales, prueba conservada, avisos firmados, pagos verificados, idempotencia, reintegros, cancelación, períodos mensuales/anuales, gracia, acceso, aislamiento y simulación sólo local.`);
+ console.log(`OK: ${checks} comprobaciones de suscripciones. Separación de cobros, consentimiento, precios especiales, prueba conservada, avisos firmados, pagos verificados, paginación de facturas, idempotencia, reintegros, cancelación, períodos mensuales/anuales, gracia, acceso, aislamiento y simulación sólo local.`);
 }finally{global.fetch=nativeFetch;global.Date=NativeDate;await new Promise(r=>server.close(r));db.close();process.chdir(initial);fs.rmSync(temp,{recursive:true,force:true})}

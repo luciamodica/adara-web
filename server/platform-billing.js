@@ -13,6 +13,8 @@ db.exec(`CREATE TABLE IF NOT EXISTS platform_subscriptions(
 if(!db.prepare('PRAGMA table_info(platform_subscriptions)').all().some(c=>c.name==='activated_at'))db.exec('ALTER TABLE platform_subscriptions ADD COLUMN activated_at TEXT');
 if(!db.prepare('PRAGMA table_info(platform_subscriptions)').all().some(c=>c.name==='payer_email'))db.exec('ALTER TABLE platform_subscriptions ADD COLUMN payer_email TEXT');
 const iso=()=>new Date().toISOString(),api='https://api.mercadopago.com',locks=new Map();
+// The authorized-payments API accepts pages of 10; larger pages were rejected by the provider.
+const invoicePageSize=10;
 const latest=id=>db.prepare('SELECT * FROM platform_subscriptions WHERE business_id=? ORDER BY created_at DESC,rowid DESC LIMIT 1').get(id);
 const live=id=>db.prepare("SELECT * FROM platform_subscriptions WHERE business_id=? AND status IN ('creating','pending','authorized','paused')").get(id);
 const grace=()=>Math.min(14,Math.max(0,Number(getSetting('billing_grace_days','3'))||0));
@@ -63,7 +65,7 @@ async function syncSubscription(s){
  if(Math.round(Number(auto.transaction_amount)*100)!==s.amount_cents||auto.currency_id!=='ARS'||Number(auto.frequency)!==(s.billing_cycle==='annual'?12:1)||auto.frequency_type!=='months')throw Error('La suscripción cambió en Mercado Pago. Revisá su importe y frecuencia antes de continuar.');
  const status=['pending','authorized','paused','cancelled'].includes(remote.status)?remote.status:s.status;
  db.prepare('UPDATE platform_subscriptions SET status=?,next_payment_date=?,last_error=NULL,updated_at=? WHERE id=?').run(status,remote.next_payment_date||null,iso(),s.id);
- for(let offset=0;offset<1000;){const result=await mp('/authorized_payments/search?preapproval_id='+encodeURIComponent(s.mp_id)+'&limit=100&offset='+offset);const rows=result.results||[];for(const row of rows)await settleInvoice(row,s);if(!rows.length||offset+rows.length>=Number(result.paging?.total??Infinity)||(!result.paging?.total&&rows.length<100))break;offset+=rows.length}
+ for(let offset=0;offset<1000;){const result=await mp('/authorized_payments/search?preapproval_id='+encodeURIComponent(s.mp_id)+'&limit='+invoicePageSize+'&offset='+offset);const rows=result.results||[];for(const row of rows)await settleInvoice(row,s);if(!rows.length||offset+rows.length>=Number(result.paging?.total??Infinity)||(!result.paging?.total&&rows.length<invoicePageSize))break;offset+=rows.length}
  refreshBillingState(s.business_id);
 }
 export function verifyBillingSignature(req){
@@ -109,7 +111,7 @@ export function registerPlatformBilling(app,{auth,own,superOnly,getBusinessPlan,
  if(!verifyBillingSignature(req))return res.status(401).json({error:'Firma inválida'});const type=req.body?.type||req.query.type,id=String(req.query['data.id']);if(!['subscription_preapproval','subscription_authorized_payment','payment'].includes(type))return res.json({ok:true});
  try{let s;if(type==='subscription_preapproval'){s=db.prepare('SELECT * FROM platform_subscriptions WHERE mp_id=? AND provider=\'mercadopago\'').get(id);if(s)await lock(s.business_id,()=>syncSubscription(s));}
  else if(type==='subscription_authorized_payment'){const invoice=await mp('/authorized_payments/'+encodeURIComponent(id));if(String(invoice.id)!==id)throw Error('Factura inválida');s=db.prepare("SELECT * FROM platform_subscriptions WHERE mp_id=? AND provider='mercadopago'").get(String(invoice.preapproval_id));if(s)await lock(s.business_id,async()=>{await settleInvoice(invoice,s);await syncSubscription(s)});}
- else{const invoices=await mp('/authorized_payments/search?payment_id='+encodeURIComponent(id)+'&limit=100');for(const row of invoices.results||[]){if(String(row.payment?.id)!==id)continue;s=db.prepare("SELECT * FROM platform_subscriptions WHERE mp_id=? AND provider='mercadopago'").get(String(row.preapproval_id));if(s)await lock(s.business_id,async()=>{await settleInvoice(row,s);await syncSubscription(s)});}}
+ else{const invoices=await mp('/authorized_payments/search?payment_id='+encodeURIComponent(id)+'&limit='+invoicePageSize);for(const row of invoices.results||[]){if(String(row.payment?.id)!==id)continue;s=db.prepare("SELECT * FROM platform_subscriptions WHERE mp_id=? AND provider='mercadopago'").get(String(row.preapproval_id));if(s)await lock(s.business_id,async()=>{await settleInvoice(row,s);await syncSubscription(s)});}}
  res.json({ok:true});}catch{res.status(503).json({error:'No se pudo verificar el aviso. Reintentar.'})}
  });
  let running=false;async function processJobs(){if(running)return;running=true;try{for(const b of db.prepare('SELECT id FROM businesses').all())refreshBillingState(b.id);if(billingConfiguration().configured)for(const s of db.prepare("SELECT * FROM platform_subscriptions WHERE provider='mercadopago' AND mp_id IS NOT NULL AND (status IN ('pending','authorized','paused') OR id IN (SELECT subscription_id FROM platform_subscription_payments WHERE status='approved'))").all()){try{await lock(s.business_id,()=>syncSubscription(s))}catch(e){db.prepare('UPDATE platform_subscriptions SET last_error=? WHERE id=?').run(e.message,s.id)}}
