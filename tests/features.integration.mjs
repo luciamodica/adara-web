@@ -119,6 +119,24 @@ try{
  // Personal branding, pale palettes and a real QR decoder.
  db.prepare("UPDATE businesses SET name=?,template_id='rose',primary_color='#e8c9c8',accent_color='#bb7c90',background_color='#fff9f7',logo_image=?,instagram=?,tiktok=?,phone=?,address=? WHERE id=?").run('Estudio de Lucía','/uploads/logo.png','@lucia.beauty','@lucia.tiktok','5491155559999','Av. Siempre Viva 742',b.id);
  const branded=(await request(root+'/qr','GET',undefined,cookie)).data;
+ check(()=>assert.equal(branded.brand.tagline,'Tu próximo momento empieza acá'));
+ const beforeQrSettings=(await request(root,'GET',undefined,cookie)).data.settings;
+ await request(root+'/qr','PUT',{tagline:'  Reservá tu momento   de bienestar  '},cookie);
+ const customQr=(await request(root+'/qr','GET',undefined,cookie)).data;
+ check(()=>assert.equal(customQr.brand.tagline,'Reservá tu momento de bienestar'));
+ check(()=>assert.equal(customQr.url,branded.url));
+ check(()=>assert.equal((db.prepare('SELECT qr_tagline FROM businesses WHERE id=?').get(b.id)).qr_tagline,customQr.brand.tagline));
+ const afterQrSettings=(await request(root,'GET',undefined,cookie)).data.settings;
+ for(const key of ['reminders_enabled','reminder_hours_json','payment_mode','payment_hold_minutes','booking_terms'])check(()=>assert.equal(afterQrSettings[key],beforeQrSettings[key]));
+ for(const tagline of ['x'.repeat(121),null,5,{}])await request(root+'/qr','PUT',{tagline},cookie,400);
+ await request(root+'/qr','PUT',{tagline:'Otra marca'},other.cookie,403);
+ check(()=>assert.equal(db.prepare('SELECT qr_tagline FROM businesses WHERE id=?').get(b.id).qr_tagline,'Reservá tu momento de bienestar'));
+ const otherQr=(await request(`/businesses/${other.b.id}/tools/qr`,'GET',undefined,other.cookie)).data;
+ check(()=>assert.equal(otherQr.brand.tagline,'Tu próximo momento empieza acá'));
+ await request(root+'/qr','PUT',{tagline:''},cookie);
+ const emptyQr=(await request(root+'/qr','GET',undefined,cookie)).data;
+ check(()=>assert.equal(emptyQr.brand.tagline,''));
+ await request(root+'/qr','PUT',{tagline:'Tu próximo momento empieza acá'},cookie);
  check(()=>assert.equal(branded.brand.primary,'#e8c9c8'));check(()=>assert.equal(branded.brand.instagram,'@lucia.beauty'));
  check(()=>assert.equal(branded.brand.logo,'/uploads/logo.png'));check(()=>assert.equal(branded.brand.address,'Av. Siempre Viva 742'));
  check(()=>assert.ok(contrast(branded.brand.qrInk,'#ffffff')>=7));

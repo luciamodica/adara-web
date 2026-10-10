@@ -9,5 +9,5 @@ export function qrBrand(b){
  while(contrast(ink,'#ffffff')<7){channels=channels.map(n=>Math.floor(n*.9));ink='#'+channels.map(n=>n.toString(16).padStart(2,'0')).join('')}
  const surface=b.template_id==='noir'&&luminance(primary)<.3?primary:background;
  const foreground=contrast(surface,'#29231f')>=4.5?'#29231f':'#ffffff';
- return {name:b.name,slug:b.slug,template:b.template_id,logo:b.logo_image||'',phone:b.phone||'',instagram:b.instagram||'',tiktok:b.tiktok||'',address:b.address||'',primary,accent,background:surface,foreground,qrInk:ink};
+ return {name:b.name,slug:b.slug,template:b.template_id,logo:b.logo_image||'',tagline:b.qr_tagline??'Tu próximo momento empieza acá',phone:b.phone||'',instagram:b.instagram||'',tiktok:b.tiktok||'',address:b.address||'',primary,accent,background:surface,foreground,qrInk:ink};
 }

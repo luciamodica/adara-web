@@ -1,5 +1,33 @@
 # Actualización de Adara Web
 
+## Tarjeta QR con identidad propia y frase editable
+
+En **Herramientas → Compartir mi página**, cada profesional puede escribir la frase de su tarjeta (hasta 120 caracteres) o dejarla vacía para ocultarla. **Guardar y generar QR** guarda la frase para ese negocio y crea una nueva tarjeta descargable. Se conserva al volver a entrar.
+
+El pie de la tarjeta muestra el logo del negocio; si no tiene uno, muestra su nombre. La dirección de Adara deja de imprimirse en la tarjeta. El código mantiene el enlace a la página de reservas y los colores y datos del negocio. El logo se carga desde **Mi página**.
+
+Para actualizar la instalación publicada, copiá estos siete archivos del ZIP a tu carpeta actual `adara-web`:
+
+- `server/features-db.js`
+- `server/features.js`
+- `server/qr-brand.js`
+- `src/Tools.tsx`
+- `src/qr-card.ts`
+- `tests/features.integration.mjs`
+- `ACTUALIZACION.md`
+
+Luego ejecutá en PowerShell desde esa carpeta:
+
+```powershell
+npm run build
+npm test
+git add server/features-db.js server/features.js server/qr-brand.js src/Tools.tsx src/qr-card.ts tests/features.integration.mjs ACTUALIZACION.md
+git commit -m "Personalizar frase e identidad de las tarjetas QR"
+git push
+```
+
+Render aplicará el cambio al desplegar. El campo de la frase se agrega automáticamente al iniciar; no hace falta ejecutar comandos en la base de datos. Las tarjetas ya descargadas se mantienen como estaban: generá y descargá una nueva para obtener el diseño actualizado.
+
 ## Corrección de consulta de facturas de Mercado Pago
 
 La API de facturas rechazó `limit=100` y `limit=20` con HTTP 400 (`Invalid value for limit`). Se verificó con la cuenta vendedora de prueba que `limit=10` devuelve HTTP 200. Adara ahora consulta páginas de 10 tanto al actualizar el estado como al recibir avisos de pagos. Recorre las siguientes páginas para conservar el historial y verificar los pagos acreditados.
