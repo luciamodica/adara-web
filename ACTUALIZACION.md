@@ -1,5 +1,32 @@
 # Actualización de Adara Web
 
+## Home compacto, carrusel de plantillas y nuevo ícono de pestaña
+
+- Home más cómodo en celular: títulos, márgenes y bloques más compactos. Los seis beneficios se muestran en dos columnas, conservando texto legible y botones cómodos para tocar.
+- Se mantiene una sola vista real de la agenda en la portada. La sección «Cómo funciona» ahora explica los estados del turno sin repetir la misma imagen.
+- Las diez plantillas pasan a un carrusel: una por vez en celular y dos en pantallas grandes. Avanza automáticamente cada cinco segundos y vuelve al inicio. Incluye flechas, selección directa, gesto de deslizar y pausa; respeta la preferencia de movimiento reducido y se detiene cuando está fuera de pantalla o mientras interactuás.
+- El ícono de pestaña usa exactamente el emblema A azul enviado, con fondo transparente y tamaños para navegador y accesos directos. Las rutas nuevas evitan reutilizar el ícono anterior guardado en caché.
+
+### Instalar esta actualización
+
+Extraé el ZIP en una carpeta aparte. Desde su carpeta **adara-web**, combiná y reemplazá **src** y **public** en tu proyecto. Reemplazá también **index.html** y **ACTUALIZACION.md**. No borres tu proyecto ni reemplaces tu **.env**, tu base de datos o tus archivos subidos.
+
+En PowerShell, desde la carpeta de tu proyecto:
+
+```powershell
+npm run build
+npm test
+git add src public index.html ACTUALIZACION.md
+git commit -m "Compactar home y agregar carrusel de plantillas"
+git push
+```
+
+Cuando Render termine el despliegue, recargá con **Ctrl + F5**. Si la pestaña conserva el ícono anterior, cerrala y abrí el sitio nuevamente. En celular, cerrá la pestaña anterior y abrí una nueva.
+
+Validación: build de producción, **1.076 comprobaciones de integración** y revisión en navegador entre **320 y 1.920 px**, navegación móvil, plantillas, pausa, avance automático, accesibilidad de teclado e íconos.
+
+---
+
 ## Identidad unisex, logo azul y nuevas plantillas
 
 - Nuevo logo azul completo, con mayor presencia y sin deformarlo. Emblema A en la pestaña e íconos para accesos directos. Nueva paleta azul/celeste/blanco y tipografía Manrope para la plataforma.

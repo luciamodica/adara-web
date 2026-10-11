@@ -1,0 +1,124 @@
+/* Compact homepage layout; tenant pages retain their chosen theme. */
+.platformHome .agendaFlow{background:#fff;border:1px solid var(--adara-line);border-radius:16px;padding:28px}
+.platformHome .agendaFlow h4{font-size:23px;line-height:1.3;margin:0 0 24px;letter-spacing:-.035em}
+.platformHome .agendaFlow article{display:flex;align-items:flex-start;gap:14px;padding:18px 0;border-top:1px solid var(--adara-line)}
+.platformHome .agendaFlow article>span{display:grid;place-items:center;flex-shrink:0;width:42px;height:42px;border-radius:12px;background:#e8f2ff;color:var(--adara-primary)}
+.platformHome .agendaFlow article:nth-of-type(2)>span{background:#fff4dc;color:#9b650b}
+.platformHome .agendaFlow article:last-child{padding-bottom:0}
+.platformHome .agendaFlow b{font-size:14px}
+.platformHome .agendaFlow p{font-size:12px;color:var(--adara-muted);margin-top:5px;line-height:1.65}
+.platformHome .productDetail-agenda{min-height:0}
+.platformHome .templateCarousel{min-width:0;margin:auto;max-width:1120px}
+.platformHome .templateTrack{display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain;border-radius:14px}
+.platformHome .templateTrack::-webkit-scrollbar{display:none}
+.platformHome .templateSlide{flex:0 0 50%;min-width:0;padding:2px 12px 10px;scroll-snap-align:start}
+.platformHome .templateSlide .websiteExample{background:#fff;border:1px solid var(--adara-line);padding:14px;border-radius:14px;height:100%}
+.platformHome .templateSlide .exampleHero{min-height:0;height:43cqw}
+.platformHome .templateSlide .examplePhoto{min-height:0;height:100%}
+.platformHome .templateSlide .exampleCopy{padding:5cqw 8%}
+.platformHome .templateSlide .exampleCopy h3{font-size:5cqw;margin:2cqw 0}
+.platformHome .templateSlide :is(.example-atlas,.example-clear,.example-forest,.example-carbon) .exampleCopy h3,.platformHome .templateSlide :is(.example-atlas,.example-clear,.example-forest,.example-carbon) .exampleNav>b{font-family:'Manrope','DM Sans',sans-serif}
+.platformHome .templateSlide .exampleCopy p{font-size:1.5cqw;margin-bottom:2cqw}
+.platformHome .templateSlide .exampleCopy small{font-size:1.3cqw}
+.platformHome .templateSlide .exampleCta{font-size:1.4cqw;padding:1.5cqw 2cqw;gap:1.5cqw}
+.platformHome .templateSlide .exampleNav{font-size:1.5cqw;padding:2.5cqw 6%}
+.platformHome .templateSlide .exampleNav>b{font-size:3.2cqw}
+.platformHome .templateSlide .exampleServices{font-size:1.5cqw;padding:3cqw 6%}
+.platformHome .templateSlide .exampleServices>b{font-size:2.2cqw}
+.platformHome .templateSlide .exampleCaption{padding-top:14px}
+.platformHome .templateSlide .exampleCaption h3{font-size:17px}
+.platformHome .templateSlide .exampleCaption p{font-size:11px}
+.platformHome .templateNavigation{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px}
+.platformHome .templateDots{display:flex;flex-wrap:wrap;align-items:center;gap:0}
+.platformHome .templateDots button{width:24px;height:44px;padding:0;border:0;background:transparent;position:relative}
+.platformHome .templateDots button::before{content:'';display:block;margin:auto;width:7px;height:7px;border-radius:50%;background:#b6c8de}
+.platformHome .templateDots button[aria-current=true]::before{background:var(--adara-primary);width:14px;border-radius:8px}
+.platformHome .templateActions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.platformHome .templateActions>span{font-size:11px;color:var(--adara-muted);font-variant-numeric:tabular-nums;margin-right:8px}
+.platformHome .templateActions button{display:grid;place-items:center;width:44px;height:44px;background:#fff;border:1px solid var(--adara-line);color:var(--adara-primary);border-radius:50%;padding:0}
+.platformHome .templateActions button:hover{background:#e8f2ff}
+@media(max-width:759px){
+ .platformHome .templateSlide{flex-basis:100%;padding:2px 4px 8px}
+ .platformHome .templateCarousel{max-width:510px}
+ .platformHome .templateSlide .exampleCaption p{line-height:1.6}
+ .platformHome .templateNavigation{padding:8px 4px;flex-wrap:wrap}
+ .platformHome .templateDots{order:2;width:100%;justify-content:center}
+ .platformHome .templateActions{width:100%;justify-content:center}
+ .platformHome .templateActions>span{margin-right:auto}
+}
+@media(max-width:700px){
+ .platformHome .platformHeader{padding:10px 18px;gap:12px}
+ .platformHome .platformHeader .platformBrand img{width:180px;height:59px}
+ .platformHome .platformHero{padding:22px 18px 42px;gap:24px}
+ .platformHome .platformHero h1{font-size:clamp(28px,7.8vw,36px);letter-spacing:-.045em;margin:16px 0;line-height:1.14}
+ .platformHome .platformHeroCopy>p{font-size:14px;line-height:1.65}
+ .platformHome .platformHeroActions{gap:14px;margin:20px 0 12px}
+ .platformHome .platformHeroActions .platformButton{min-height:44px;font-size:12px;padding:13px 15px}
+ .platformHome .platformSecondary{font-size:12px;min-height:44px}
+ .platformHome .platformHeroCopy>small{font-size:10px;line-height:1.6}
+ .platformHome .productStage{padding:12px;border-radius:16px}
+ .platformHome .stageEyebrow{margin:0 0 9px;font-size:9px}
+ .platformHome .stageFloatingNote{display:none}
+ .platformHome .stageDisclaimer{font-size:9px;bottom:-23px}
+ .platformHome .adminDemoMain{padding:12px 9px}
+ .platformHome .adminDemoMain>h3{font-size:19px}
+ .platformHome .adminDemoMain>p{margin-bottom:10px}
+ .platformHome .adminDemoMain .panel{padding:10px}
+ .platformHome .adminDemoMain .panel h2{font-size:16px}
+ .platformHome .adminDemoMain .bookingAdmin{padding:8px 0}
+ .platformHome .platformHighlights{margin:0 18px;gap:14px 10px;padding:18px 0}
+ .platformHome .platformHighlights>span{font-size:10px;gap:7px}
+ .platformHome .platformProduct,.platformHome .platformBenefits,.platformHome .platformTemplates,.platformHome .platformPlans{padding:40px 18px}
+ .platformHome .platformSectionTitle{margin-bottom:22px}
+ .platformHome h2{font-size:27px;line-height:1.22}
+ .platformHome .platformEyebrow{font-size:9px;letter-spacing:1.1px;margin-bottom:10px}
+ .platformHome .platformSectionTitle p{font-size:13px;line-height:1.65;margin-top:12px}
+ .platformHome .productTabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:18px}
+ .platformHome .productTabs button{min-height:56px;flex-direction:column;padding:8px 5px;gap:4px;font-size:10px;line-height:1.4}
+ .platformHome .productDetail{padding:20px 16px;gap:20px;min-height:0}
+ .platformHome .productIcon{width:38px;height:38px;margin-bottom:14px}
+ .platformHome .productIcon svg{width:22px}
+ .platformHome .productDetailCopy h3{font-size:23px;margin-bottom:12px}
+ .platformHome .productDetailCopy>p{font-size:13px;line-height:1.7}
+ .platformHome .productDetailCopy ul{margin:16px 0}
+ .platformHome .productDetailCopy li{font-size:12px;margin:9px 0}
+ .platformHome .platformTextLink{min-height:44px}
+ .platformHome .agendaFlow{padding:18px}
+ .platformHome .agendaFlow h4{font-size:19px;margin-bottom:16px}
+ .platformHome .agendaFlow article{gap:10px;padding:14px 0}
+ .platformHome .agendaFlow article>span{width:34px;height:34px;border-radius:9px}
+ .platformHome .agendaFlow b{font-size:13px}
+ .platformHome .agendaFlow p{font-size:12px}
+ .platformHome .platformBenefits{padding-top:16px}
+ .platformHome .platformBenefitGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:22px}
+ .platformHome .platformBenefitGrid article{padding:16px 12px;border-color:var(--adara-line)}
+ .platformHome .platformBenefitGrid article>span{width:34px;height:34px;margin-bottom:12px}
+ .platformHome .platformBenefitGrid article>span svg{width:20px}
+ .platformHome .platformBenefitGrid h3{font-size:14px;line-height:1.4;margin-bottom:7px}
+ .platformHome .platformBenefitGrid p{font-size:12px;line-height:1.6}
+ .platformHome .platformTemplateNote{font-size:11px;line-height:1.6;gap:12px;padding-top:12px}
+ .platformHome .platformTemplateNote a{min-height:44px;font-size:11px}
+ .platformHome .platformSteps{margin:0 18px;padding:24px 20px;gap:24px}
+ .platformHome .platformSteps h2{font-size:26px;margin-bottom:18px}
+ .platformHome .platformSteps ol{gap:18px}
+ .platformHome .platformSteps p{font-size:12px;line-height:1.6}
+ .platformHome .platformBilling{margin-bottom:28px}
+ .platformHome .platformPlanGrid article{padding:24px 22px}
+ .platformHome .platformPlanGrid h3{font-size:21px}
+ .platformHome .platformPrice{font-size:31px;margin:18px 0}
+ .platformHome .platformPlanGrid .platformButton{margin-bottom:18px}
+ .platformHome .platformPlanFeatures{padding-top:16px;gap:10px}
+ .platformHome .platformFaq{padding:0 18px 40px;gap:20px}
+ .platformHome .platformFaq h2{font-size:27px}
+ .platformHome .platformFaq summary{font-size:13px;min-height:44px}
+ .platformHome .platformFaq details{padding:12px 0}
+ .platformHome .platformFaq details p{font-size:12px;line-height:1.7}
+ .platformHome .platformSupport{margin:0 18px 40px;padding:24px 20px;gap:18px}
+ .platformHome .platformSupport h2{font-size:27px!important}
+ .platformHome .platformSupport p{font-size:13px;line-height:1.65}
+ .platformHome .platformFinal{padding:40px 18px}
+ .platformHome .platformFinal h2{font-size:27px}
+ .platformHome .platformFinal p{font-size:13px;line-height:1.65;margin:16px 0 20px}
+ .platformHome .platformHomeFooter{padding:30px 18px 20px}
+ .platformHome .platformFooterBottom{margin-top:28px;flex-wrap:wrap;gap:12px;line-height:1.65}
+}

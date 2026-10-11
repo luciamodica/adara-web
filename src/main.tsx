@@ -4,6 +4,7 @@ import App from './App';
 import './styles.css';
 import './platform-theme.css';
 import './public-gallery.css';
+import './home-compact.css';
 import {BRAND} from './brand';
 Object.entries(BRAND.colors).forEach(([key,value])=>document.documentElement.style.setProperty(`--adara-${key}`,value));
 createRoot(document.getElementById('root')!).render(<App/>);

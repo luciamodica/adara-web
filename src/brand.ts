@@ -4,6 +4,6 @@ export const BRAND = {
   tagline: 'Tu negocio, en un solo lugar.',
   trialDays: 15,
   logo: '/images/adara-blue-logo.svg',
-  favicon: '/icons/adara-blue-32.png',
+  favicon: '/icons/adara-mark-32.png',
   colors: {primary:'#0758df',accent:'#35c9ed',background:'#f6faff',ink:'#10243a',muted:'#61748c',line:'#dbe6f2'}
 } as const;
