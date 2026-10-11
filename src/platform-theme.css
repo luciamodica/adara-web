@@ -1,34 +1,34 @@
-:root{--adara-primary:#58243e;--adara-accent:#c38e82;--adara-background:#fcf7f5;--adara-ink:#35212d;--adara-muted:#7b6570;--adara-line:#e8d6dc}
+:root{--adara-primary:#0758df;--adara-accent:#35c9ed;--adara-background:#f6faff;--adara-ink:#10243a;--adara-muted:#61748c;--adara-line:#dbe6f2}
 body{background:var(--adara-background);color:var(--adara-ink)}
 .platformBrand{display:inline-flex;align-items:center;line-height:1;letter-spacing:normal;max-width:100%}
-.platformBrand img{display:block;width:280px;height:100px;object-fit:contain;max-width:100%;mix-blend-mode:multiply}
+.platformBrand img{display:block;width:280px;height:92px;object-fit:contain;max-width:100%}
 .platformBrand.light{background:var(--adara-background);border-radius:12px;padding:8px 9px}
-.platformBrand.light img{width:204px;height:73px}
+.platformBrand.light img{width:204px;height:67px}
 .platformWordmark{display:inline-flex}
 .platformHome{--ph-ink:var(--adara-ink);--ph-muted:var(--adara-muted);--ph-primary:var(--adara-primary);--ph-line:var(--adara-line);background:var(--adara-background)}
 .platformHome .platformHeader,.platformHome .platformHomeFooter{background:var(--adara-background)}
 .platformHome .platformHero h1 span{color:var(--adara-primary)}
-.platformHome .platformPill{color:var(--adara-primary);background:#f4e7eb;border-color:var(--adara-line)}
+.platformHome .platformPill{color:var(--adara-primary);background:#e8f2ff;border-color:var(--adara-line)}
 .platformHome .platformButton:not(.outline){background:var(--adara-primary);border-color:var(--adara-primary);color:white}
-.platformHome .platformButton:not(.outline):hover{background:#71334f;border-color:#71334f}
+.platformHome .platformButton:not(.outline):hover{background:#034abf;border-color:#034abf}
 .platformHome .platformButton.outline{color:var(--adara-primary)!important;border-color:var(--adara-line)}
-.platformHome .productStage{background:linear-gradient(135deg,#efdae1,#f9eee8 65%,#f0ded8);border-color:var(--adara-line)}
-.platformHome .productDetail,.platformHome .platformSteps{background:#f4e8eb;border-color:var(--adara-line)}
-.platformHome .platformFinal{background:linear-gradient(115deg,#eed5dd,#fbf2ed 65%,#edcfc3);border-color:var(--adara-line)}
-.platformHome .platformPlanGrid article.highlighted{border-color:var(--adara-primary);background:#fffaf9}
-.platformHome .platformBilling{background:#f0e1e6;border-color:var(--adara-line)}
+.platformHome .productStage{background:linear-gradient(135deg,#dceaff,#f4faff 65%,#dff7ff);border-color:var(--adara-line)}
+.platformHome .productDetail,.platformHome .platformSteps{background:#edf5ff;border-color:var(--adara-line)}
+.platformHome .platformFinal{background:linear-gradient(115deg,#dceaff,#f3fbff 65%,#cef0ff);border-color:var(--adara-line)}
+.platformHome .platformPlanGrid article.highlighted{border-color:var(--adara-primary);background:#fbfdff}
+.platformHome .platformBilling{background:#e8f2ff;border-color:var(--adara-line)}
 .platformHome .platformBilling button.active{background:var(--adara-primary);color:white}
-.platformHome .platformBenefitGrid article>span{color:var(--adara-primary);background:#f3e3e9}
+.platformHome .platformBenefitGrid article>span{color:var(--adara-primary);background:#e8f2ff}
 .platformHome .platformEyebrow,.platformHome .platformTextLink{color:var(--adara-primary)}
-.platformSupport{max-width:1248px;margin:0 auto 70px;padding:36px 40px;border:1px solid var(--adara-line);border-radius:22px;background:#fffaf8;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:40px}
+.platformSupport{max-width:1248px;margin:0 auto 70px;padding:36px 40px;border:1px solid var(--adara-line);border-radius:22px;background:#ffffff;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:40px}
 .platformSupport h2{margin:10px 0!important;font-size:34px!important}
 .platformSupport p{max-width:620px;color:var(--adara-muted)}
 .platformSupportActions{display:grid;gap:14px;justify-items:start}
 .authBg,.manageBg,.publicError,.legalPage{background:var(--adara-background)}
 .authCard,.manageCard{border-color:var(--adara-line)}
 .admin,.superLayout{background:var(--adara-background)}
-.admin aside,.superLayout aside{background:#3d2030;color:#fff5f6}
-.admin aside button.active,.admin aside button:hover,.superLayout aside button.active,.superLayout aside button:hover{background:#60334b;color:white}
+.admin aside,.superLayout aside{background:#0c1e36;color:#f3f8ff}
+.admin aside button.active,.admin aside button:hover,.superLayout aside button.active,.superLayout aside button:hover{background:#153f73;color:white}
 .panelLayout .panelMobileHeader{background:var(--adara-background);border-color:var(--adara-line)}
 .panelLayout .panelMobileIdentity .platformBrand img{width:174px;height:62px}
 .panelLayout .panelSidebarHeading .platformBrand{margin:0 0 20px}
@@ -38,7 +38,43 @@ body{background:var(--adara-background);color:var(--adara-ink)}
 .authCard h1,.authCard h2,.dash h1,.dash h2{color:var(--adara-ink)}
 .outline{border-color:var(--adara-line);color:var(--adara-primary)}
 .panel,.cardsList article{border-color:var(--adara-line)}
-@media(max-width:1000px){.platformHome .platformHeader{position:relative;padding:18px 24px;gap:20px}.platformHome .platformMenu{display:block;color:var(--adara-primary)}.platformHome .platformHeader nav{display:none}.platformHome .platformHeader nav.open{display:flex;position:absolute;top:calc(100% - 8px);left:16px;right:16px;background:#fff;border:1px solid var(--adara-line);box-shadow:0 15px 40px #58243e18;padding:24px;border-radius:12px;flex-direction:column;align-items:stretch;gap:20px;z-index:20}.platformHome .platformHeader nav.open a{padding:3px}.platformSupport{margin:0 24px 60px;grid-template-columns:1fr;gap:24px;padding:28px}}
-@media(max-width:700px){.platformBrand img{width:210px;height:75px}.platformSupport h2{font-size:29px!important}.platformSupportActions{width:100%}.platformSupportActions .platformButton{width:100%;justify-content:center}}
+@media(max-width:1000px){.platformHome .platformHeader{position:relative;padding:18px 24px;gap:20px}.platformHome .platformMenu{display:block;color:var(--adara-primary)}.platformHome .platformHeader nav{display:none}.platformHome .platformHeader nav.open{display:flex;position:absolute;top:calc(100% - 8px);left:16px;right:16px;background:#fff;border:1px solid var(--adara-line);box-shadow:0 15px 40px #0758df18;padding:24px;border-radius:12px;flex-direction:column;align-items:stretch;gap:20px;z-index:20}.platformHome .platformHeader nav.open a{padding:3px}.platformSupport{margin:0 24px 60px;grid-template-columns:1fr;gap:24px;padding:28px}}
+@media(max-width:700px){.platformBrand img{width:210px;height:69px}.platformSupport h2{font-size:29px!important}.platformSupportActions{width:100%}.platformSupportActions .platformButton{width:100%;justify-content:center}}
 
 .adminDemoTop .platformBrand img{width:114px;height:41px}.adaraLegalHeader .platformBrand img{width:224px;height:80px}
+
+/* Platform identity: public business themes keep their own typography and palette. */
+body{font-family:'Manrope','DM Sans',sans-serif}
+.platformHome h1,.platformHome h2,.platformHome h3,.authCard h2,.panelContent>h1,.dash h1,.dash h2,.panel>h2,.panelTitle h2{font-family:'Manrope','DM Sans',sans-serif;letter-spacing:-.035em}
+.platformHome .platformHero h1{font-weight:800;line-height:1.12}
+.platformHome .platformButton,.authCard .dark{border-radius:12px}
+.authCard>.platformBrand{display:flex;width:100%;justify-content:flex-start;margin:0 0 24px}
+.authCard>.kicker{display:block;line-height:1.65;margin:0 0 12px;white-space:normal}
+.authCard>.platformBrand img{width:290px;height:96px}
+.store.heading-modern h1,.store.heading-modern h2,.store.heading-modern h3{font-family:'Manrope','DM Sans',sans-serif;letter-spacing:-.035em;font-weight:700}
+.livePreview.preview-heading-modern h3,.livePreview.preview-heading-modern h4{font-family:'Manrope','DM Sans',sans-serif}
+.whatsappFloat,.lpWhatsapp{background:#25d366!important;color:#fff}
+.lpWhatsapp svg{width:24px;height:24px;display:block}
+.example-atlas .examplePhoto,.example-clear .examplePhoto,.example-forest .examplePhoto,.example-carbon .examplePhoto{background:linear-gradient(135deg,var(--demo-primary),var(--demo-accent));display:flex;align-items:center;justify-content:center}
+.examplePhoto>svg{width:38%;height:38%;color:#fff;opacity:.85;stroke-width:1.2}
+.example-atlas h3,.example-clear h3,.example-forest h3,.example-carbon h3{font-family:'Manrope',sans-serif;font-weight:800}
+.example-clear .exampleHero{background:var(--demo-bg)}
+.example-carbon .exampleHero{background:#14202c;color:#fff}
+.example-carbon .exampleCopy p,.example-carbon .exampleCopy small{color:#d3e0e9}
+@media(max-width:700px){.authCard>.platformBrand img{width:240px;height:79px}.platformHome .platformHero h1{font-size:40px}}
+
+.platformHome{font-family:'Manrope','DM Sans',sans-serif}
+.platformHome .adminDemoBody>aside{background:#0c1e36;color:#edf5ff}
+.platformHome .adminDemoBody>aside>span.active{background:#153f73}
+.platformHome .adminDemoMain{background:#f6faff}
+.platformHome .adminDemoMain>h3,.platformHome .adminDemoMain .panel h2{font-family:'Manrope','DM Sans',sans-serif}
+.platformHome .adminDemoMain .agendaFilters button.active{background:#0758df}
+
+.authCard input,.authCard select,.authCard textarea,.panelLayout input,.panelLayout select,.panelLayout textarea{border-color:var(--adara-line)}
+.authCard .link{color:var(--adara-muted)}
+.panelLayout .toolsNav button:not(.active),.panelLayout .agendaFilters button:not(.active),.panelLayout .toggle{background:#e8f2ff;color:#43576f;border-color:var(--adara-line)}
+.panelLayout .lead,.panelLayout .mutedText{color:var(--adara-muted)}
+.adaraLegalPage{background:var(--adara-background)}
+.adaraLegalArticle h1,.adaraLegalArticle h2{font-family:'Manrope','DM Sans',sans-serif}
+
+.adaraLegalIntro h1,.legalText h2{font-family:'Manrope','DM Sans',sans-serif}

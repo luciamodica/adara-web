@@ -9,7 +9,7 @@ export function savePeriod(businessId,input,periodId=0){
  if(to<from)throw new Error('La fecha hasta debe ser igual o posterior a la fecha desde');
  const days=Math.round((Date.parse(to+'T12:00:00Z')-Date.parse(from+'T12:00:00Z'))/86400000)+1;
  if(days>366)throw new Error('Cada período puede abarcar hasta 366 días');
- if(staffId!==null&&(!Number.isInteger(staffId)||staffId<1||!db.prepare('SELECT 1 FROM staff WHERE id=? AND business_id=?').get(staffId,businessId)))throw new Error('Elegí una profesional de tu negocio');
+ if(staffId!==null&&(!Number.isInteger(staffId)||staffId<1||!db.prepare('SELECT 1 FROM staff WHERE id=? AND business_id=?').get(staffId,businessId)))throw new Error('Elegí un profesional de tu negocio');
  if(!closed&&(!validTime(input.start_time)||!validTime(input.end_time)||input.start_time>=input.end_time))throw new Error('El horario de cierre debe ser posterior al de apertura');
  if(periodId!==0&&(!Number.isInteger(periodId)||periodId<1))throw new Error('Período inválido');
  const current=periodId?db.prepare('SELECT * FROM calendar_periods WHERE id=? AND business_id=?').get(periodId,businessId):null;

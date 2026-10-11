@@ -347,7 +347,7 @@ if(!individual){
   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
     'adara','Adara Individual','Para profesionales independientes que trabajan con una sola agenda.',
     2490000,24900000,100,30,100,50,1,3,
-    JSON.stringify(['Página profesional premium','Agenda y reservas inteligentes','Servicios e imágenes','Promociones y banner superior','Cupones y descuentos grupales','Mercado Pago propio','Clientas y estadísticas']),
+    JSON.stringify(['Página profesional premium','Agenda y reservas inteligentes','Servicios e imágenes','Promociones y banner superior','Cupones y descuentos grupales','Mercado Pago propio','Clientes y estadísticas']),
     1,1,1,1,1,0
   );
 }else{
@@ -359,7 +359,7 @@ if(!team){
   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
     'adara-equipo','Adara Equipo','Para estudios con varias profesionales, agendas independientes y reservas por integrante.',
     4990000,49900000,250,80,200,100,1,3,
-    JSON.stringify(['Todo lo de Adara Individual','Hasta 10 integrantes','Agenda independiente por profesional','La clienta elige con quién reservar','Servicios asignables por integrante','Panel unificado del equipo']),
+    JSON.stringify(['Todo lo de Adara Individual','Hasta 10 integrantes','Agenda independiente por profesional','El cliente elige con quién reservar','Servicios asignables por integrante','Panel unificado del equipo']),
     1,1,0,2,10,1
   );
 }else{

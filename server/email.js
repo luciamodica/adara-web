@@ -30,7 +30,7 @@ export async function sendBookingEmail({email,clientName,businessName,summary,da
       html:`<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:32px;color:#2d2723">
         <h2>Hola ${escapeHtml(clientName)}</h2>
         <p>${cancelled?'Tu turno fue cancelado.':confirmed?'Tu turno quedó confirmado.':'Guardamos temporalmente tu horario mientras completás el pago.'}</p>
-        ${!confirmed&&!cancelled&&paymentMethod==='bank_transfer'?'<p>Desde el enlace de tu reserva podés consultar el alias y enviar el comprobante. La profesional verifica el ingreso antes de confirmar el turno. Enviar el comprobante no extiende el plazo.</p>':''}
+        ${!confirmed&&!cancelled&&paymentMethod==='bank_transfer'?'<p>Desde el enlace de tu reserva podés consultar el alias y enviar el comprobante. El profesional verifica el ingreso antes de confirmar el turno. Enviar el comprobante no extiende el plazo.</p>':''}
         ${!confirmed&&!cancelled&&holdExpiresAt?`<p>Completá el pago antes del ${escapeHtml(new Date(holdExpiresAt).toLocaleString('es-AR',{timeZone:'America/Argentina/Buenos_Aires'}))}. Al vencer el plazo, el horario se libera automáticamente.</p>`:''}
         <div style="background:#f7f2ee;border-radius:14px;padding:18px;margin:20px 0">
           <p><b>${escapeHtml(businessName)}</b></p>
@@ -74,6 +74,6 @@ export async function sendProfessionalNotification({email,businessName,clientNam
       </div>`
     })
   });
-  if(!response.ok) throw new Error('No se pudo enviar el aviso a la profesional');
+  if(!response.ok) throw new Error('No se pudo enviar el aviso al profesional');
   return {sent:true,dev:false};
 }

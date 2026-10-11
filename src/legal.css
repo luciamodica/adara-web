@@ -1,30 +1,30 @@
-.adaraLegalPage{min-height:100vh;background:#f8f4ef}
-.adaraLegalHeader{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:22px max(5vw,20px);border-bottom:1px solid #e5dad2;background:#fcf9f6}
+.adaraLegalPage{min-height:100vh;background:#f6faff}
+.adaraLegalHeader{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:22px max(5vw,20px);border-bottom:1px solid #dbe6f2;background:#f6faff}
 .adaraLegalHeader .brand{text-decoration:none}
 .adaraLegalMain{max-width:1080px;margin:auto;padding:64px 24px 50px}
 .adaraLegalIntro h1{font:600 48px/1.12 'Playfair Display',Georgia,serif;margin:16px 0;overflow-wrap:anywhere}
-.adaraLegalIntro>p{color:#786a60}
+.adaraLegalIntro>p{color:#61748c}
 .adaraLegalNav{display:flex;flex-wrap:wrap;gap:10px;margin:28px 0}
-.adaraLegalNav a{padding:12px 16px;border-radius:12px;border:1px solid #e2d5ca;background:white;text-decoration:none;font-size:14px}
-.adaraLegalNav a[aria-current=page]{background:#2d2723;color:white;border-color:#2d2723}
-.adaraLegalArticle{padding:38px 42px;border:1px solid #e5dad2;border-radius:22px;background:#fff}
+.adaraLegalNav a{padding:12px 16px;border-radius:12px;border:1px solid #dbe6f2;background:white;text-decoration:none;font-size:14px}
+.adaraLegalNav a[aria-current=page]{background:#0758df;color:white;border-color:#0758df}
+.adaraLegalArticle{padding:38px 42px;border:1px solid #dbe6f2;border-radius:22px;background:#fff}
 .legalText section+section{margin-top:30px}
 .legalText h2{font:600 27px/1.25 'Playfair Display',Georgia,serif;margin:0 0 12px}
-.legalText p{line-height:1.8;white-space:pre-line;overflow-wrap:anywhere;color:#61554d;margin:0}
+.legalText p{line-height:1.8;white-space:pre-line;overflow-wrap:anywhere;color:#43576f;margin:0}
 .adaraLegalContact{display:flex;flex-wrap:wrap;gap:18px;margin-top:28px}
 .adaraLegalContact a{display:flex;align-items:center;gap:8px;font-size:14px;overflow-wrap:anywhere}
 .legalAdminForm fieldset{border:0;margin:0;padding:0;min-width:0}
 .legalPublication{display:flex;align-items:center;justify-content:space-between;gap:16px}
-.legalPublication p{line-height:1.6;color:#786a60;margin-bottom:0}
+.legalPublication p{line-height:1.6;color:#61748c;margin-bottom:0}
 .legalEditorTabs,.legalEditorActions{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}
 .legalAdminForm textarea{font-size:14px;line-height:1.6;resize:vertical}
 .legalPublishActions .switchLine{display:flex;align-items:flex-start;gap:10px;line-height:1.6}
 .legalPublishActions .switchLine input{width:auto;flex-shrink:0;margin-top:4px}
-.legalAcceptanceList article{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;border-bottom:1px solid #e5dad2;padding:16px 0}
+.legalAcceptanceList article{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;border-bottom:1px solid #dbe6f2;padding:16px 0}
 .legalAcceptanceList article>div{display:grid;gap:6px;overflow-wrap:anywhere}
-.legalAcceptanceList small{color:#786a60}
+.legalAcceptanceList small{color:#61748c}
 .legalSignupConsent{display:flex!important;align-items:flex-start;gap:10px!important;font-size:13px!important;line-height:1.7;font-weight:400!important;margin:22px 0!important}
 .legalSignupConsent input{width:auto!important;flex-shrink:0;margin-top:4px}
 .legalSignupConsent a,.subscriptionLegalLink a,.reservationPrivacyNotice a{text-decoration:underline;text-underline-offset:3px}
-.reservationPrivacyNotice{line-height:1.7;font-size:13px;color:#786a60}
+.reservationPrivacyNotice{line-height:1.7;font-size:13px;color:#61748c}
 @media(max-width:700px){.adaraLegalHeader{padding:18px 16px;flex-wrap:wrap;gap:14px}.adaraLegalHeader .brand{font-size:21px}.adaraLegalHeader .outline{font-size:13px;padding:10px 13px}.adaraLegalMain{padding:36px 16px}.adaraLegalIntro h1{font-size:36px}.adaraLegalNav{flex-direction:column}.adaraLegalArticle{padding:26px 20px}.legalText h2{font-size:25px}.legalAcceptanceList article{grid-template-columns:minmax(0,1fr)}.legalEditorActions>*{width:100%}.adaraLegalContact{flex-direction:column}.legalPublishActions>button{width:100%}}

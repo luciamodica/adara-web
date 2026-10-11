@@ -1,3 +1,4 @@
+import {migratePlatformCopy} from './platform-copy.js';
 import {galleryFromRequest,serviceGallery,businessGallery} from './image-gallery.js';
 import './production-env.js';
 import {registerPlatformLegal,legalConsent,recordLegalAcceptance} from './platform-legal.js';
@@ -31,6 +32,7 @@ const DEMO_PAYMENTS=(process.env.DEMO_PAYMENTS ?? (process.env.NODE_ENV==='produ
 const PRODUCTION=process.env.NODE_ENV==='production';
 const distDir=fileURLToPath(new URL('../dist/',import.meta.url));
 if(PRODUCTION&&!fs.existsSync(path.join(distDir,'index.html')))throw new Error('Falta compilar la web. Ejecutá npm run build antes de iniciar producción.');
+migratePlatformCopy(db);
 bootstrapSuperAdmin(db);
 
 app.disable('x-powered-by');
@@ -71,6 +73,10 @@ const fromMinutes=m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60)
 const addDays=(iso,days)=>{const d=new Date(`${iso}T12:00:00-03:00`);d.setDate(d.getDate()+days);return dateOnly(d)};
 
 const TEMPLATES=[
+{"id": "atlas", "name": "Atlas Studio", "description": "Azul nítido, portada dividida y tipografía moderna.", "level": 1, "colors": {"primary": "#0758df", "accent": "#35c9ed", "background": "#f6faff"}, "defaults": {"hero_layout": "split", "hero_height": "large", "hero_align": "left", "header_style": "minimal", "service_card_style": "editorial", "button_style": "soft", "image_ratio": "landscape", "content_width": "wide", "footer_style": "light", "heading_font": "modern", "body_font": "clean"}},
+{"id": "clear", "name": "Clear Space", "description": "Blanco luminoso, líneas simples y una composición centrada.", "level": 1, "colors": {"primary": "#1b4965", "accent": "#a8dce7", "background": "#fafcfd"}, "defaults": {"hero_layout": "centered", "hero_height": "medium", "hero_align": "center", "header_style": "centered", "service_card_style": "minimal", "button_style": "soft", "image_ratio": "square", "content_width": "narrow", "footer_style": "light", "heading_font": "modern", "body_font": "clean"}},
+{"id": "forest", "name": "Forest Ritual", "description": "Verde profundo, equilibrio natural y bloques asimétricos.", "level": 2, "colors": {"primary": "#245347", "accent": "#98b8a5", "background": "#f4f8f5"}, "defaults": {"hero_layout": "offset", "hero_height": "large", "hero_align": "left", "header_style": "floating", "service_card_style": "offset", "button_style": "soft", "image_ratio": "square", "content_width": "wide", "footer_style": "light", "heading_font": "modern", "body_font": "clean"}},
+{"id": "carbon", "name": "Carbon Studio", "description": "Grafito, contraste y una portada con presencia.", "level": 2, "colors": {"primary": "#14202c", "accent": "#8eacbf", "background": "#f5f7fa"}, "defaults": {"hero_layout": "cinematic", "hero_height": "xl", "hero_align": "left", "header_style": "dark", "service_card_style": "horizontal", "button_style": "square", "image_ratio": "landscape", "content_width": "wide", "footer_style": "dark", "heading_font": "modern", "body_font": "clean"}},
   {id:'silk',name:'Silk Editorial',description:'Portada dividida, tipografía editorial y tarjetas tipo revista.',level:1,colors:{primary:'#8d665b',accent:'#d9b8aa',background:'#fbf8f4'},defaults:{hero_layout:'split',hero_height:'large',hero_align:'left',header_style:'minimal',service_card_style:'editorial',button_style:'pill',image_ratio:'portrait',content_width:'wide',footer_style:'light',heading_font:'editorial',body_font:'clean'}},
   {id:'rose',name:'Rose Atelier',description:'Boutique suave, portada superpuesta y detalles delicados.',level:1,colors:{primary:'#8d5e62',accent:'#e8c9c8',background:'#fff9f7'},defaults:{hero_layout:'overlay',hero_height:'large',hero_align:'left',header_style:'classic',service_card_style:'soft',button_style:'pill',image_ratio:'landscape',content_width:'wide',footer_style:'soft',heading_font:'romantic',body_font:'clean'}},
   {id:'sage',name:'Sage Ritual',description:'Calma de spa, portada centrada y composición aireada.',level:2,colors:{primary:'#5f6d63',accent:'#cbd4cc',background:'#f7f8f3'},defaults:{hero_layout:'centered',hero_height:'medium',hero_align:'center',header_style:'centered',service_card_style:'minimal',button_style:'soft',image_ratio:'square',content_width:'narrow',footer_style:'light',heading_font:'serif-soft',body_font:'clean'}},
@@ -204,7 +210,10 @@ app.post('/api/auth/register',async(req,res)=>{
     const u=db.prepare('INSERT INTO users(name,email,password_hash,verify_token,verify_expires_at) VALUES(?,?,?,?,?)').run(String(name).trim(),String(email).trim().toLowerCase(),bcrypt.hashSync(password,10),vt,expiry);
     const trialDays=Math.max(0,Number(getSetting('trial_days','15')));
     const trialEnd=new Date(Date.now()+trialDays*86400000).toISOString();
-    const b=db.prepare(`INSERT INTO businesses(owner_id,name,slug,category,trial_ends_at,plan_slug,billing_cycle) VALUES(?,?,?,?,?,?,?)`).run(u.lastInsertRowid,String(businessName).trim(),uniqueSlug(businessName),category||'Belleza',trialEnd,selectedPlan.slug,billingCycle);
+    const b=db.prepare(`INSERT INTO businesses(owner_id,name,slug,category,trial_ends_at,plan_slug,billing_cycle) VALUES(?,?,?,?,?,?,?)`).run(u.lastInsertRowid,String(businessName).trim(),uniqueSlug(businessName),category||'Servicios profesionales',trialEnd,selectedPlan.slug,billingCycle);
+    const starter=TEMPLATES.find(t=>t.id==='atlas');
+    const defaults={template_id:starter.id,primary_color:starter.colors.primary,accent_color:starter.colors.accent,background_color:starter.colors.background,...starter.defaults};
+    db.prepare(`UPDATE businesses SET ${Object.keys(defaults).map(k=>`${k}=?`).join(',')} WHERE id=?`).run(...Object.values(defaults),b.lastInsertRowid);
     for(let d=0;d<7;d++)db.prepare('INSERT INTO schedules(business_id,weekday,start_time,end_time,active) VALUES(?,?,?,?,?)').run(b.lastInsertRowid,d,d===0?'10:00':'09:00',d===0?'14:00':'18:00',d===0?0:1);
     recordLegalAcceptance(consent,u.lastInsertRowid,b.lastInsertRowid,'registration');
     return {userId:u.lastInsertRowid,businessId:b.lastInsertRowid,token:vt};
@@ -259,7 +268,7 @@ app.get('/api/me',auth,(req,res)=>{
   res.json({user:u,businesses:businesses.map(b=>({...b,subscription_access:billingAccess(b)}))});
 });
 
-// ---------- Panel de la profesional ----------
+// ---------- Panel del profesional ----------
 app.get('/api/businesses/:id/dashboard',auth,(req,res)=>{
   const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);cleanupExpiredHolds(b.id);
   const today=dateOnly(new Date());
@@ -353,12 +362,12 @@ app.patch('/api/businesses/:id/bookings/:bid',auth,(req,res)=>{
   const duration=items.reduce((sum,z)=>sum+Number(z.duration_min||0),0)*Math.max(1,Number(current.party_size||1));
   const endTime=fromMinutes(toMinutes(startTime)+duration);
   const client=db.prepare('SELECT * FROM clients WHERE id=? AND business_id=?').get(current.client_id,b.id);
-  const email=String(x.email??client?.email??'').trim().toLowerCase();if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return res.status(400).json({error:'Revisá el email de la clienta'});
+  const email=String(x.email??client?.email??'').trim().toLowerCase();if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return res.status(400).json({error:'Revisá el email del cliente'});
   const tx=db.transaction(()=>{
     db.prepare('UPDATE bookings SET date=?,start_time=?,end_time=?,status=?,notes=? WHERE id=? AND business_id=?').run(date,startTime,endTime,status,String(x.notes??current.notes??''),current.id,b.id);
     if(client)db.prepare('UPDATE clients SET name=?,phone=?,email=? WHERE id=? AND business_id=?').run(String(x.client_name??client.name??'').trim(),String(x.phone??client.phone??'').trim(),email||null,client.id,b.id);
   });
-  try{tx()}catch(e){return res.status(409).json({error:'No se pudo actualizar el turno. Revisá que el email no pertenezca a otra clienta.'})}
+  try{tx()}catch(e){return res.status(409).json({error:'No se pudo actualizar el turno. Revisá que el email no pertenezca a otro cliente.'})}
   reconcileBenefits();res.json({ok:true,booking:bookingDetails(current.id)});
 });
 
@@ -370,9 +379,9 @@ app.get('/api/businesses/:id/staff',auth,(req,res)=>{
   res.json({enabled:true,max_staff:Number(plan.max_staff||1),staff:rows,services:db.prepare('SELECT id,name FROM services WHERE business_id=? AND active=1 ORDER BY display_order,id').all(b.id)});
 });
 app.post('/api/businesses/:id/staff',auth,(req,res)=>{
-  const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);const plan=getBusinessPlan(b),max=Math.max(1,Number(plan.max_staff||1));if(max<=1)return res.status(403).json({error:'Tu plan actual es para una sola profesional'});
+  const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);const plan=getBusinessPlan(b),max=Math.max(1,Number(plan.max_staff||1));if(max<=1)return res.status(403).json({error:'Tu plan actual es para una soel profesional'});
   const count=Number(db.prepare('SELECT count(*) n FROM staff WHERE business_id=? AND active=1').get(b.id).n||0);if(count>=max)return res.status(403).json({error:`Tu plan permite hasta ${max} integrantes`});
-  const x=req.body||{},name=String(x.name||'').trim();if(!name)return res.status(400).json({error:'Escribí el nombre de la profesional'});
+  const x=req.body||{},name=String(x.name||'').trim();if(!name)return res.status(400).json({error:'Escribí el nombre del profesional'});
   const tx=db.transaction(()=>{const r=db.prepare('INSERT INTO staff(business_id,name,title,image_url,active) VALUES(?,?,?,?,1)').run(b.id,name,String(x.title||'').trim(),String(x.image_url||''));const sid=Number(r.lastInsertRowid);const base=businessSchedule(b.id);for(let d=0;d<7;d++){const row=base.find(z=>Number(z.weekday)===d);db.prepare('INSERT INTO staff_schedules(staff_id,weekday,start_time,end_time,active) VALUES(?,?,?,?,?)').run(sid,d,row?.start_time||'09:00',row?.end_time||'18:00',row?.active?1:0)}const ids=Array.isArray(x.service_ids)?x.service_ids.map(Number).filter(Boolean):[];for(const serviceId of ids)db.prepare('INSERT OR IGNORE INTO staff_services(staff_id,service_id) SELECT ?,id FROM services WHERE id=? AND business_id=?').run(sid,serviceId,b.id);return sid});res.json({id:tx()});
 });
 app.put('/api/businesses/:id/staff/:sid',auth,(req,res)=>{
@@ -405,7 +414,7 @@ app.put('/api/businesses/:id/page-settings',auth,(req,res)=>{
   const allowed=(v,list,fallback)=>list.includes(v)?v:fallback;
   db.prepare(`UPDATE businesses SET name=?,category=?,phone=?,instagram=?,address=?,description=?,hero_title=?,hero_text=?,hero_image=?,logo_image=?,template_id=?,primary_color=?,accent_color=?,background_color=?,heading_font=?,body_font=?,hero_layout=?,hero_height=?,hero_align=?,header_style=?,service_card_style=?,button_style=?,image_ratio=?,content_width=?,footer_style=?,show_promotions=?,show_posts=?,show_description=?,show_footer_contact=?,show_faqs=?,show_services=?,show_booking=?,hero_images_json=?,show_category=?,category_label=? WHERE id=?`).run(
     x.name||b.name,x.category||'',x.phone||'',x.instagram||'',x.address||'',x.description||'',x.hero_title||'',x.hero_text||'',images[0]||'',x.logo_image||'',tpl.id,x.primary_color||tpl.colors.primary,x.accent_color||tpl.colors.accent,x.background_color||tpl.colors.background,
-    allowed(x.heading_font,['editorial','romantic','serif-soft','fashion'],b.heading_font||tpl.defaults.heading_font),allowed(x.body_font,['clean','elegant'],b.body_font||tpl.defaults.body_font),allowed(x.hero_layout,['overlay','split','centered','cinematic','arch','offset'],b.hero_layout||tpl.defaults.hero_layout),allowed(x.hero_height,['compact','medium','large','xl'],b.hero_height||tpl.defaults.hero_height),allowed(x.hero_align,['left','center','right'],b.hero_align||tpl.defaults.hero_align),allowed(x.header_style,['classic','minimal','centered','dark','floating'],b.header_style||tpl.defaults.header_style),allowed(x.service_card_style,['image-top','editorial','soft','minimal','horizontal','luxury','offset'],b.service_card_style||tpl.defaults.service_card_style),allowed(x.button_style,['pill','soft','square'],b.button_style||tpl.defaults.button_style),allowed(x.image_ratio,['landscape','square','portrait'],b.image_ratio||tpl.defaults.image_ratio),allowed(x.content_width,['wide','narrow'],b.content_width||tpl.defaults.content_width),allowed(x.footer_style,['dark','light','soft','champagne'],b.footer_style||tpl.defaults.footer_style),x.show_promotions===undefined?b.show_promotions:(x.show_promotions?1:0),x.show_posts===undefined?b.show_posts:(x.show_posts?1:0),x.show_description===undefined?b.show_description:(x.show_description?1:0),x.show_footer_contact===undefined?b.show_footer_contact:(x.show_footer_contact?1:0),x.show_faqs===undefined?b.show_faqs:(x.show_faqs?1:0),x.show_services===undefined?b.show_services:(x.show_services?1:0),x.show_booking===undefined?b.show_booking:(x.show_booking?1:0),JSON.stringify(images),x.show_category===undefined?b.show_category:(x.show_category?1:0),categoryLabel.trim(),b.id
+    allowed(x.heading_font,['editorial','romantic','serif-soft','fashion','modern'],b.heading_font||tpl.defaults.heading_font),allowed(x.body_font,['clean','elegant'],b.body_font||tpl.defaults.body_font),allowed(x.hero_layout,['overlay','split','centered','cinematic','arch','offset'],b.hero_layout||tpl.defaults.hero_layout),allowed(x.hero_height,['compact','medium','large','xl'],b.hero_height||tpl.defaults.hero_height),allowed(x.hero_align,['left','center','right'],b.hero_align||tpl.defaults.hero_align),allowed(x.header_style,['classic','minimal','centered','dark','floating'],b.header_style||tpl.defaults.header_style),allowed(x.service_card_style,['image-top','editorial','soft','minimal','horizontal','luxury','offset'],b.service_card_style||tpl.defaults.service_card_style),allowed(x.button_style,['pill','soft','square'],b.button_style||tpl.defaults.button_style),allowed(x.image_ratio,['landscape','square','portrait'],b.image_ratio||tpl.defaults.image_ratio),allowed(x.content_width,['wide','narrow'],b.content_width||tpl.defaults.content_width),allowed(x.footer_style,['dark','light','soft','champagne'],b.footer_style||tpl.defaults.footer_style),x.show_promotions===undefined?b.show_promotions:(x.show_promotions?1:0),x.show_posts===undefined?b.show_posts:(x.show_posts?1:0),x.show_description===undefined?b.show_description:(x.show_description?1:0),x.show_footer_contact===undefined?b.show_footer_contact:(x.show_footer_contact?1:0),x.show_faqs===undefined?b.show_faqs:(x.show_faqs?1:0),x.show_services===undefined?b.show_services:(x.show_services?1:0),x.show_booking===undefined?b.show_booking:(x.show_booking?1:0),JSON.stringify(images),x.show_category===undefined?b.show_category:(x.show_category?1:0),categoryLabel.trim(),b.id
   );res.json({ok:true});
 });
 
@@ -476,14 +485,14 @@ app.post('/api/public/:slug/bookings',async(req,res)=>{
   const marks=ids.map(()=>'?').join(',');const services=db.prepare(`SELECT * FROM services WHERE business_id=? AND active=1 AND id IN (${marks})`).all(b.id,...ids);if(services.length!==ids.length)return res.status(400).json({error:'Uno de los servicios ya no está disponible'});
   let quote,benefits;try{quote=computeQuote({business:b,services,partySize:x.partySize,couponCode:x.couponCode});benefits=applyBenefits(b,x,quote,services);if(b.terms_required&&!x.acceptTerms)throw new Error('Aceptá los términos para reservar')}catch(e){return res.status(400).json({error:e.message||'No se pudo aplicar el descuento'})}
   const plan=getBusinessPlan(b),activeStaff=Number(plan.max_staff||1)>1?db.prepare('SELECT * FROM staff WHERE business_id=? AND active=1 ORDER BY display_order,id').all(b.id):[];let staffId=x.staffId?Number(x.staffId):null,staff=null;if(Number(plan.max_staff||1)<=1)staffId=null;if(activeStaff.length){if(!staffId)return res.status(400).json({error:'Elegí con qué profesional querés reservar'});staff=activeStaff.find(z=>Number(z.id)===staffId);if(!staff||!staffCanDoServices(staff.id,ids))return res.status(400).json({error:'Esa profesional no realiza todos los servicios seleccionados'})}
-  refreshBillingState(b.id);if(!billingAccess(db.prepare('SELECT * FROM businesses WHERE id=?').get(b.id)))return res.status(402).json({error:'Este negocio no está recibiendo nuevas reservas online. Contactá a la profesional.'});
+  refreshBillingState(b.id);if(!billingAccess(db.prepare('SELECT * FROM businesses WHERE id=?').get(b.id)))return res.status(402).json({error:'Este negocio no está recibiendo nuevas reservas online. Contactá al profesional.'});
   const available=availabilityFor({business:b,date:x.date,services,partySize:quote.party_size,staffId});if(!available.includes(x.time))return res.status(409).json({error:'Ese horario ya no está disponible. Elegí otro.'});
   if(!x.clientName||!x.phone)return res.status(400).json({error:'Completá tu nombre y WhatsApp'});
   if(b.require_email&&!String(x.email||'').trim())return res.status(400).json({error:'Completá tu email para reservar'});
   const start=toMinutes(x.time),end=fromMinutes(start+quote.duration_min),payment=benefits.waiveAdvance?{mode:'none',due:0}:benefits.fullPayment?{mode:'total',due:quote.total_cents}:calculatePayment(b,quote.total_cents);
-  const allowedMethods=paymentMethods(b),method=payment.due>0?String(x.paymentMethod||allowedMethods[0]||''):'none';if(payment.due>0&&!allowedMethods.includes(method))return res.status(400).json({error:'Elegí un medio de pago habilitado por la profesional'});
+  const allowedMethods=paymentMethods(b),method=payment.due>0?String(x.paymentMethod||allowedMethods[0]||''):'none';if(payment.due>0&&!allowedMethods.includes(method))return res.status(400).json({error:'Elegí un medio de pago habilitado por el profesional'});
   if(payment.due>0&&method==='mercadopago'&&!b.mp_access_token_enc&&!DEMO_PAYMENTS)return res.status(503).json({error:'Esta profesional todavía no conectó Mercado Pago para recibir pagos online'});
-  if(x.repeatDays&&(b.payment_mode!=='none'||x.packCode||x.rewardCode||x.couponCode||benefits.fullPayment))return res.status(400).json({error:'La repetición automática desde la web requiere reservas sin pago online ni beneficios. Coordiná la serie con la profesional.'});
+  if(x.repeatDays&&(b.payment_mode!=='none'||x.packCode||x.rewardCode||x.couponCode||benefits.fullPayment))return res.status(400).json({error:'La repetición automática desde la web requiere reservas sin pago online ni beneficios. Coordiná la serie con el profesional.'});
   const email=String(x.email||'').trim().toLowerCase();
   const tx=db.transaction(()=>{
     let client=benefits.client||findClient(b,email,x.phone);
@@ -527,7 +536,7 @@ app.post('/api/public/:slug/bookings/:id/demo-approve',async(req,res)=>{
 });
 
 
-// ---------- Gestión de reserva por la clienta ----------
+// ---------- Gestión de reserva por el cliente ----------
 app.get('/api/public/manage-booking/:token',(req,res)=>{
   const held=db.prepare('SELECT business_id FROM bookings WHERE manage_token=?').get(req.params.token);if(held)cleanupExpiredHolds(held.business_id);
   const booking=db.prepare(`SELECT bk.*,c.name client_name,c.email client_email,c.phone client_phone,b.name business_name,b.slug business_slug,b.cancellation_hours,b.cancellation_policy,b.phone business_phone,s.name staff_name FROM bookings bk JOIN clients c ON c.id=bk.client_id JOIN businesses b ON b.id=bk.business_id LEFT JOIN staff s ON s.id=bk.staff_id WHERE bk.manage_token=?`).get(req.params.token);
@@ -552,7 +561,7 @@ app.post('/api/public/manage-booking/:token/cancel',async(req,res)=>{
   if(!bookingCanChange(booking))return res.status(409).json({error:`La cancelación online requiere al menos ${booking.cancellation_hours||0} horas de anticipación`});
   db.prepare(`UPDATE bookings SET status='cancelled',hold_expires_at=NULL WHERE id=?`).run(booking.id);
   reconcileBenefits();const updated=bookingDetails(booking.id);await emailBooking(updated);await emailProfessional(updated,'cancelled');
-  res.json({ok:true,booking:{...updated,can_change:false},refund_note:booking.amount_paid_cents>0?'La cancelación no genera automáticamente un reintegro. Coordiná la devolución con la profesional.':''});
+  res.json({ok:true,booking:{...updated,can_change:false},refund_note:booking.amount_paid_cents>0?'La cancelación no genera automáticamente un reintegro. Coordiná la devolución con el profesional.':''});
 });
 app.post('/api/public/manage-booking/:token/reschedule',async(req,res)=>{
   const found=db.prepare('SELECT id FROM bookings WHERE manage_token=?').get(req.params.token),booking=found?bookingDetails(found.id):null;

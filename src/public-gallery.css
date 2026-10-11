@@ -8,6 +8,10 @@
 .imageCarousel .carouselControls button:hover{background:#ffffff25}
 .imageCarousel .carouselControls button:focus-visible{outline:2px solid white;outline-offset:1px}
 .store .storeHeroMedia{isolation:auto}
+.store.hero-overlay .storeHeroMedia,.store.hero-cinematic .storeHeroMedia{position:absolute;inset:0}
+.store.hero-split .storeHeroMedia{min-height:440px}
+.store.hero-split .storeHeroCopy,.store.hero-arch .storeHeroCopy,.store.hero-offset .storeHeroCopy,.store.hero-centered.hasImage .storeHeroCopy{color:#14202c}
+@media(max-width:700px){.store.hero-split .storeHeroMedia{min-height:340px}}
 .store .storeHeroMedia .carouselImage{position:absolute;inset:0}
 .store.hero-cinematic .storeHeroMedia{filter:none}
 .store.hero-cinematic .storeHeroMedia .carouselImage{filter:brightness(.5) saturate(.9)}

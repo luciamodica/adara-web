@@ -2,9 +2,9 @@ import {db,getSetting} from './db.js';
 db.exec(`CREATE TABLE IF NOT EXISTS platform_faqs(id INTEGER PRIMARY KEY,question TEXT NOT NULL,answer TEXT NOT NULL,active INTEGER NOT NULL DEFAULT 1,display_order INTEGER NOT NULL DEFAULT 0)`);
 const defaults=[
  ['¿Necesito saber diseñar o programar?','No. Elegís una plantilla, cargás tus imágenes y servicios, y personalizás los colores y secciones desde tu panel.'],
- ['¿Puedo usar Adara si trabajo sola?','Sí. El plan Individual está pensado para una profesional con una agenda. Si trabajás con otras personas, el plan Equipo permite administrar agendas independientes.'],
- ['¿Cómo reservan mis clientas?','Compartís el enlace de tu página por redes, WhatsApp o tu QR. La clienta elige servicios, fecha y horario, completa sus datos y paga según tu configuración.'],
- ['¿Qué sucede si no pagan la seña?','El turno queda pendiente durante el plazo que definís en tu panel. Al vencer, se cancela y el horario se libera. Con transferencia, la profesional verifica el ingreso antes de confirmar.'],
+ ['¿Puedo usar Adara si trabajo por mi cuenta?','Sí. El plan Individual está pensado para un profesional con una agenda. Si trabajás con otras personas, el plan Equipo permite administrar agendas independientes.'],
+ ['¿Cómo reservan mis clientes?','Compartís el enlace de tu página por redes, WhatsApp o tu QR. El cliente elige servicios, fecha y horario, completa sus datos y paga según tu configuración.'],
+ ['¿Qué sucede si no pagan la seña?','El turno queda pendiente durante el plazo que definís en tu panel. Al vencer, se cancela y el horario se libera. Con transferencia, el profesional verifica el ingreso antes de confirmar.'],
  ['¿Puedo modificar horarios o cargar vacaciones?','Sí. Podés bloquear un día o un horario, y guardar períodos desde una fecha hasta otra para vacaciones o cambios temporales.'],
  ['¿Cuánto dura la prueba gratuita?','Tenés {dias_prueba} días para conocer Adara Web. Podés crear tu cuenta sin cargar una tarjeta y probar tu página, tu agenda y las herramientas del panel.']
 ];

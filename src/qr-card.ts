@@ -1,3 +1,4 @@
+import {WHATSAPP_PATH} from "./whatsapp-mark";
 type Brand={name:string;slug:string;template:string;logo:string;tagline:string;phone:string;instagram:string;tiktok:string;address:string;email?:string;primary:string;accent:string;background:string;foreground:string;qrInk:string};
 type ContactKind='whatsapp'|'instagram'|'tiktok'|'location'|'email';
 type QR={url:string;dataUrl:string;brand:Brand};
@@ -15,14 +16,13 @@ function contactIcon(ctx:CanvasRenderingContext2D,kind:ContactKind,x:number,y:nu
  ctx.save();ctx.translate(x,y);ctx.scale(size/24,size/24);
  if(kind==='instagram'){
   const gradient=ctx.createLinearGradient(2,24,23,0);gradient.addColorStop(0,'#feda75');gradient.addColorStop(.3,'#fa7e1e');gradient.addColorStop(.6,'#d62976');gradient.addColorStop(1,'#7044c7');ctx.fillStyle=gradient;
- }else ctx.fillStyle=kind==='whatsapp'?'#168c52':kind==='tiktok'?'#19141b':primary;
+ }else ctx.fillStyle=kind==='whatsapp'?'#25d366':kind==='tiktok'?'#19141b':primary;
  ctx.beginPath();ctx.arc(12,12,12,0,Math.PI*2);ctx.fill();
  ctx.strokeStyle='#ffffff';ctx.fillStyle='#ffffff';ctx.lineWidth=1.35;ctx.lineCap='round';ctx.lineJoin='round';
  if(kind==='instagram'){
   ctx.beginPath();ctx.roundRect(5.5,5.5,13,13,4);ctx.stroke();ctx.beginPath();ctx.arc(12,12,3.25,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(16.25,7.75,.9,0,Math.PI*2);ctx.fill();
  }else if(kind==='whatsapp'){
-  ctx.beginPath();ctx.moveTo(5.2,19);ctx.lineTo(6.2,15.8);ctx.arc(12,11.4,6.5,2.4,8.5);ctx.lineTo(5.2,19);ctx.stroke();
-  ctx.fill(new Path2D('M9 7.7c-.3-.7-.7-.7-1-.7-.3 0-.8.3-1 1-.3 1 .2 2.4 1.7 4.1 1.8 2 3.6 2.8 4.8 2.8.8 0 1.4-.6 1.6-1.1.1-.3.1-.5-.1-.6l-1.8-.9c-.2-.1-.4-.1-.6.1l-.7.8c-.2.2-.4.2-.6.1-.8-.3-2-1.2-2.5-2-.2-.3-.3-.5-.1-.7l.5-.6c.1-.2.1-.4 0-.6z'));
+  ctx.translate(4,4);ctx.fill(new Path2D(WHATSAPP_PATH));
  }else if(kind==='tiktok'){
   const note=new Path2D('M12.4 5.2h2.7c.2 1.9 1.3 3 3.2 3.3v2.6c-1.2-.1-2.3-.5-3.2-1.1v5.3a4.9 4.9 0 1 1-4.9-4.9h.8v2.8a2.2 2.2 0 1 0 1.4 2.1z');
   ctx.save();ctx.translate(-.35,.35);ctx.fillStyle='#25f4ee';ctx.fill(note);ctx.restore();ctx.save();ctx.translate(.35,-.25);ctx.fillStyle='#fe2c55';ctx.fill(note);ctx.restore();ctx.fillStyle='#ffffff';ctx.fill(note);
@@ -39,10 +39,10 @@ export async function createQrCard(qr:QR){
  const code=document.createElement('canvas');code.width=720;code.height=720;const qc=code.getContext('2d')!;qc.drawImage(base,0,0,720,720);
  if(logo){qc.fillStyle='#ffffff';rounded(qc,306,306,108,108,10);fit(qc,logo,320,320,80,80)}
  const contacts:{kind:ContactKind;value:string}[]=[{kind:'whatsapp',value:b.phone},{kind:'instagram',value:b.instagram?social(b.instagram):''},{kind:'tiktok',value:b.tiktok?social(b.tiktok):''},{kind:'location',value:b.address},{kind:'email',value:b.email||''}];
- const card=document.createElement('canvas');const measure=card.getContext('2d')!;measure.font='20px Arial';const taglineLines=b.tagline?.trim()?lines(measure,b.tagline,970):[];measure.font='52px Georgia';const nameLines=lines(measure,b.name,970);measure.font='30px Arial';const contactLines=contacts.filter(c=>c.value?.trim()).map(c=>({...c,lines:lines(measure,c.value,805)}));measure.font='24px Arial';const footerLines=logo?[]:lines(measure,b.name,950);
+ const card=document.createElement('canvas');const measure=card.getContext('2d')!;measure.font='20px Arial';const taglineLines=b.tagline?.trim()?lines(measure,b.tagline,970):[];measure.font='52px Georgia';const nameLines=lines(measure,b.name,970);measure.font='30px Arial';const contactLines=contacts.filter(c=>c.value?.trim()).map(c=>({...c,lines:lines(measure,c.value,805)}));
  const logoY=taglineLines.length?110+(taglineLines.length-1)*28:80;
  const top=logo?logoY+130:taglineLines.length?logoY+20:70,nameY=top+nameLines.length*64,qrY=nameY+74,contactY=qrY+805;
- const footerHeight=logo?210:110+footerLines.length*30;
+ const footerHeight=90;
  card.width=1200;card.height=Math.max(1500,contactY+contactLines.reduce((n,c)=>n+Math.max(106,42+c.lines.length*38)+18,0)+footerHeight);
  const ctx=card.getContext('2d')!;ctx.fillStyle=b.background;ctx.fillRect(0,0,1200,card.height);
  ctx.strokeStyle=b.accent;ctx.lineWidth=2;ctx.strokeRect(40,40,1120,card.height-80);
@@ -60,9 +60,7 @@ export async function createQrCard(qr:QR){
   contactIcon(ctx,c.kind,145,y+(height-72)/2,72,b.qrInk);ctx.fillStyle=b.foreground;ctx.font='30px Arial';
   c.lines.forEach((v,i)=>ctx.fillText(v,240,y+height/2-(c.lines.length-1)*19+10+i*38));y+=height+18;
  });
- // The destination stays encoded in the QR; the footer belongs to the business.
- if(logo){ctx.fillStyle='#ffffff';rounded(ctx,510,y+40,180,120,b.template==='noir'?2:22);fit(ctx,logo,520,y+50,160,100)}
- else{ctx.textAlign='center';ctx.fillStyle=b.foreground;ctx.font='24px Arial';footerLines.forEach((v,i)=>ctx.fillText(v,600,y+75+i*30))}
+ // The name and logo are already above the QR; keep a clean lower margin.
  try{return {...qr,codeUrl:code.toDataURL('image/png'),cardUrl:card.toDataURL('image/png')}}catch{throw new Error('Ese logo no permite descargar la tarjeta. Subilo como archivo desde Mi página y volvé a generar el QR.')}
 }
 export function downloadPng(url:string,name:string){const a=document.createElement('a');a.href=url;a.download=name;a.click()}

@@ -1,5 +1,36 @@
 # Actualización de Adara Web
 
+## Identidad unisex, logo azul y nuevas plantillas
+
+- Nuevo logo azul completo, con mayor presencia y sin deformarlo. Emblema A en la pestaña e íconos para accesos directos. Nueva paleta azul/celeste/blanco y tipografía Manrope para la plataforma.
+- Ingreso de escritorio corregido: el logo, el saludo y el título se muestran en filas separadas. Saludo neutro: «Qué bueno verte de nuevo».
+- «Clientes», «Horarios» y «Tu negocio» en la interfaz. Rubros ampliados en el registro: barbería, peluquería, estética y cuidado personal, bienestar, tatuajes, entrenamiento, yoga y otros servicios.
+- Cuatro plantillas adicionales: Atlas Studio y Clear Space (nivel 1), Forest Ritual y Carbon Studio (nivel 2). Se conservan las seis anteriores y los límites de cada plan. Las nuevas cuentas empiezan con Atlas; las cuentas existentes conservan sus colores y diseño.
+- WhatsApp usa la misma silueta reconocible en la página, la vista previa y el QR. En la tarjeta se elimina el logo del pie: sólo queda arriba y en el centro del código. Se mantienen Instagram, TikTok, ubicación y email público.
+- Explicación de Google Analytics y Meta Pixel en Herramientas → Estadísticas. Los campos son opcionales y las etiquetas externas requieren el consentimiento del visitante.
+- Se corrige la altura del carrusel dividido en celulares y se evita que la reproducción quede pausada al salir de la imagen.
+- Migración automática de los textos de planes y FAQ de la plataforma; no cambia precios, reservas, datos ni contenidos personalizados del negocio. Las versiones legales ya publicadas y sus aceptaciones se conservan. Si querés cambiar también la redacción de esos textos publicados, editá y publicá una nueva versión desde Super Admin → Legal.
+
+### Actualizar tu proyecto en Windows
+
+Copiá y reemplazá las carpetas completas **src**, **server**, **public** y **tests** del ZIP sobre las de tu proyecto. Copiá también **index.html**, **package.json**, **ACTUALIZACION.md** y **THIRD_PARTY_NOTICES.md**. Conservá tu **.env**, **data** y los archivos de **server/uploads**: no borres las carpetas existentes, sólo combiná y reemplazá los archivos del ZIP.
+
+Desde la carpeta de tu proyecto en PowerShell:
+
+```powershell
+npm run build
+npm test
+git add src server public tests index.html package.json ACTUALIZACION.md THIRD_PARTY_NOTICES.md
+git commit -m "Adaptar Adara a identidad unisex y nuevas plantillas"
+git push
+```
+
+Después del despliegue, recargá con **Ctrl + F5**. Para ver la nueva A, cerrá y volvé a abrir la pestaña si conservó el ícono anterior. En **Herramientas → Compartir mi página**, generá y descargá nuevamente tu tarjeta QR: los PNG descargados antes no cambian.
+
+Validación: build de producción y **1.076 comprobaciones de integración** aprobadas. Revisión en navegador de ingreso, registro, colores, plantillas, galerías, reservas, menú móvil, reproducción automática y lectura real del QR.
+
+---
+
 ## Logo completo, ícono de pestaña, contactos del QR y portada automática
 
 - El logo usa la nueva imagen horizontal completa en alta resolución. Se aumenta su tamaño en el home y los paneles, conservando un tamaño cómodo en celular.
