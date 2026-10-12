@@ -1,5 +1,36 @@
 # Actualización de Adara Web
 
+## Secciones a tu medida, promociones reservables y WhatsApp del home
+
+- **Mi página → Orden de las secciones:** mové Portada, Turnos, Promociones, Servicios, Novedades y Preguntas frecuentes con las flechas de subir/bajar. La vista previa y la página publicada siguen el mismo orden. Las secciones ocultas conservan su posición; la cabecera y el pie quedan fijos.
+- **Promociones:** ahora se pueden editar, pausar y eliminar. Vinculá uno o varios servicios y elegí precio promocional o porcentaje. Se muestran precio antes, precio ahora y porcentaje de ahorro. La duración de la reserva se obtiene de los servicios incluidos, no de un horario inventado para la promoción.
+- **Reservar una promoción:** el cliente puede elegirla desde su tarjeta o desde Turnos. El servidor valida sus servicios, su vigencia y su precio al crear la reserva. La seña o el pago total se calculan sobre el importe promocional. Una edición posterior no modifica los turnos ya creados.
+- Las promociones anteriores se conservan como avisos. Para hacerlas reservables, entrá a **Editar promoción**, elegí sus servicios y guardá el precio. Se omiten las reservas de ofertas cuyo servicio ya está archivado o eliminado. Las promociones no se combinan con cupones, packs, canjes ni descuentos grupales; los precios son por persona.
+- Las fechas de vigencia aplican al momento de reservar y a la fecha inicial del turno. Las promociones no generan repeticiones automáticas; coordiná una serie con el profesional si la necesitás.
+- **Servicios en celular:** se respeta el estilo elegido en Mi página. Los estilos con foto arriba se muestran en dos columnas; Horizontal y Editorial mantienen su composición lateral. Las descripciones largas tienen **Leer más / Leer menos**, sin perder contenido.
+- **Mi página → Ajuste de imágenes de portada:** elegí imágenes completas, sin ampliar ni recortar, o rellenar el espacio. La opción completa es la predeterminada. Las portadas móviles tienen una altura más cómoda; se conserva el carrusel automático.
+- **Super Admin → Configuración → WhatsApp del home de Adara:** activá el botón, cargá el número con código de país y editá el mensaje inicial. Se muestra sólo cuando está habilitado y el número es válido. Abre el chat de soporte; no necesita completar WhatsApp Business ni la verificación de Meta.
+
+### Instalar esta actualización
+
+Extraé el ZIP aparte. Desde su carpeta **adara-web**, combiná y reemplazá los archivos de **src**, **server** y **tests** en tu proyecto. Reemplazá también **package.json** y **ACTUALIZACION.md**. No borres carpetas: conservá **.env**, **data** y los archivos existentes en **server/uploads**.
+
+En PowerShell, desde la carpeta de tu proyecto:
+
+```powershell
+npm run build
+npm test
+git add src server tests package.json ACTUALIZACION.md
+git commit -m "Personalizar secciones y habilitar promociones reservables"
+git push
+```
+
+Render agrega las nuevas columnas automáticamente al iniciar, conservando los datos existentes. Esperá a que termine el despliegue y recargá el sitio. Después vinculá los servicios de tus promociones anteriores, revisá el orden y activá el WhatsApp de soporte si querés usarlo.
+
+Validación: build de producción y **1.225 comprobaciones de integración**, incluidas **149 nuevas** de promociones, vigencia, precios, reservas, permisos y configuración. Revisión en navegador del flujo móvil, descripción completa, orden, diez plantillas, siete estilos de tarjetas y WhatsApp del Super Admin.
+
+---
+
 ## Home compacto, carrusel de plantillas y nuevo ícono de pestaña
 
 - Home más cómodo en celular: títulos, márgenes y bloques más compactos. Los seis beneficios se muestran en dos columnas, conservando texto legible y botones cómodos para tocar.

@@ -1,3 +1,4 @@
+import {readSections} from './page-layout.js';
 export function readGallery(json,fallback='') {
  let images=[];try{images=JSON.parse(json||'[]')}catch{}
  return Array.isArray(images)&&images.length?images.filter(x=>typeof x==='string'):fallback?[fallback]:[];
@@ -16,4 +17,4 @@ export function galleryFromRequest(input,key,legacyKey,current={}) {
 }
 
 export const serviceGallery=s=>({...s,images:readGallery(s.images_json,s.image_url)});
-export const businessGallery=b=>({...b,hero_images:readGallery(b.hero_images_json,b.hero_image)});
+export const businessGallery=b=>({...b,section_order:readSections(b.section_order_json),hero_images:readGallery(b.hero_images_json,b.hero_image)});

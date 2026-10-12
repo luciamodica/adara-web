@@ -254,6 +254,18 @@ addColumn('services','group_discount_enabled','INTEGER NOT NULL DEFAULT 0');
 addColumn('services','group_min_people','INTEGER NOT NULL DEFAULT 2');
 addColumn('services','group_discount_percent','INTEGER NOT NULL DEFAULT 0');
 addColumn('promotions','show_banner','INTEGER NOT NULL DEFAULT 0');
+addColumn('promotions','service_ids_json',"TEXT NOT NULL DEFAULT '[]'");
+addColumn('promotions','pricing_mode',"TEXT NOT NULL DEFAULT 'percent'");
+addColumn('promotions','price_before_cents','INTEGER');
+addColumn('promotions','price_after_cents','INTEGER');
+addColumn('bookings','promotion_id','INTEGER');
+addColumn('bookings','promotion_title',"TEXT NOT NULL DEFAULT ''");
+addColumn('bookings','promotion_discount_cents','INTEGER NOT NULL DEFAULT 0');
+addColumn('bookings','promotion_before_cents','INTEGER');
+addColumn('booking_items','line_promotion_discount_cents','INTEGER NOT NULL DEFAULT 0');
+addColumn('businesses','section_order_json',`TEXT NOT NULL DEFAULT '["hero","booking","promotions","services","posts","faqs"]'`);
+addColumn('businesses','hero_image_fit',"TEXT NOT NULL DEFAULT 'contain'");
+
 addColumn('promotions','banner_text',"TEXT NOT NULL DEFAULT ''");
 addColumn('promotions','banner_bg',"TEXT NOT NULL DEFAULT '#2d2723'");
 addColumn('promotions','banner_text_color',"TEXT NOT NULL DEFAULT '#ffffff'");

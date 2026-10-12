@@ -1,0 +1,91 @@
+.sectionOrderEditor ol{list-style:none;padding:0;margin:18px 0 0;display:grid;gap:10px}
+.sectionOrderEditor li{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--adara-line);border-radius:10px;background:#fff}
+.sectionOrderEditor li>span{font-size:12px;color:var(--adara-muted);width:20px}
+.sectionOrderEditor li>b{font-size:14px;flex:1;min-width:0}
+.sectionOrderEditor li>div{display:flex;gap:6px}
+.sectionOrderEditor button{min-width:44px;min-height:44px;padding:8px}
+.sectionOrderEditor button:disabled{opacity:.3;cursor:default}
+.promotionServices,.homeContactSettings{margin:12px 0;border:1px solid var(--adara-line);border-radius:12px;padding:18px;min-width:0}
+.promotionServices legend,.homeContactSettings legend{padding:0 7px;font-size:15px;font-weight:700}
+.promotionServices p{font-size:13px;line-height:1.6;color:var(--adara-muted)}
+.promotionServices .switchLine{margin:12px 0;align-items:flex-start}
+.promotionServices .switchLine input{flex-shrink:0}
+.homeContactSettings{display:grid;gap:16px}
+.homeContactSettings label{display:grid;gap:8px}
+.homeContactSettings label.switchLine{display:flex}
+.homeContactSettings small{color:var(--adara-muted);line-height:1.6}
+.promotionPricePreview{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#eef5ff;border-radius:10px;padding:14px;color:var(--adara-ink);font-size:14px}
+.promotionPricePreview span{font-size:12px;color:var(--adara-muted)}
+.promotionAdminActions{display:flex;gap:8px;flex-wrap:wrap;padding:16px;align-items:center}
+.promotionAdminActions .outline{font-size:12px;padding:10px 12px;min-height:44px}
+.promotionPublicPrice{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:14px 0}
+.promotionPublicPrice del{font-size:14px;opacity:.6}
+.promotionPublicPrice b{font-size:24px}
+.store .promoCards .storeButton{display:inline-flex;justify-content:center;margin-top:12px;text-decoration:none;min-height:44px;font-size:14px}
+.store .bookingPromotions{margin-bottom:24px}
+.store .bookingPromotions>h3{font-size:22px;margin:0 0 8px}
+.store .bookingPromotions>p{font-size:13px;color:#74665f;margin-bottom:18px}
+.store .bookingPromotions>div:first-of-type{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.store .bookingPromotions button{font-family:inherit}
+.store .bookingPromotions>div:first-of-type>button{display:grid;gap:8px;padding:18px;border:1px solid color-mix(in srgb,var(--primary) 25%,transparent);background:#fff;text-align:left;color:#2d2723;border-radius:12px;cursor:pointer}
+.store .bookingPromotions>div:first-of-type>button.selected{background:color-mix(in srgb,var(--accent) 20%,white);border:2px solid var(--primary);padding:17px}
+.store .bookingPromotions button>b{font-size:16px}
+.store .bookingPromotions button>span{font-size:12px;line-height:1.6}
+.store .bookingPromotions button>small{font-size:13px;line-height:1.6}
+.store .bookingPromotions del{opacity:.65;margin-right:6px}
+.store .selectedPromotion{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:color-mix(in srgb,var(--accent) 20%,white);padding:14px;border-radius:12px;margin-top:16px}
+.store .selectedPromotion>b{font-size:14px}
+.store .selectedPromotion>span{font-size:12px;line-height:1.6;flex:1}
+.store .selectedPromotion button{font-size:12px;padding:10px 12px;min-height:44px}
+.store .serviceGrid .expandableText{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:0;white-space:pre-wrap;overflow-wrap:anywhere;margin-bottom:4px}
+.store .serviceGrid .expandableText.expanded{display:block;-webkit-line-clamp:unset;overflow:visible}
+.store .serviceGrid .readMore{display:block;min-height:36px;background:transparent;border:0;color:var(--primary);font:inherit;font-size:12px;line-height:1.5;font-weight:600;padding:6px 0;margin:0 0 8px;text-align:left;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.store.fit-contain .storeHeroMedia .carouselImage,.livePreview.preview-fit-contain .lpHeroMedia .carouselImage{object-fit:scale-down;object-position:center}
+.store.fit-cover .storeHeroMedia .carouselImage,.livePreview.preview-fit-cover .lpHeroMedia .carouselImage{object-fit:cover;object-position:center}
+.lpContentSample{padding:20px;display:grid;gap:8px;background:color-mix(in srgb,var(--a) 10%,white)}
+.lpContentSample small{font-size:8px;letter-spacing:.1em}.lpContentSample b{font-size:14px}.lpContentSample span{font-size:10px}
+.platformWhatsappFloat{position:fixed;right:22px;bottom:22px;width:56px;height:56px;display:grid;place-items:center;border-radius:50%;background:#25d366;color:white!important;z-index:40;box-shadow:0 8px 24px #10243a28}
+.platformWhatsappFloat svg{width:30px;height:30px}.platformWhatsappFloat:focus-visible{outline:3px solid #0758df;outline-offset:4px}
+@media(max-width:700px){
+ .store .storeSection{padding-top:40px;padding-bottom:40px}
+ .store .storeSection h2{font-size:clamp(27px,7.3vw,32px);line-height:1.2;margin:12px 0 18px}
+ .store .sectionIntro{font-size:14px;line-height:1.7}
+ .store .serviceGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+ .store .serviceGrid.serviceGrid>article{display:block;grid-template-columns:none;padding:0;border-radius:12px;transform:none!important;min-width:0;align-self:start}
+ .store .serviceGrid.serviceGrid>article>.serviceMedia,.store .serviceGrid.serviceGrid>article>.serviceFallback{width:100%;height:auto;min-height:0;aspect-ratio:4/3;border-radius:0}
+ .store.ratio-square .serviceGrid.serviceGrid>article>.serviceMedia,.store.ratio-square .serviceGrid.serviceGrid>article>.serviceFallback{aspect-ratio:1}
+ .store.ratio-portrait .serviceGrid.serviceGrid>article>.serviceMedia,.store.ratio-portrait .serviceGrid.serviceGrid>article>.serviceFallback{aspect-ratio:4/5}
+ .store .serviceGrid.serviceGrid>article>.serviceCopy{padding:14px 12px}
+ .store .serviceGrid h3{font-size:17px;line-height:1.3;overflow-wrap:anywhere}
+ .store .serviceGrid p{font-size:12px;line-height:1.6;min-height:0}
+ .store .serviceGrid .serviceCopy>b{display:block;font-size:16px;margin-top:8px}
+ .store .serviceGrid .serviceCopy>span{display:block;font-size:12px;line-height:1.6}
+ .store .serviceGrid .serviceCopy>a{display:inline-flex;justify-content:center;align-items:center;min-height:44px;font-size:12px;max-width:100%}
+ .store.cards-minimal .serviceGrid.serviceGrid>article{background:transparent;border:0;border-radius:0}
+ .store.cards-minimal .serviceGrid.serviceGrid>article>.serviceCopy{padding:12px 0}
+ .store.cards-soft .serviceGrid.serviceGrid>article{border-radius:22px}
+ .store.cards-luxury .serviceGrid.serviceGrid>article{border-radius:100px 100px 14px 14px;padding-top:8px}
+ .store.cards-luxury .serviceGrid.serviceGrid>article>.serviceMedia,.store.cards-luxury .serviceGrid.serviceGrid>article>.serviceFallback{border-radius:100px 100px 0 0}
+ .store.cards-horizontal .serviceGrid,.store.cards-editorial .serviceGrid{grid-template-columns:minmax(0,1fr)}
+ .store.cards-horizontal .serviceGrid.serviceGrid>article,.store.cards-editorial .serviceGrid.serviceGrid>article{display:grid;grid-template-columns:110px minmax(0,1fr);gap:14px;padding:12px}
+ .store.cards-horizontal .serviceGrid.serviceGrid>article>.serviceMedia,.store.cards-horizontal .serviceGrid.serviceGrid>article>.serviceFallback,.store.cards-editorial .serviceGrid.serviceGrid>article>.serviceMedia,.store.cards-editorial .serviceGrid.serviceGrid>article>.serviceFallback{width:110px;height:146px;aspect-ratio:auto;min-height:0;border-radius:8px}
+ .store.cards-horizontal .serviceGrid.serviceGrid>article>.serviceCopy,.store.cards-editorial .serviceGrid.serviceGrid>article>.serviceCopy{padding:0}
+ .store.cards-editorial .serviceGrid.serviceGrid>article{border-radius:0;grid-template-columns:125px minmax(0,1fr)}
+ .store.cards-editorial .serviceGrid.serviceGrid>article>.serviceMedia,.store.cards-editorial .serviceGrid.serviceGrid>article>.serviceFallback{width:125px;border-radius:0}
+ .store.cards-horizontal .serviceMedia .carouselControls,.store.cards-editorial .serviceMedia .carouselControls{gap:0}
+ .store .serviceMedia .carouselControls button{width:26px;min-width:26px}
+ .store.hero-split .storeHero,.store.hero-arch .storeHero,.store.hero-offset .storeHero{min-height:0;grid-template-columns:1fr;gap:0;padding:0!important}
+ .store.hero-split .storeHeroMedia,.store.hero-arch .storeHeroMedia,.store.hero-offset .storeHeroMedia{height:clamp(190px,62vw,340px);min-height:0;order:0;transform:none;box-shadow:none;border-radius:0}
+ .store.hero-split .storeHeroCopy,.store.hero-arch .storeHeroCopy,.store.hero-offset .storeHeroCopy{padding:28px 6vw}
+ .store.heroHeight-compact:is(.hero-overlay,.hero-cinematic,.hero-centered) .storeHero{min-height:320px}
+ .store.heroHeight-medium:is(.hero-overlay,.hero-cinematic,.hero-centered) .storeHero{min-height:380px}
+ .store.heroHeight-large:is(.hero-overlay,.hero-cinematic,.hero-centered) .storeHero{min-height:440px}
+ .store.heroHeight-xl:is(.hero-overlay,.hero-cinematic,.hero-centered) .storeHero{min-height:520px}
+ .store .storeHeroCopy h1{font-size:clamp(30px,8vw,38px);line-height:1.12}
+ .store .storeHeroCopy p{font-size:14px;line-height:1.7}
+ .store .bookingPromotions>div:first-of-type{grid-template-columns:minmax(0,1fr)}
+ .store .selectedPromotion{align-items:flex-start;flex-direction:column;gap:8px}
+ .promotionAdminActions{padding:12px}
+ .promotionServices{padding:14px}
+ .platformWhatsappFloat{width:52px;height:52px;right:16px;bottom:16px}
+}
