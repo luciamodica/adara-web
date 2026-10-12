@@ -253,6 +253,25 @@ addColumn('plans','team_enabled','INTEGER NOT NULL DEFAULT 0');
 addColumn('services','group_discount_enabled','INTEGER NOT NULL DEFAULT 0');
 addColumn('services','group_min_people','INTEGER NOT NULL DEFAULT 2');
 addColumn('services','group_discount_percent','INTEGER NOT NULL DEFAULT 0');
+
+addColumn('users','session_version','INTEGER NOT NULL DEFAULT 0');
+addColumn('businesses','show_service_duration','INTEGER NOT NULL DEFAULT 1');
+db.exec(`
+CREATE TABLE IF NOT EXISTS password_reset_tokens(
+ token_hash TEXT PRIMARY KEY,
+ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ session_version INTEGER NOT NULL,
+ expires_at TEXT NOT NULL,
+ used_at TEXT,
+ created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS password_reset_user ON password_reset_tokens(user_id);
+CREATE TABLE IF NOT EXISTS auth_rate_limits(
+ key TEXT PRIMARY KEY,
+ count INTEGER NOT NULL,
+ window_start INTEGER NOT NULL
+);
+`);
 addColumn('promotions','show_banner','INTEGER NOT NULL DEFAULT 0');
 addColumn('promotions','service_ids_json',"TEXT NOT NULL DEFAULT '[]'");
 addColumn('promotions','pricing_mode',"TEXT NOT NULL DEFAULT 'percent'");

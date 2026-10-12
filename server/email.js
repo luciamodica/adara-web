@@ -77,3 +77,15 @@ export async function sendProfessionalNotification({email,businessName,clientNam
   if(!response.ok) throw new Error('No se pudo enviar el aviso al profesional');
   return {sent:true,dev:false};
 }
+
+
+export async function sendPasswordResetEmail({email,name,resetUrl}) {
+ if(!process.env.RESEND_API_KEY)return {sent:false,dev:true};
+ const r=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${process.env.RESEND_API_KEY}`,'Content-Type':'application/json'},signal:AbortSignal.timeout(15000),body:JSON.stringify({from:process.env.EMAIL_FROM||'Adara Web <onboarding@resend.dev>',to:[email],subject:'Restablecé tu contraseña de Adara Web',html:`<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px;color:#10243a"><h2>Hola ${escapeHtml(name)}</h2><p>Recibimos una solicitud para restablecer tu contraseña.</p><p><a href="${escapeHtml(resetUrl)}" style="display:inline-block;background:#0758df;color:white;padding:14px 20px;border-radius:12px;text-decoration:none">Restablecer contraseña</a></p><p>Este enlace vence en 30 minutos y se puede usar una sola vez.</p><p>Si no solicitaste el cambio, podés ignorar este correo. Tu contraseña no cambió.</p></div>`})});
+ if(!r.ok)throw new Error('No se pudo enviar el correo de recuperación');return {sent:true};
+}
+export async function sendPasswordChangedEmail({email,name,supportUrl}) {
+ if(!process.env.RESEND_API_KEY)return {sent:false,dev:true};
+ const r=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${process.env.RESEND_API_KEY}`,'Content-Type':'application/json'},signal:AbortSignal.timeout(15000),body:JSON.stringify({from:process.env.EMAIL_FROM||'Adara Web <onboarding@resend.dev>',to:[email],subject:'Tu contraseña de Adara Web fue cambiada',html:`<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px;color:#10243a"><h2>Hola ${escapeHtml(name)}</h2><p>La contraseña de tu cuenta de Adara Web fue cambiada. Cerramos las sesiones anteriores.</p><p>Si no realizaste este cambio, recuperá tu contraseña y <a href="${escapeHtml(supportUrl)}">contactá a soporte</a>.</p></div>`})});
+ if(!r.ok)throw new Error('No se pudo enviar el aviso de seguridad');return {sent:true};
+}

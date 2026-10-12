@@ -1,5 +1,37 @@
 # Actualización de Adara Web
 
+## Contraseñas, intervalos configurables y duración de servicios
+
+- **Ingresar → Olvidé mi contraseña:** ingresá el email de tu cuenta. El enlace enviado por email permite elegir una nueva contraseña, vence en 30 minutos y sirve una sola vez. El formulario da la misma respuesta para emails registrados y no registrados. No modifica la contraseña hasta que se completa el enlace.
+- **Panel profesional y Super Admin → Cambiar contraseña:** ingresá la contraseña actual y repetí la nueva. Mínimo 8 caracteres para profesionales y 12 para Super Admin. Al cambiarla o restablecerla, se cierran las sesiones anteriores y se invalidan los enlaces de recuperación pendientes. Después ingresás normalmente con la nueva contraseña. La verificación del email sigue siendo necesaria para cuentas todavía no verificadas.
+- La recuperación usa el mismo servicio de email ya configurado en Render; no necesita nuevas claves. Si el envío no está configurado en producción, se informa que hay que contactar a soporte. La dirección del email de recuperación usa FRONTEND_URL, nunca la dirección enviada por quien hace la solicitud.
+- En desarrollo local sin proveedor de email aparece un enlace de prueba. En producción ese enlace no se muestra. Se guardan huellas de los tokens, no sus valores; los límites de solicitudes se conservan en la base de datos para evitar envíos repetidos incluso después de reiniciar.
+- **Agenda → Intervalo entre horarios** y **Configuración → Intervalo de horarios:** agregamos **1 hora y media (90 minutos)**, **2 horas (120 minutos)** y **Personalizado**. Podés elegir un número entero entre 5 y 720 minutos. Es la separación entre los horarios de inicio ofrecidos; la duración del servicio se configura por separado. Los valores inválidos se rechazan antes de modificar la agenda.
+- **Mi página → Decidí qué mostrar** o **Configuración → Qué querés tener activo:** desmarcá **Mostrar duración de los servicios al público** para quitar los minutos de las tarjetas y del formulario de reserva. La duración se mantiene en el panel y se usa internamente para reservar todo el tiempo necesario y evitar superposiciones. Las páginas existentes siguen mostrando la duración hasta que se cambie esta opción.
+- **Google Calendar:** la integración actual sincroniza **Adara → Google**. Los turnos creados, reprogramados o cancelados en Adara actualizan Google. Los eventos creados directamente en Google **no aparecen en Adara ni bloquean su disponibilidad**. Para mantener ambas agendas coordinadas, creá o modificá los turnos desde Adara y bloqueá en Adara los compromisos externos. La sincronización inversa requeriría una actualización adicional.
+
+### Instalar esta actualización
+
+Extraé el ZIP aparte. Desde su carpeta **adara-web**, combiná y reemplazá **src**, **server** y **tests** en tu proyecto. Reemplazá también **package.json** y **ACTUALIZACION.md**. Conservá **.env**, **data** y los archivos existentes en **server/uploads**; no borres las carpetas.
+
+En PowerShell, desde la carpeta de tu proyecto:
+
+```powershell
+npm run build
+npm test
+git add src server tests package.json ACTUALIZACION.md
+git commit -m "Agregar recuperacion de acceso e intervalos configurables"
+git push
+```
+
+Render agrega las columnas y tablas automáticamente al iniciar, conservando cuentas, turnos e imágenes. Esperá a que termine el despliegue y recargá la página. No hace falta reiniciar las contraseñas existentes.
+
+**Super Admin:** cambiar la contraseña desde el panel no requiere editar SUPERADMIN_PASSWORD en Render. Esa variable se usa para crear la cuenta en el primer inicio y para el restablecimiento manual mediante `npm run admin:password`. No ejecutes ese comando con la contraseña anterior si querés conservar la nueva.
+
+Validación: build de producción y **1.390 comprobaciones de integración**, incluidas **165 nuevas** sobre enlaces, vencimiento, reutilización, cambios simultáneos, sesiones, permisos, email, límites persistentes, intervalos y duración pública. Revisión del flujo completo en navegador, ambos paneles y tamaños de celular y computadora.
+
+---
+
 ## Secciones a tu medida, promociones reservables y WhatsApp del home
 
 - **Mi página → Orden de las secciones:** mové Portada, Turnos, Promociones, Servicios, Novedades y Preguntas frecuentes con las flechas de subir/bajar. La vista previa y la página publicada siguen el mismo orden. Las secciones ocultas conservan su posición; la cabecera y el pie quedan fijos.
