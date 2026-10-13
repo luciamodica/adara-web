@@ -1,0 +1,20 @@
+.manualWhatsappTrigger,.manualWhatsappOpen{display:inline-flex;align-items:center;justify-content:center;gap:7px}
+.manualWhatsappTrigger svg,.manualWhatsappOpen svg{flex:none;width:17px;height:17px}
+.manualWhatsappTrigger{white-space:normal!important;text-align:center;line-height:1.4}
+.manualWhatsappTrigger:hover{border-color:#16894c;color:#106936}
+.manualWhatsappDialog{width:min(640px,100%);min-width:0;max-height:90dvh;overflow:auto;border-radius:20px;background:#fff;padding:26px;box-shadow:0 24px 80px #10243a33;color:#10243a}
+.manualWhatsappDialog .panelTitle{gap:14px;align-items:flex-start}
+.manualWhatsappDialog h2{font:700 24px/1.25 'Open Sans',sans-serif;margin:0}
+.manualWhatsappDialog p,.manualWhatsappDialog small{font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+.manualWhatsappDialog label{display:grid;gap:7px;margin:18px 0 7px;font-size:13px;font-weight:700}
+.manualWhatsappDialog input,.manualWhatsappDialog textarea{width:100%;min-width:0;border:1px solid #cbd8e7;border-radius:10px;padding:12px;background:white;color:#10243a;font:400 16px/1.6 'Open Sans',sans-serif}
+.manualWhatsappDialog textarea{resize:vertical;min-height:200px}
+.manualWhatsappDialog small,.manualWhatsappNote{color:#61748c}
+.manualWhatsappSummary{display:grid;gap:4px;border-radius:12px;background:#f1f7ff;padding:12px}
+.manualWhatsappActions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.manualWhatsappActions>*{flex:1 1 180px;text-align:center;min-height:44px}
+.manualWhatsappDialog :is(button,a,input,textarea):focus-visible{outline:3px solid #0758df;outline-offset:3px}
+.manualWhatsappMode{border-left:3px solid #25d366;background:#f3fbf6;border-radius:10px;padding:12px 16px;line-height:1.6}
+.manualReminderRow>div:first-child{min-width:0;flex:1;overflow-wrap:anywhere}
+.manualReminderRow .manualWhatsappTrigger{flex:none}
+@media(max-width:560px){.manualWhatsappBackdrop{padding:12px}.manualWhatsappDialog{padding:20px 16px;border-radius:16px;max-height:94dvh}.manualWhatsappDialog h2{font-size:20px}.manualWhatsappDialog .panelTitle{margin-bottom:10px}.manualWhatsappDialog textarea{min-height:190px}.manualReminderRow .manualWhatsappTrigger{width:100%}}

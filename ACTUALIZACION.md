@@ -1,5 +1,36 @@
 # Actualización de Adara Web
 
+## WhatsApp manual para recordatorios y lista de espera
+
+- **Agenda → Reservas → Recordatorio por WhatsApp:** disponible para próximos turnos confirmados. Adara prepara el nombre del cliente, negocio, fecha, horario, servicio y el enlace privado de la reserva para confirmar asistencia, reprogramar o cancelar.
+- **Herramientas → Recordatorios → Próximas asistencias:** incluye el mismo botón. Los recordatorios automáticos por email conservan su configuración y horarios; el WhatsApp manual se abre cuando la profesional lo decide.
+- Antes de abrir WhatsApp podés revisar y editar **el destinatario y el mensaje**, o **Copiar mensaje**. Incluí el código de país en el teléfono. Estos cambios son sólo para ese mensaje: no modifican la ficha del cliente ni la reserva.
+- **Abrir WhatsApp** vuelve a comprobar el turno. Si cambió su información, muestra el borrador actualizado para revisarlo. Si fue cancelado, completado o ya comenzó, no permite abrir el recordatorio. El envío se completa tocando **Enviar dentro de WhatsApp**.
+- **Herramientas → Lista de espera → Avisar por WhatsApp:** prepara el aviso sólo si los servicios y el profesional siguen disponibles y hay un horario libre en ese momento. El aviso lleva al enlace público de reservas y explica que no guarda el horario.
+- Preparar, copiar o abrir el chat no marca el mensaje como enviado o recibido, no confirma asistencia, no crea trabajos de envío ni modifica el estado del turno o de la solicitud.
+- No necesita tokens, plantillas, verificación de Meta ni nuevas variables de Render. El modo manual aparece disponible en Herramientas. El control de WhatsApp automático se muestra sólo cuando el proveedor está configurado; la integración de API se conserva para una futura activación.
+- La vista previa funciona en celular y computadora, con el ícono de WhatsApp, campos editables, cierre por Escape, foco de teclado y fondo sin desplazamiento. Los mensajes se preparan mediante endpoints privados que verifican el negocio dueño de cada reserva o solicitud; el Super Admin no recibe reservas de profesionales.
+
+### Instalar esta actualización
+
+Extraé el ZIP en otra carpeta. Desde **adara-web**, combiná y reemplazá **src**, **server** y **tests** en tu proyecto actual. Reemplazá también **package.json** y **ACTUALIZACION.md**. Conservá **.env**, **data** y tus imágenes en **server/uploads**; no borres esas carpetas.
+
+Desde la carpeta de tu proyecto en PowerShell:
+
+```powershell
+npm run build
+npm test
+git add src server tests package.json ACTUALIZACION.md
+git commit -m "Agregar recordatorios y avisos manuales por WhatsApp"
+git push
+```
+
+Cuando Render termine el despliegue, recargá el panel. Abrí un próximo turno confirmado y usá **Recordatorio por WhatsApp → Abrir WhatsApp → Enviar**. Si el número guardado no incluye código de país, corregilo en el borrador. No hay migraciones ni cambios de credenciales para este modo.
+
+Validación: compilación de producción, **1.459 comprobaciones de integración** (69 nuevas de WhatsApp manual) y **39 comprobaciones en navegador**. Se verificaron permisos, aislamiento, enlaces privados, cambios recientes, estados, disponibilidad de lista de espera, edición, copiado, números inválidos, ausencia de envíos automáticos y tamaños de 320, 390, 768 y 1280 px. Las pruebas usan datos ficticios y no envían mensajes reales.
+
+---
+
 ## Contraseñas, intervalos configurables y duración de servicios
 
 - **Ingresar → Olvidé mi contraseña:** ingresá el email de tu cuenta. El enlace enviado por email permite elegir una nueva contraseña, vence en 30 minutos y sirve una sola vez. El formulario da la misma respuesta para emails registrados y no registrados. No modifica la contraseña hasta que se completa el enlace.

@@ -1,4 +1,5 @@
 import {privatePaymentClient} from './client-payment-policy.js';
+import {manualReminder,manualWaitlist} from './manual-whatsapp.js';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import QRCode from 'qrcode';
@@ -53,6 +54,14 @@ export function registerFeatures(app,{auth,own,availabilityFor,bookingDetails,st
  reconcileBenefits();const secrets=['mp_access_token_enc','mp_refresh_token_enc','google_access_enc','google_refresh_enc'];const settings={...b};secrets.forEach(k=>delete settings[k]);
  const clients=db.prepare(`SELECT c.*,SUM(CASE WHEN bk.status='completed' THEN 1 ELSE 0 END) completed_count,SUM(CASE WHEN bk.status='cancelled' THEN 1 ELSE 0 END) cancelled_count,SUM(CASE WHEN bk.status='no_show' THEN 1 ELSE 0 END) no_show_count,COALESCE(SUM(CASE WHEN bk.status='completed' THEN bk.total_cents ELSE 0 END),0) spent_cents FROM clients c LEFT JOIN bookings bk ON bk.client_id=c.id WHERE c.business_id=? GROUP BY c.id ORDER BY c.name`).all(b.id).map(c=>({...c,points:balance(c.id)}));
  res.json({settings,clients,periods:listPeriods(b.id),services:db.prepare('SELECT id,name FROM services WHERE business_id=? AND active=1').all(b.id),staff:db.prepare('SELECT id,name FROM staff WHERE business_id=? AND active=1').all(b.id),waitlist:db.prepare('SELECT * FROM waitlist WHERE business_id=? ORDER BY date,id').all(b.id),exceptions:db.prepare('SELECT * FROM calendar_exceptions WHERE business_id=? ORDER BY date').all(b.id),packs:db.prepare('SELECT p.*,s.name service_name FROM packs p JOIN services s ON s.id=p.service_id WHERE p.business_id=?').all(b.id),clientPacks:db.prepare(`SELECT cp.*,c.name client_name,p.name pack_name,(cp.sessions-(SELECT count(*) FROM pack_uses WHERE client_pack_id=cp.id AND restored=0)) remaining FROM client_packs cp JOIN clients c ON c.id=cp.client_id JOIN packs p ON p.id=cp.pack_id WHERE cp.business_id=? ORDER BY cp.id DESC`).all(b.id),jobs:db.prepare('SELECT id,kind,channel,status,attempts,last_error,created_at,sent_at FROM notification_jobs WHERE business_id=? ORDER BY id DESC LIMIT 100').all(b.id),providers:{email:Boolean(process.env.RESEND_API_KEY),whatsapp:Boolean(process.env.WHATSAPP_ACCESS_TOKEN&&process.env.WHATSAPP_PHONE_NUMBER_ID&&process.env.WHATSAPP_GRAPH_VERSION&&process.env.WHATSAPP_REMINDER_TEMPLATE&&process.env.WHATSAPP_WAITLIST_TEMPLATE),googleConfigured:googleConfigured(),googleConnected:Boolean(b.google_refresh_enc)},bookings:db.prepare('SELECT bk.id,bk.date,bk.start_time,bk.status,bk.selection_summary,bk.attendance_confirmed_at,bk.google_error,bk.series_id,c.name client_name FROM bookings bk JOIN clients c ON c.id=bk.client_id WHERE bk.business_id=? ORDER BY bk.date DESC LIMIT 200').all(b.id),analytics:db.prepare("SELECT event,count(*) count FROM analytics_events WHERE business_id=? AND created_at>=datetime('now','-30 days') GROUP BY event").all(b.id)});
+ }));
+ app.get('/api/businesses/:id/tools/bookings/:bid/whatsapp',auth,guarded((req,res,b)=>{
+  res.set({'Cache-Control':'no-store','Referrer-Policy':'no-referrer'});
+  res.json(manualReminder(b,integer(req.params.bid,1,Number.MAX_SAFE_INTEGER)));
+ }));
+ app.get('/api/businesses/:id/tools/waitlist/:wid/whatsapp',auth,guarded((req,res,b)=>{
+  res.set({'Cache-Control':'no-store','Referrer-Policy':'no-referrer'});
+  res.json(manualWaitlist(b,integer(req.params.wid,1,Number.MAX_SAFE_INTEGER),availabilityFor,staffCanDoServices));
  }));
  app.put('/api/businesses/:id/tools/settings',auth,guarded((req,res,b)=>{
  const x=req.body||{},hours=Array.isArray(x.reminder_hours)?[...new Set(x.reminder_hours.map(h=>integer(h,1,168)))].sort((a,z)=>z-a):JSON.parse(b.reminder_hours_json);if(!hours.length||hours.length>5)throw new Error('Elegí entre 1 y 5 recordatorios');
