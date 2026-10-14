@@ -1,3 +1,29 @@
+# Ajuste de carga de Google Analytics del Home
+
+La configuración y el ID ya guardados se conservan. No hay que crear otra propiedad ni cambiar variables de Render.
+
+La etiqueta ahora carga desde un documento HTML de Adara con una URL propia, en lugar de `srcdoc`. Los eventos quedan en espera hasta recibir la confirmación de que el archivo de Google terminó de cargar. La carga del marco por sí sola ya no se considera una etiqueta lista. Se comprueban el origen, el marco, el canal y el ID antes de enviar eventos.
+
+Se mantiene el consentimiento obligatorio, la separación de las páginas de profesionales y la exclusión de paneles, reservas y enlaces privados. El marco se elimina al salir del Home o el registro y al rechazar la medición. El documento usa el origen real del navegador para funcionar tanto en el dominio principal como en sus alias.
+
+## Aplicar y probar
+
+Reemplazar **src**, **server**, **tests** y **ACTUALIZACION.md** con los del ZIP. Conservar `.env`, datos e imágenes subidas.
+
+```powershell
+npm run build
+npm test
+git add src server tests ACTUALIZACION.md
+git commit -m "Corregir carga de Analytics del Home"
+git push
+```
+
+Tras el despliegue de Render, abrir el Home en incógnito, aceptar la medición, visitar el registro y consultar Tiempo real en la propiedad correspondiente. Un bloqueador puede impedir la carga de Google.
+
+Validación local: build y 1.764 comprobaciones, incluidas 122 de Analytics del Home. Se prueba la respuesta HTML real por HTTP, los eventos y la confirmación de carga simulada. Las pruebas no contactan a Google; la recepción real debe comprobarse después del despliegue.
+
+---
+
 # Google Analytics para el Home de Adara Web
 
 ## Activación

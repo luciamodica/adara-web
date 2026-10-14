@@ -1,3 +1,4 @@
+import {registerHomeAnalytics} from './home-analytics-tag.js';
 import './production-env.js';
 import {registerManualBookings} from './manual-bookings.js';
 import {registerPlatformSupport} from './platform-support.js';
@@ -201,6 +202,7 @@ async function emailProfessional(booking,event='new'){
 // ---------- Planes públicos ----------
 app.get('/api/public/plans',(_req,res)=>res.json(db.prepare('SELECT * FROM plans WHERE active=1 AND public_enabled=1 ORDER BY display_order,id').all().map(publicPlan)));
 app.get('/api/public/config',(_req,res)=>res.json({trial_days:Number(getSetting('trial_days','15')),...homeContact()}));
+registerHomeAnalytics(app,{getSetting});
 registerPlatformFaqs(app,{auth,superOnly});
 registerPlatformLegal(app,{auth,superOnly});
 app.get('/api/public/templates',(_req,res)=>res.json(TEMPLATES));
