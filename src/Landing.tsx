@@ -1,3 +1,4 @@
+import {trackHomeEvent} from './home-analytics';
 import {PlatformSupport} from './PlatformSupport';
 import PlatformSocials from './PlatformSocials';
 import './management-update.css';
@@ -13,7 +14,7 @@ import AgendaPreview from './AgendaPreview';
 import TemplateCarousel from './TemplateCarousel';
 import './landing.css';
 
-function go(path:string){history.pushState({},'',path);window.dispatchEvent(new PopStateEvent('popstate'))}
+function go(path:string){if(path.startsWith('/registro'))trackHomeEvent('registration_start');history.pushState({},'',path);window.dispatchEvent(new PopStateEvent('popstate'))}
 function Wordmark(){return <a className="platformWordmark" href="/" aria-label="Adara Web, inicio"><PlatformLogo/></a>}
 function PaymentsPreview(){
  const[mode,setMode]=useState('deposit');
@@ -48,7 +49,7 @@ export default function Landing(){
    <PlatformSupport contact={contact}/>
    <section className="platformFinal"><span className="platformEyebrow">TU NEGOCIO, A SU PRÓXIMA ETAPA</span><h2>Menos vueltas.<br/>Más espacio para tu talento.</h2><p>Creá tu página y organizá tus reservas con Adara Web.</p><button className="platformButton" onClick={()=>go('/registro')}>Empezar mi prueba gratis <ArrowRight size={17}/></button><small>{trialDays} días gratis · Sin tarjeta para comenzar</small></section>
   </main>
-  <footer className="platformHomeFooter"><div className="platformFooterGrid"><div><Wordmark/><p>Web, reservas y gestión<br/>para negocios.</p><PlatformSocials socials={contact.home_socials}/></div><div><b>PRODUCTO</b><a href="#funciones">Cómo funciona</a><a href="#ejemplos">Plantillas</a><a href="#planes">Planes</a></div><div><b>TU ESPACIO</b><a href="/login">Ingresar</a><a href="/registro">Crear cuenta</a><a href="#preguntas">Preguntas frecuentes</a></div><div><b>CONTACTO & LEGAL</b><a href="#soporte">Soporte</a><a href={'mailto:'+(legal?.profile?.email||contactEmail)}>Contacto</a><a href="/privacidad">Privacidad</a><a href="/terminos">Términos y condiciones</a><a href="/condiciones-de-suscripcion">Condiciones de suscripción</a></div></div><div className="platformFooterBottom"><span>© {new Date().getFullYear()} Adara Web</span><span>Pensada para tu negocio.</span></div></footer>
+  <footer className="platformHomeFooter"><div className="platformFooterGrid"><div><Wordmark/><p>Web, reservas y gestión<br/>para negocios.</p><PlatformSocials socials={contact.home_socials}/></div><div><b>PRODUCTO</b><a href="#funciones">Cómo funciona</a><a href="#ejemplos">Plantillas</a><a href="#planes">Planes</a></div><div><b>TU ESPACIO</b><a href="/login">Ingresar</a><a href="/registro" onClick={()=>trackHomeEvent('registration_start')}>Crear cuenta</a><a href="#preguntas">Preguntas frecuentes</a></div><div><b>CONTACTO & LEGAL</b><a href="#soporte">Soporte</a><a href={'mailto:'+(legal?.profile?.email||contactEmail)}>Contacto</a><a href="/privacidad">Privacidad</a><a href="/terminos">Términos y condiciones</a><a href="/condiciones-de-suscripcion">Condiciones de suscripción</a></div></div><div className="platformFooterBottom"><span>© {new Date().getFullYear()} Adara Web</span><span>Pensada para tu negocio.</span></div></footer>
   {contact.home_whatsapp_enabled&&contact.home_whatsapp_phone&&<a className="platformWhatsappFloat" href={`https://wa.me/${contact.home_whatsapp_phone}?text=${encodeURIComponent(contact.home_whatsapp_message||'Hola, quiero conocer Adara Web.')}`} target="_blank" rel="noopener noreferrer" aria-label="Soporte de Adara por WhatsApp"><WhatsappIcon/></a>}
  </div>;
 }

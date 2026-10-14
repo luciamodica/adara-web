@@ -1,3 +1,42 @@
+# Google Analytics para el Home de Adara Web
+
+## Activación
+
+1. Aplicar esta actualización y desplegarla en Render.
+2. Entrar a **Super Admin → Configuración → Google Analytics del Home de Adara**.
+3. Pegar el ID de medición de la propiedad del Home, por ejemplo `G-XXXXXXXXXX`.
+4. Marcar **Activar Google Analytics del Home** y guardar.
+5. Abrir el Home en una ventana de incógnito y aceptar la medición.
+6. Consultar **Google Analytics → Informes → Tiempo real**. Probar también un clic de registro. Un bloqueador de publicidad puede impedir el envío.
+
+## Qué se mide
+
+- `page_view`: visita a `/` y `/registro`.
+- `registration_start`: clic desde el Home para empezar el registro.
+- `sign_up`: la API creó la cuenta correctamente, antes de que se verifique el correo. No representa una suscripción pagada ni una cuenta con email verificado.
+
+La elección de consentimiento del Home es independiente de la de cada profesional. Se puede cambiar desde **Preferencias de medición**. Rechazar o desactivar el ID detiene la medición.
+
+La etiqueta de la plataforma sólo funciona en el Home y el registro. Usa un documento aislado que se elimina al cambiar a otras rutas; no se instala en los paneles, reservas, enlaces privados, recuperación de contraseña ni páginas de profesionales. Los eventos incluyen únicamente el nombre del evento y la ruta pública canónica; se omiten consultas de URL, fragmentos, nombres, correos, contraseñas y tokens. El origen de referencia se limita al dominio externo. No se activan Google signals ni personalización publicitaria.
+
+Esta configuración conecta Google Analytics. Meta Pixel de los profesionales conserva su configuración existente. No hay nuevas variables de Render ni dependencias.
+
+## Aplicar los archivos
+
+Reemplazar **src**, **server**, **tests**, **package.json** y **ACTUALIZACION.md** dentro del proyecto actual. Conservar los archivos privados de entorno, la base de datos y las imágenes subidas.
+
+```powershell
+npm run build
+npm test
+git add src server tests package.json ACTUALIZACION.md
+git commit -m "Agregar Google Analytics al Home de Adara"
+git push
+```
+
+Validación local: build y 1.740 comprobaciones. Las 98 nuevas verifican configuración, permisos, consentimiento, eventos, rutas privadas, aislamiento y ausencia de datos personales en los mensajes. La recepción en Google Analytics debe comprobarse con el ID real tras desplegar; las pruebas locales no contactan a Google.
+
+---
+
 # Turnos manuales, QR personalizable y soporte
 
 - **Turnos**: nueva sección para ver, editar y cancelar reservas online y manuales. “Agregar turno manual” permite seleccionar uno o varios servicios, cliente nuevo o existente, fecha, horario y agenda del profesional (plan Equipo). El email y WhatsApp del cliente son opcionales. Si hay email, el profesional puede pedir una confirmación por correo.
