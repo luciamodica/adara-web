@@ -1,3 +1,4 @@
+import {readQrSettings,validateQrSettings} from './qr-settings.js';
 import {privatePaymentClient} from './client-payment-policy.js';
 import {manualReminder,manualWaitlist} from './manual-whatsapp.js';
 import crypto from 'crypto';
@@ -93,8 +94,14 @@ export function registerFeatures(app,{auth,own,availabilityFor,bookingDetails,st
  app.patch('/api/businesses/:id/tools/waitlist/:wid',auth,guarded((req,res,b)=>{db.prepare("UPDATE waitlist SET status='closed' WHERE id=? AND business_id=?").run(req.params.wid,b.id);res.json({ok:true})}));
  app.post('/api/public/manage-booking/:token/confirm-attendance',(req,res)=>{const bk=db.prepare("SELECT * FROM bookings WHERE manage_token=? AND status='confirmed'").get(req.params.token);if(!bk||Date.parse(`${bk.date}T${bk.start_time}:00-03:00`)<=Date.now())return res.status(409).json({error:'El turno ya no está disponible para confirmar asistencia'});db.prepare('UPDATE bookings SET attendance_confirmed_at=COALESCE(attendance_confirmed_at,?) WHERE id=?').run(iso(),bk.id);res.json({ok:true,attendance_confirmed_at:iso()})});
  app.put('/api/businesses/:id/tools/qr',auth,guarded((req,res,b)=>{
- const tagline=req.body?.tagline;if(typeof tagline!=='string'||[...tagline].length>120)throw new Error('La frase debe tener hasta 120 caracteres.');
- db.prepare('UPDATE businesses SET qr_tagline=? WHERE id=?').run(tagline.replace(/\s+/g,' ').trim(),b.id);res.json({ok:true});
+ const tagline=req.body?.tagline===undefined?b.qr_tagline:req.body.tagline;if(typeof tagline!=='string'||[...tagline].length>120)throw new Error('La frase debe tener hasta 120 caracteres.');
+ const settings=validateQrSettings(req.body?.settings===undefined?{}:req.body.settings,readQrSettings(b));
+ db.prepare('UPDATE businesses SET qr_tagline=?,qr_settings_json=? WHERE id=?').run(tagline.replace(/\s+/g,' ').trim(),JSON.stringify(settings),b.id);res.json({ok:true,settings});
+ }));
+ app.post('/api/businesses/:id/tools/qr/preview',auth,guarded(async(req,res,b)=>{
+ const tagline=req.body?.tagline===undefined?b.qr_tagline:req.body.tagline;if(typeof tagline!=='string'||[...tagline].length>120)throw Error('La frase debe tener hasta 120 caracteres.');
+ const settings=validateQrSettings(req.body?.settings===undefined?{}:req.body.settings,readQrSettings(b)),brand=qrBrand({...b,qr_tagline:tagline,qr_settings_json:JSON.stringify(settings)}),url=`${FRONTEND}/reservar/${b.slug}`;
+ res.set('Cache-Control','no-store').json({url,brand,dataUrl:await QRCode.toDataURL(url,{width:720,margin:4,errorCorrectionLevel:'H',color:{dark:brand.qrInk,light:'#ffffff'}})});
  }));
  app.get('/api/businesses/:id/tools/qr',auth,guarded(async(req,res,b)=>{const url=`${FRONTEND}/reservar/${b.slug}`,brand=qrBrand(b);res.json({url,brand,dataUrl:await QRCode.toDataURL(url,{width:720,margin:4,errorCorrectionLevel:'H',color:{dark:brand.qrInk,light:'#ffffff'}})})}));
  app.get('/api/businesses/:id/tools/export/:type',auth,guarded((req,res,b)=>{const rows=req.params.type==='clients'?db.prepare('SELECT name,email,phone,notes,blocked,created_at FROM clients WHERE business_id=?').all(b.id):req.params.type==='bookings'?db.prepare('SELECT bk.date,bk.start_time,bk.end_time,c.name client_name,c.phone,bk.selection_summary,bk.status,bk.total_cents/100.0 total_pesos,bk.amount_paid_cents/100.0 paid_pesos FROM bookings bk JOIN clients c ON c.id=bk.client_id WHERE bk.business_id=? ORDER BY date,start_time').all(b.id):null;if(!rows)throw new Error('Elegí clientes o turnos');const cols=rows.length?Object.keys(rows[0]):['Sin datos'];const cell=v=>'"'+String(v??'').replace(/^\s*[=+@\-]/,"'$&").replace(/"/g,'""')+'"';res.type('text/csv').attachment(`${b.slug}-${req.params.type}.csv`).send('\ufeff'+[cols.map(cell).join(';'),...rows.map(r=>cols.map(k=>cell(r[k])).join(';'))].join('\r\n'))}));

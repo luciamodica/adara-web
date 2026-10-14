@@ -47,3 +47,6 @@ db.transaction(()=>{
 })();
 export const normalizePhone=p=>String(p||'').replace(/\D/g,'');
 for(const c of db.prepare("SELECT id,phone FROM clients WHERE phone_normalized=''").all())db.prepare('UPDATE clients SET phone_normalized=? WHERE id=?').run(normalizePhone(c.phone),c.id);
+
+add('bookings','booking_source',"TEXT NOT NULL DEFAULT 'online'");
+add('businesses','qr_settings_json',"TEXT NOT NULL DEFAULT '{}'");

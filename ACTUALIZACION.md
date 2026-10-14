@@ -1,3 +1,41 @@
+# Turnos manuales, QR personalizable y soporte
+
+- **Turnos**: nueva sección para ver, editar y cancelar reservas online y manuales. “Agregar turno manual” permite seleccionar uno o varios servicios, cliente nuevo o existente, fecha, horario y agenda del profesional (plan Equipo). El email y WhatsApp del cliente son opcionales. Si hay email, el profesional puede pedir una confirmación por correo.
+- Un turno manual se confirma sin cobro online ni pagos ficticios. Adara comprueba disponibilidad para toda su duración dentro de los horarios configurados, vacaciones, bloqueos e intervalos. La carga manual permite horarios de hoy sin exigir la anticipación mínima de las reservas públicas. El importe de los servicios queda informado; el cobro se acuerda con el cliente.
+- Los turnos manuales ocupan los horarios de la página, aparecen en el historial y se sincronizan hacia Google Calendar si está conectado. Reprogramarlos o cancelarlos actualiza la disponibilidad y la sincronización.
+- **Agenda**: horarios habituales, días libres, bloqueos, vacaciones, horarios temporales, turnos recurrentes y condiciones de reserva. “Agenda especial” deja de estar en Herramientas. El enlace “Ver y gestionar turnos” abre la nueva sección.
+- **Herramientas → Compartir mi página**: editor de tarjeta QR con vista previa automática, tres diseños, tres tipografías, colores propios o los de la página, imagen de fondo, intensidad, tamaño del logo y opción de mostrarlo dentro del código. Se conserva una zona blanca y suficiente contraste para escanear. Guardar antes de descargar el PNG.
+- **Super Admin → Configuración → Redes de Adara Web**: enlaces completos HTTPS a Instagram, Facebook, TikTok, YouTube y LinkedIn. Los campos vacíos se omiten en el Home.
+- **Home → Soporte**: formulario con nombre, email y mensaje, enlace a adaraweb23@gmail.com y WhatsApp cuando esté habilitado en la configuración de la plataforma.
+- **Super Admin → Soporte**: consultas guardadas, estado Nueva/Leída/Resuelta y enlace para responder por email. Las consultas se conservan aunque falle el aviso a adaraweb23@gmail.com. El aviso usa el proveedor de correo ya configurado; no se envían respuestas automáticas al visitante.
+
+## Aplicar la actualización
+
+Copiar y reemplazar **src**, **server**, **tests**, **package.json** y **ACTUALIZACION.md** dentro del proyecto actual. Conservar los archivos privados de entorno, la base de datos y las imágenes ya subidas. No reemplazar una instalación existente borrando sus carpetas de datos.
+
+```powershell
+npm run build
+npm test
+git add src server tests package.json ACTUALIZACION.md
+git commit -m "Agregar turnos manuales, editor QR y soporte"
+git push
+```
+
+Render aplica las columnas y tablas nuevas al iniciar. No hay nuevas dependencias ni variables obligatorias. El email de soporte utiliza RESEND_API_KEY y EMAIL_FROM existentes.
+
+## Comprobación después del despliegue
+
+1. En Turnos, crear un turno manual para una fecha disponible. Comprobar que se vea como “Cargado manualmente” y que su horario ya no esté disponible en la página pública.
+2. Reprogramar y cancelar: comprobar la liberación del horario y, con Google conectado, la actualización del evento.
+3. En Agenda, comprobar períodos especiales y el enlace a Turnos.
+4. En Herramientas → Compartir mi página, elegir fondo/colores/tipografía, guardar y descargar la tarjeta. Escanear el QR.
+5. En Super Admin → Configuración, guardar redes y comprobar el pie del Home.
+6. En el Home, enviar una consulta de prueba. Revisarla en Super Admin → Soporte y comprobar el aviso por correo. Marcarla Resuelta después de probar.
+
+Validación local: build, 1.642 comprobaciones de integración y 36 lecturas de QR en 18 variantes de tarjeta. Los envíos de prueba utilizaron proveedores simulados, sin mensajes a personas reales. La revisión visual del panel en el navegador y la entrega real del correo deben comprobarse tras desplegar.
+
+---
+
 # Actualización de Adara Web
 
 ## WhatsApp manual para recordatorios y lista de espera

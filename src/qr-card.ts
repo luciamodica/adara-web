@@ -1,5 +1,6 @@
 import {WHATSAPP_PATH} from "./whatsapp-mark";
-type Brand={name:string;slug:string;template:string;logo:string;tagline:string;phone:string;instagram:string;tiktok:string;address:string;email?:string;primary:string;accent:string;background:string;foreground:string;qrInk:string};
+type Design={font?:string;layout?:string;background_image?:string;overlay?:number;logo_size?:number;show_logo_in_code?:boolean};
+type Brand={design?:Design;name:string;slug:string;template:string;logo:string;tagline:string;phone:string;instagram:string;tiktok:string;address:string;email?:string;primary:string;accent:string;background:string;foreground:string;qrInk:string};
 type ContactKind='whatsapp'|'instagram'|'tiktok'|'location'|'email';
 type QR={url:string;dataUrl:string;brand:Brand};
 const picture=async(src:string)=>{const img=new Image();img.crossOrigin='anonymous';img.src=src;await img.decode();return img};
@@ -34,33 +35,27 @@ function contactIcon(ctx:CanvasRenderingContext2D,kind:ContactKind,x:number,y:nu
  ctx.restore();
 }
 export async function createQrCard(qr:QR){
- const b=qr.brand,base=await picture(qr.dataUrl);let logo:HTMLImageElement|undefined;
- if(b.logo){try{logo=await picture(b.logo)}catch{throw new Error('No pudimos cargar tu logo. Volvé a subirlo desde Mi página y generá el QR nuevamente.')}}
+ const b=qr.brand,d=b.design||{},base=await picture(qr.dataUrl),family=d.font==='editorial'?'Georgia':d.font==='friendly'?'Trebuchet MS':'Arial';let logo:HTMLImageElement|undefined,bg:HTMLImageElement|undefined;
+ if(b.logo)try{logo=await picture(b.logo)}catch{throw new Error('No pudimos cargar tu logo. Volvé a subirlo desde Mi página.')}
+ if(d.background_image)try{bg=await picture(d.background_image)}catch{throw new Error('No pudimos cargar el fondo. Volvé a subir la imagen.')}
  const code=document.createElement('canvas');code.width=720;code.height=720;const qc=code.getContext('2d')!;qc.drawImage(base,0,0,720,720);
- if(logo){qc.fillStyle='#ffffff';rounded(qc,306,306,108,108,10);fit(qc,logo,320,320,80,80)}
+ if(logo&&d.show_logo_in_code!==false){qc.fillStyle='#ffffff';rounded(qc,306,306,108,108,10);fit(qc,logo,320,320,80,80)}
  const contacts:{kind:ContactKind;value:string}[]=[{kind:'whatsapp',value:b.phone},{kind:'instagram',value:b.instagram?social(b.instagram):''},{kind:'tiktok',value:b.tiktok?social(b.tiktok):''},{kind:'location',value:b.address},{kind:'email',value:b.email||''}];
- const card=document.createElement('canvas');const measure=card.getContext('2d')!;measure.font='20px Arial';const taglineLines=b.tagline?.trim()?lines(measure,b.tagline,970):[];measure.font='52px Georgia';const nameLines=lines(measure,b.name,970);measure.font='30px Arial';const contactLines=contacts.filter(c=>c.value?.trim()).map(c=>({...c,lines:lines(measure,c.value,805)}));
- const logoY=taglineLines.length?110+(taglineLines.length-1)*28:80;
- const top=logo?logoY+130:taglineLines.length?logoY+20:70,nameY=top+nameLines.length*64,qrY=nameY+74,contactY=qrY+805;
- const footerHeight=90;
- card.width=1200;card.height=Math.max(1500,contactY+contactLines.reduce((n,c)=>n+Math.max(106,42+c.lines.length*38)+18,0)+footerHeight);
+ const card=document.createElement('canvas'),measure=card.getContext('2d')!;measure.font='28px '+family;const taglineLines=b.tagline?.trim()?lines(measure,b.tagline,970):[];measure.font='bold 54px '+family;const nameLines=lines(measure,b.name,970);measure.font='30px '+family;const contactLines=contacts.filter(c=>c.value?.trim()).map(c=>({...c,lines:lines(measure,c.value,805)}));
+ const size=logo?(d.logo_size||160):0,nameY=110+size+(logo?70:0),tagY=nameY+(nameLines.length-1)*66+52,qrY=tagY+taglineLines.length*38+55,contactY=qrY+830;
+ card.width=1200;card.height=Math.max(1500,contactY+contactLines.reduce((n,c)=>n+Math.max(106,42+c.lines.length*38)+18,0)+100);
  const ctx=card.getContext('2d')!;ctx.fillStyle=b.background;ctx.fillRect(0,0,1200,card.height);
- ctx.strokeStyle=b.accent;ctx.lineWidth=2;ctx.strokeRect(40,40,1120,card.height-80);
- ctx.fillStyle=b.accent;ctx.globalAlpha=.18;
- if(b.template==='rose'||b.template==='pearl'){ctx.beginPath();ctx.arc(1080,110,230,0,Math.PI*2);ctx.fill()}else{ctx.fillRect(40,40,1120,18);ctx.fillRect(40,card.height-58,1120,18)}ctx.globalAlpha=1;
- ctx.textAlign='center';ctx.fillStyle=b.foreground;ctx.font='20px Arial';taglineLines.forEach((v,i)=>ctx.fillText(v,600,90+i*28));
- if(logo){ctx.fillStyle='#ffffff';rounded(ctx,540,logoY,120,100,b.template==='noir'?2:22);fit(ctx,logo,550,logoY+8,100,84)}
- ctx.fillStyle=b.foreground;ctx.font=(b.template==='muse'?'bold ':'')+'52px Georgia';nameLines.forEach((v,i)=>ctx.fillText(v,600,top+58+i*64));ctx.font='27px Arial';ctx.fillText('Escaneá y reservá tu turno',600,nameY+44);
- ctx.fillStyle='#ffffff';rounded(ctx,210,qrY,780,780,b.template==='noir'?2:24);ctx.drawImage(code,240,qrY+30,720,720);
+ if(bg){const k=Math.max(1200/bg.naturalWidth,card.height/bg.naturalHeight);ctx.drawImage(bg,(1200-bg.naturalWidth*k)/2,(card.height-bg.naturalHeight*k)/2,bg.naturalWidth*k,bg.naturalHeight*k);ctx.fillStyle=b.background;ctx.globalAlpha=(d.overlay||85)/100;ctx.fillRect(0,0,1200,card.height);ctx.globalAlpha=1;}
+ if(d.layout==='frame'){ctx.strokeStyle=b.accent;ctx.lineWidth=4;ctx.strokeRect(38,38,1124,card.height-76)}
+ if(d.layout==='bold'){ctx.fillStyle=b.primary;ctx.fillRect(0,0,1200,25);ctx.fillRect(0,card.height-25,1200,25);ctx.fillStyle=b.accent;ctx.fillRect(100,64,1000,8)}
+ // Solid surfaces keep text legible over every photograph.
+ if(bg){ctx.fillStyle=b.background;rounded(ctx,85,70,1030,qrY-95,30)}
+ if(logo)fit(ctx,logo,(1200-size)/2,100,size,size);
+ ctx.textAlign='center';ctx.fillStyle=b.foreground;ctx.font='bold 54px '+family;nameLines.forEach((v,i)=>ctx.fillText(v,600,nameY+i*66));
+ ctx.font='28px '+family;taglineLines.forEach((v,i)=>ctx.fillText(v,600,tagY+i*38));
+ ctx.fillStyle='#ffffff';rounded(ctx,210,qrY,780,780,d.layout==='bold'?8:30);ctx.drawImage(code,240,qrY+30,720,720);
  let y=contactY;ctx.textAlign='left';
- contactLines.forEach(c=>{
-  const height=Math.max(106,42+c.lines.length*38);
-  ctx.fillStyle='#ffffff';ctx.globalAlpha=b.foreground==='#ffffff'?.08:.65;rounded(ctx,125,y,950,height,28);ctx.globalAlpha=1;
-  ctx.strokeStyle=b.accent;ctx.lineWidth=2;ctx.globalAlpha=.6;ctx.beginPath();ctx.roundRect(125,y,950,height,28);ctx.stroke();ctx.globalAlpha=1;
-  contactIcon(ctx,c.kind,145,y+(height-72)/2,72,b.qrInk);ctx.fillStyle=b.foreground;ctx.font='30px Arial';
-  c.lines.forEach((v,i)=>ctx.fillText(v,240,y+height/2-(c.lines.length-1)*19+10+i*38));y+=height+18;
- });
- // The name and logo are already above the QR; keep a clean lower margin.
- try{return {...qr,codeUrl:code.toDataURL('image/png'),cardUrl:card.toDataURL('image/png')}}catch{throw new Error('Ese logo no permite descargar la tarjeta. Subilo como archivo desde Mi página y volvé a generar el QR.')}
+ contactLines.forEach(c=>{const height=Math.max(106,42+c.lines.length*38);ctx.fillStyle=b.background;rounded(ctx,125,y,950,height,24);ctx.strokeStyle=b.accent;ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(125,y,950,height,24);ctx.stroke();contactIcon(ctx,c.kind,145,y+(height-72)/2,72,b.qrInk);ctx.fillStyle=b.foreground;ctx.font='30px '+family;c.lines.forEach((v,i)=>ctx.fillText(v,240,y+height/2-(c.lines.length-1)*19+10+i*38));y+=height+18;});
+ try{return {...qr,codeUrl:code.toDataURL('image/png'),cardUrl:card.toDataURL('image/png')}}catch{throw new Error('No pudimos descargar la tarjeta. Subí las imágenes como archivos y volvé a intentar.')}
 }
 export function downloadPng(url:string,name:string){const a=document.createElement('a');a.href=url;a.download=name;a.click()}

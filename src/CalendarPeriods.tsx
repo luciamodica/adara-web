@@ -9,7 +9,7 @@ export default function CalendarPeriods({b,staff,periods=[],root,refresh}:any){
  const reset=()=>{setForm(blank());setError('')};
  const save=async(e:any)=>{e.preventDefault();setBusy(true);setError('');setMessage('');try{
   const result=await api(root+'/calendar-periods'+(form.id?'/'+form.id:''),{method:form.id?'PUT':'POST',body:JSON.stringify(form)});
-  await refresh();setMessage(`Período ${form.id?'actualizado':'guardado'}: ${fmtDate(form.date_from)}${form.date_to!==form.date_from?' al '+fmtDate(form.date_to):''}.${result.affected_bookings?` Hay ${result.affected_bookings} turno${result.affected_bookings===1?'':'s'} en esos horarios. Revisalos en Agenda; sus reservas se conservan.`:''}`);reset();
+  await refresh();setMessage(`Período ${form.id?'actualizado':'guardado'}: ${fmtDate(form.date_from)}${form.date_to!==form.date_from?' al '+fmtDate(form.date_to):''}.${result.affected_bookings?` Hay ${result.affected_bookings} turno${result.affected_bookings===1?'':'s'} en esos horarios. Revisalos en Turnos; sus reservas se conservan.`:''}`);reset();
  }catch(e:any){setError(e.message)}finally{setBusy(false)}};
  const edit=(p:any)=>{setError('');setMessage('');setForm({...p,staff_id:p.staff_id?String(p.staff_id):'',closed:!!p.closed,start_time:p.start_time||'10:00',end_time:p.end_time||'18:00'});editor.current?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'})};
  const remove=async(p:any)=>{setBusy(true);setError('');setMessage('');try{await api(root+'/calendar-periods/'+p.id,{method:'DELETE'});await refresh();if(form.id===p.id)reset();setMessage('Período eliminado. Se vuelve a usar tu agenda habitual en esas fechas.')}catch(e:any){setError(e.message)}finally{setBusy(false)}};

@@ -1,4 +1,6 @@
 import './production-env.js';
+import {registerManualBookings} from './manual-bookings.js';
+import {registerPlatformSupport} from './platform-support.js';
 import {registerAccountSecurity} from './account-security.js';
 import {validateSlotInterval,durationVisibility} from './booking-display.js';
 import {homeContact,savePlatformSettings} from './platform-contact.js';
@@ -107,7 +109,7 @@ function activeBookingsForDate(businessId,date,excludeBookingId=0,staffId=null){
   if(staffId)return db.prepare(`SELECT start_time,end_time FROM bookings WHERE business_id=? AND date=? AND status IN ('confirmed','pending_payment') AND id!=? AND staff_id=?`).all(businessId,date,Number(excludeBookingId||0),Number(staffId));
   return db.prepare(`SELECT start_time,end_time FROM bookings WHERE business_id=? AND date=? AND status IN ('confirmed','pending_payment') AND id!=? AND staff_id IS NULL`).all(businessId,date,Number(excludeBookingId||0));
 }
-function availabilityFor({business,date,services,partySize=1,excludeBookingId=0,staffId=null}){
+function availabilityFor({business,date,services,partySize=1,excludeBookingId=0,staffId=null,manual=false}){
   if(!date||!services?.length)return [];
   const selected=new Date(`${date}T12:00:00`);if(Number.isNaN(selected.getTime()))return [];
   const today=dateOnly(new Date());if(date<today||date>addDays(today,Number(business.booking_horizon_days||90)))return [];
@@ -121,7 +123,7 @@ function availabilityFor({business,date,services,partySize=1,excludeBookingId=0,
   const duration=services.reduce((sum,x)=>sum+Number(x.duration_min||0),0)*Math.max(1,Math.min(10,Number(partySize)||1));
   const busy=activeBookingsForDate(business.id,date,excludeBookingId,staffId),blocks=db.prepare('SELECT start_time,end_time FROM blocks WHERE business_id=? AND date=? AND all_day=0').all(business.id,date),occupied=[...busy,...blocks];
   const step=Math.max(5,Number(business.slot_interval_min||30)),start=toMinutes(sch.start_time),end=toMinutes(sch.end_time),out=[];
-  for(let m=start;m+duration<=end;m+=step){const finish=m+duration,overlaps=occupied.some(x=>m<toMinutes(x.end_time||'23:59')&&finish>toMinutes(x.start_time||'00:00'));if(!overlaps){const startIso=new Date(`${date}T${fromMinutes(m)}:00-03:00`);if(startIso.getTime()>Date.now()+Math.max(0,Number(business.booking_notice_min||120))*60*1000)out.push(fromMinutes(m))}}
+  for(let m=start;m+duration<=end;m+=step){const finish=m+duration,overlaps=occupied.some(x=>m<toMinutes(x.end_time||'23:59')&&finish>toMinutes(x.start_time||'00:00'));if(!overlaps){const startIso=new Date(`${date}T${fromMinutes(m)}:00-03:00`);if(startIso.getTime()>Date.now()+Math.max(0,Number(manual?0:business.booking_notice_min||120))*60*1000)out.push(fromMinutes(m))}}
   return out;
 }
 function calculatePayment(business,totalCents){
@@ -362,7 +364,7 @@ app.patch('/api/businesses/:id/bookings/:bid',auth,(req,res)=>{
   const items=db.prepare(`SELECT s.* FROM booking_items bi JOIN services s ON s.id=bi.service_id WHERE bi.booking_id=? ORDER BY bi.id`).all(current.id);
   if(!items.length)return res.status(409).json({error:'El turno no tiene servicios válidos para calcular su duración'});
   if(date!==current.date||startTime!==current.start_time||(!['confirmed','pending_payment'].includes(current.status)&&['confirmed','pending_payment'].includes(status))){
-    const slots=availabilityFor({business:b,date,services:items,partySize:current.party_size,excludeBookingId:current.id,staffId:current.staff_id||null});
+    const slots=availabilityFor({business:b,date,services:items,partySize:current.party_size,excludeBookingId:current.id,staffId:current.staff_id||null,manual:current.booking_source==='manual'});
     if(!slots.includes(startTime))return res.status(409).json({error:'Ese horario no está disponible para la duración completa del turno'});
   }
   const duration=items.reduce((sum,z)=>sum+Number(z.duration_min||0),0)*Math.max(1,Number(current.party_size||1));
@@ -649,6 +651,8 @@ app.get('/api/admin/settings',auth,superOnly,(_req,res)=>res.json({trial_days:Nu
 app.put('/api/admin/settings',auth,superOnly,(req,res)=>{try{savePlatformSettings(req.body||{});res.json({ok:true})}catch(e){res.status(400).json({error:e.message})}});
 
 registerManualPayments(app,{auth,own,bookingDetails,cleanupExpiredHolds,emailBooking,emailProfessional});
+registerManualBookings(app,{auth,own,availabilityFor,bookingDetails,getBusinessPlan,staffCanDoServices});
+registerPlatformSupport(app,{auth,superOnly});
 export const featureWorker=registerFeatures(app,{auth,own,availabilityFor,bookingDetails,staffCanDoServices});
 
 app.use('/api',(_req,res)=>res.status(404).json({error:'Ruta no encontrada'}));
