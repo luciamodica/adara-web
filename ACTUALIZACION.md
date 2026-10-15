@@ -1,3 +1,55 @@
+# Meta Pixel para el Home de Adara Web
+
+## Activación
+
+1. Aplicar los archivos y esperar el despliegue de Render.
+2. Entrar a **Super Admin → Configuración → Meta Pixel del Home de Adara**.
+3. Pegar sólo el ID numérico del Pixel/conjunto de datos de Adara, marcar **Activar Meta Pixel del Home** y guardar. No pegar código HTML, access token ni client secret.
+4. En el Home, abrir **Preferencias de medición**, aceptar **Publicidad (Meta Pixel)** y guardar la selección, o aceptar todo.
+5. En el Administrador de eventos de Meta, consultar **Probar eventos** para ese Pixel y abrir el Home. Verificar PageView, tocar crear cuenta y verificar RegistrationStart. CompleteRegistration sólo debe aparecer después de que la API cree una cuenta correctamente.
+
+La configuración es independiente de Google Analytics y de los IDs de cada profesional. No exige nuevas variables de Render, credenciales de WhatsApp ni dependencias.
+
+## Eventos y consentimiento
+
+| Acción | Evento de Meta |
+| --- | --- |
+| Visita al Home o al registro | PageView |
+| Clic del Home para iniciar el registro | RegistrationStart (personalizado) |
+| Cuenta creada por la API, antes de verificar el email | CompleteRegistration |
+
+No representa contratación pagada, suscripción aprobada ni verificación de email. No se envía ningún evento Purchase.
+
+El aviso permite elegir **Estadísticas (Google Analytics)** y **Publicidad (Meta Pixel)** por separado. La aceptación anterior de Analytics no activa Meta. Se puede rechazar o cambiar la elección en Preferencias de medición. No se carga ningún archivo de Meta antes de consentir. Al rechazar o salir del Home/registro, se elimina el documento del Pixel.
+
+La etiqueta queda en un documento propio, con la URL limitada a `/` o `/registro`, configuración automática desactivada y sin asociación avanzada de datos de los formularios. Los eventos escritos por Adara no incluyen nombre, email, teléfono, contraseña, token o importes pagados. Los paneles, reservas y páginas de profesionales no reciben el Pixel de la plataforma. Las solicitudes del propio SDK de Meta pueden incluir identificadores del navegador, cookies y datos técnicos de conexión, como parte del servicio externo autorizado.
+
+Guardar la configuración no confirma la entrega a Meta. Hay que comprobarla en el Administrador de eventos después del despliegue, con un ID válido y consentimiento. Los bloqueadores pueden impedir la carga.
+
+## Información de privacidad del Home
+
+Revisar la sección de cookies de la política publicada en el Super Admin. Este texto describe el nuevo funcionamiento; los textos ya publicados y sus registros de aceptación no se alteran automáticamente con esta actualización:
+
+> En el Home y el registro de Adara Web podés elegir por separado Estadísticas (Google Analytics) y Publicidad (Meta Pixel). Analytics mide visitas, clics y creación de cuentas. Meta Pixel permite medir resultados de anuncios y crear públicos de publicidad en Instagram y Facebook. Estas herramientas sólo cargan después de tu autorización correspondiente. Pueden tratar datos técnicos de navegación y conexión e identificadores de cookies, conforme a las condiciones de Google y Meta. Adara no incluye nombre, email, teléfono o contraseña de los formularios en esos eventos. Rechazar no impide usar el sitio. Podés cambiar tus elecciones en Preferencias de medición. Las páginas de los profesionales tienen sus propias configuraciones y elecciones de consentimiento.
+
+## Aplicar
+
+Reemplazar **src**, **server**, **tests**, **package.json** y **ACTUALIZACION.md**. Conservar `.env`, base de datos e imágenes subidas.
+
+```powershell
+npm run build
+npm test
+git add src server tests package.json ACTUALIZACION.md
+git commit -m "Agregar Meta Pixel al Home de Adara"
+git push
+```
+
+Validación local: build y 1.895 comprobaciones, incluidas 131 de Meta Pixel del Home. Se validan permisos, guardado atómico, IDs, consentimiento separado, preferencia anterior, eventos, carga por HTTP, URLs sin datos privados, eliminación de etiquetas y convivencia con Analytics. El SDK externo se simula en las pruebas: no se envían eventos reales a Meta durante las pruebas locales.
+
+Fuentes técnicas: implementación oficial de Meta en https://github.com/facebook/GoogleTagManager-WebTemplate-For-FacebookPixel/blob/main/template.tpl (consent, autoConfig, disablePushState, trackSingle y trackSingleCustom).
+
+---
+
 # Ajuste de carga de Google Analytics del Home
 
 La configuración y el ID ya guardados se conservan. No hay que crear otra propiedad ni cambiar variables de Render.
