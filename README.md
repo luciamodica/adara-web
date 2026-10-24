@@ -4,6 +4,17 @@ Plataforma SaaS para negocios de belleza. El plan Individual incluye una sola pr
 
 ## Portada y registro
 
+### Plan Inicial y experiencia de reservas
+
+- **Adara Inicial:** $9.900 por mes o $99.000 por año, una agenda, hasta diez servicios, plantillas esenciales y reseñas moderadas. Promociones, cupones, novedades y herramientas avanzadas se habilitan desde Individual. La incorporación del plan se hace una sola vez y conserva posteriores cambios del administrador.
+- El formulario de servicios permite usar el intervalo de la agenda como duración automática. Los servicios existentes mantienen sus minutos explícitos. Cambiar el intervalo actualiza los servicios automáticos para futuras reservas y conserva la duración guardada en turnos anteriores.
+- Las nuevas reservas grupales piden nombre, WhatsApp, email según la configuración del negocio y horario por persona, para una única fecha. Los horarios pueden estar separados; sólo se ocupan los intervalos elegidos. Los datos se guardan en las fichas de clientes y se muestran en Turnos.
+- El grupo conserva un único total, pago y enlace privado. Su confirmación, vencimiento, cancelación y reprogramación se aplican en conjunto. Reprogramar mueve todos los horarios con la misma separación y valida cada espacio antes de guardar. Las reservas antiguas de varias personas conservan su comportamiento anterior.
+- Cada reseña se recibe pendiente. Desde **Reseñas de clientas**, la profesional puede publicarla u ocultarla. La página pública muestra únicamente las aprobadas, con nombre, calificación y comentario; el envío solicita consentimiento y limita repeticiones.
+- La página de reservas incorpora menú móvil, promociones y novedades compactas, imágenes ampliables completas y controles de contraseña en ingreso, registro y recuperación.
+
+Las comprobaciones de estas funciones están en `tests/customer-experience.integration.mjs` y forman parte de `npm test`. Los proveedores de pago y avisos se simulan durante las pruebas.
+
 - La portada permite elegir un servicio, un día y un horario en una demostración interactiva. El resultado muestra la confirmación del cliente y un resumen para la agenda. Son datos de ejemplo: no se crean reservas ni se contactan las APIs de pagos.
 - El registro presenta primero los datos de la cuenta y resume el plan de prueba. **Cambiar plan** permite elegir otro plan o período, conservando también las selecciones de los enlaces de precios.
 - Los planes, importes y días de prueba se consultan desde la configuración pública de la plataforma. Si falla la carga de planes se ofrece un reintento; el envío muestra su estado y evita nuevos intentos mientras está pendiente.
