@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import industries from '../shared/industries.json' with {type:'json'};
+import integrations from '../shared/integrations.json' with {type:'json'};
 
 export {industries};
 export const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -16,7 +17,7 @@ export function marketingDocument(template,{origin,industry=null}){
  const html=template.replace(/<title>[\s\S]*?<\/title>/i,`<title>${escapeHtml(title)}</title>`).replace(/<meta\s+name="description"[^>]*>/i,`<meta name="description" content="${escapeHtml(description)}" />`);
  const breadcrumb=industry?{'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:[{'@type':'ListItem',position:1,name:'Adara Web',item:origin+'/'},{'@type':'ListItem',position:2,name:industry.label,item:url}]}:{'@context':'https://schema.org','@type':'WebSite',name:'Adara Web',url:origin+'/'};
  const metadata=`<link rel="canonical" href="${escapeHtml(url)}" /><meta property="og:type" content="website" /><meta property="og:title" content="${escapeHtml(title)}" /><meta property="og:description" content="${escapeHtml(description)}" /><meta property="og:url" content="${escapeHtml(url)}" /><meta property="og:image" content="${escapeHtml(origin+'/images/adara-blue-logo.png')}" /><script type="application/ld+json">${JSON.stringify(breadcrumb).replace(/</g,'\\u003c')}</script>`;
- const homeMarkup='<main class="industryContext"><h1>Tu web. Tus turnos. Todo en un solo lugar.</h1><p>Adara Web reúne tu página profesional, reservas online y gestión de tu negocio. Conocé nuestros planes y empezá tu prueba sin tarjeta.</p><a href="/registro">Crear mi cuenta</a><nav aria-label="Adara por rubro">'+industries.map(i=>`<a href="/para/${i.slug}">Agenda para ${escapeHtml(i.label.toLowerCase())}</a>`).join(' ')+'</nav></main>';
+ const homeMarkup='<main class="industryContext"><h1>Tu web. Tus turnos. Todo en un solo lugar.</h1><p>Adara Web reúne tu página profesional, reservas online y gestión de tu negocio. Conocé nuestros planes y empezá tu prueba sin tarjeta.</p><a href="/registro">Crear mi cuenta</a><nav aria-label="Adara por rubro">'+industries.map(i=>`<a href="/para/${i.slug}">Agenda para ${escapeHtml(i.label.toLowerCase())}</a>`).join(' ')+'</nav><section id="integraciones"><h2>Tus herramientas, en un mismo lugar.</h2><ul>'+integrations.map(item=>`<li><strong>${escapeHtml(item.name)}</strong>: ${escapeHtml(item.description)}</li>`).join('')+'</ul><p>Google Calendar, recordatorios y medición: desde el plan Individual. Las integraciones requieren configuración y conexión según el servicio; el envío automático de WhatsApp requiere WhatsApp Business y plantillas aprobadas. Las etiquetas de medición se cargan con consentimiento.</p><a href="/#planes">Ver planes</a></section></main>';
  return html.replace('</head>',metadata+'</head>').replace('<div id="root"></div>','<div id="root">'+(industry?industryMarkup(industry):homeMarkup)+'</div>');
 }
 export function registerMarketingPages(app,{distDir,frontendUrl,enabled}){
