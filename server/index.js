@@ -1,4 +1,8 @@
 import './production-env.js';
+import {registerGrowth,markSetup} from './growth.js';
+import {registerTestimonials} from './testimonials.js';
+import {registerClientImports} from './client-imports.js';
+import {registerMarketingPages} from './marketing-pages.js';
 import {registerReviews} from './reviews.js';
 import {participantsFor,groupSelection,validateGroupAvailability,storeParticipants,shiftedGroup,moveParticipants} from './group-bookings.js';
 import {registerHomeMeta} from './home-meta-tag.js';
@@ -80,6 +84,9 @@ const nowIso=()=>new Date().toISOString();
 app.use('/api/businesses/:id',auth,(req,res,next)=>{const b=own(req.user.sub,req.params.id);if(b&&getBusinessPlan(b).basic_only&&/^\/(promotions|posts|coupons|tools)(\/|$)/.test(req.path))return res.status(403).json({error:'Esta herramienta está disponible desde Adara Individual.'});next()});
 registerReviews(app,{auth,own});
 export const billingWorker=registerPlatformBilling(app,{auth,own,superOnly,getBusinessPlan,publicPlan});
+registerGrowth(app,{auth,own,superOnly,billingAccess});
+registerTestimonials(app,{auth,superOnly});
+registerClientImports(app,{auth,own});
 const dateOnly=d=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Argentina/Buenos_Aires',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(d));
 const toMinutes=t=>{const[a,b]=String(t||'00:00').split(':').map(Number);return a*60+b};
 const fromMinutes=m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
@@ -418,7 +425,7 @@ app.put('/api/businesses/:id/staff/:sid',auth,(req,res)=>{
 });
 app.put('/api/businesses/:id/staff/:sid/schedule',auth,(req,res)=>{
   const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);const person=db.prepare('SELECT * FROM staff WHERE id=? AND business_id=?').get(req.params.sid,b.id);if(!person)return res.sendStatus(404);const rows=Array.isArray(req.body?.schedule)?req.body.schedule:[];
-  const tx=db.transaction(()=>{for(const row of rows){if(Number(row.weekday)<0||Number(row.weekday)>6)continue;db.prepare(`INSERT INTO staff_schedules(staff_id,weekday,start_time,end_time,active) VALUES(?,?,?,?,?) ON CONFLICT(staff_id,weekday) DO UPDATE SET start_time=excluded.start_time,end_time=excluded.end_time,active=excluded.active`).run(person.id,Number(row.weekday),row.start_time||'09:00',row.end_time||'18:00',row.active?1:0)}});tx();res.json({ok:true});
+  const tx=db.transaction(()=>{for(const row of rows){if(Number(row.weekday)<0||Number(row.weekday)>6)continue;db.prepare(`INSERT INTO staff_schedules(staff_id,weekday,start_time,end_time,active) VALUES(?,?,?,?,?) ON CONFLICT(staff_id,weekday) DO UPDATE SET start_time=excluded.start_time,end_time=excluded.end_time,active=excluded.active`).run(person.id,Number(row.weekday),row.start_time||'09:00',row.end_time||'18:00',row.active?1:0)}});tx();markSetup(b.id,'schedule',{staff:true});res.json({ok:true});
 });
 app.delete('/api/businesses/:id/staff/:sid',auth,(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);db.prepare('UPDATE staff SET active=0 WHERE id=? AND business_id=?').run(req.params.sid,b.id);res.json({ok:true})});
 
@@ -428,7 +435,7 @@ app.get('/api/businesses/:id/schedule',auth,(req,res)=>{
 app.put('/api/businesses/:id/schedule',auth,(req,res)=>{
   const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);const rows=Array.isArray(req.body?.schedule)?req.body.schedule:[];
   let interval;try{interval=validateSlotInterval(req.body?.slot_interval_min,b.slot_interval_min)}catch(e){return res.status(400).json({error:e.message})}
-  const tx=db.transaction(()=>{for(const row of rows){if(Number(row.weekday)<0||Number(row.weekday)>6)continue;db.prepare(`INSERT INTO schedules(business_id,weekday,start_time,end_time,active) VALUES(?,?,?,?,?) ON CONFLICT(business_id,weekday) DO UPDATE SET start_time=excluded.start_time,end_time=excluded.end_time,active=excluded.active`).run(b.id,Number(row.weekday),row.start_time||'09:00',row.end_time||'18:00',row.active?1:0)}db.prepare('UPDATE businesses SET slot_interval_min=?,booking_horizon_days=? WHERE id=?').run(interval,Math.max(7,Math.min(365,Number(req.body?.booking_horizon_days||90))),b.id);db.prepare('UPDATE services SET duration_min=? WHERE business_id=? AND duration_auto=1').run(interval,b.id)});tx();res.json({ok:true})
+  const tx=db.transaction(()=>{for(const row of rows){if(Number(row.weekday)<0||Number(row.weekday)>6)continue;db.prepare(`INSERT INTO schedules(business_id,weekday,start_time,end_time,active) VALUES(?,?,?,?,?) ON CONFLICT(business_id,weekday) DO UPDATE SET start_time=excluded.start_time,end_time=excluded.end_time,active=excluded.active`).run(b.id,Number(row.weekday),row.start_time||'09:00',row.end_time||'18:00',row.active?1:0)}db.prepare('UPDATE businesses SET slot_interval_min=?,booking_horizon_days=? WHERE id=?').run(interval,Math.max(7,Math.min(365,Number(req.body?.booking_horizon_days||90))),b.id);db.prepare('UPDATE services SET duration_min=? WHERE business_id=? AND duration_auto=1').run(interval,b.id)});tx();markSetup(b.id,'schedule');res.json({ok:true})
 });
 app.post('/api/businesses/:id/blocks',auth,(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);const x=req.body||{};if(!validDate(x.date))return res.status(400).json({error:'Elegí una fecha válida'});if(!x.all_day&&(!validTime(x.start_time)||!validTime(x.end_time)||x.start_time>=x.end_time))return res.status(400).json({error:'El horario hasta debe ser posterior al horario desde'});const r=db.prepare('INSERT INTO blocks(business_id,date,start_time,end_time,all_day,reason) VALUES(?,?,?,?,?,?)').run(b.id,x.date,x.all_day?null:x.start_time||null,x.all_day?null:x.end_time||null,x.all_day?1:0,x.reason||'');res.json({id:r.lastInsertRowid})});
 app.delete('/api/businesses/:id/blocks/:bid',auth,(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);db.prepare('DELETE FROM blocks WHERE id=? AND business_id=?').run(req.params.bid,b.id);res.json({ok:true})});
@@ -467,7 +474,7 @@ app.get('/api/businesses/:id/payment-settings',auth,(req,res)=>{
 });
 app.put('/api/businesses/:id/payment-settings',auth,(req,res)=>{
  const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);const x=req.body||{};
- try{if(!['none','deposit','total'].includes(x.payment_mode))throw new Error('Modalidad de cobro inválida');if(!['fixed','percent'].includes(x.deposit_type||'fixed'))throw new Error('Tipo de seña inválido');let value=Number(x.deposit_value||0);if(!Number.isFinite(value)||value<0||(x.deposit_type==='percent'&&value>100))throw new Error('Revisá el importe de seña');value=x.deposit_type==='percent'?Math.round(value):cents(value);const holdMinutes=Number(x.payment_hold_minutes??b.payment_hold_minutes);if(!Number.isInteger(holdMinutes)||holdMinutes<5||holdMinutes>1440)throw new Error('Elegí un plazo de pago entre 5 y 1440 minutos (24 horas)');const m=validatePaymentSettings(b,x);db.prepare('UPDATE businesses SET payment_mode=?,deposit_type=?,deposit_value=?,payment_hold_minutes=?,payment_methods_json=?,bank_alias=?,bank_account=?,bank_holder=?,bank_name=?,bank_instructions=? WHERE id=?').run(x.payment_mode,x.deposit_type||'fixed',value,holdMinutes,JSON.stringify(m.methods),m.alias,m.account,m.holder,m.bank,m.instructions,b.id);res.json({ok:true})}catch(e){res.status(400).json({error:e.message})}
+ try{if(!['none','deposit','total'].includes(x.payment_mode))throw new Error('Modalidad de cobro inválida');if(!['fixed','percent'].includes(x.deposit_type||'fixed'))throw new Error('Tipo de seña inválido');let value=Number(x.deposit_value||0);if(!Number.isFinite(value)||value<0||(x.deposit_type==='percent'&&value>100))throw new Error('Revisá el importe de seña');value=x.deposit_type==='percent'?Math.round(value):cents(value);const holdMinutes=Number(x.payment_hold_minutes??b.payment_hold_minutes);if(!Number.isInteger(holdMinutes)||holdMinutes<5||holdMinutes>1440)throw new Error('Elegí un plazo de pago entre 5 y 1440 minutos (24 horas)');const m=validatePaymentSettings(b,x);db.prepare('UPDATE businesses SET payment_mode=?,deposit_type=?,deposit_value=?,payment_hold_minutes=?,payment_methods_json=?,bank_alias=?,bank_account=?,bank_holder=?,bank_name=?,bank_instructions=? WHERE id=?').run(x.payment_mode,x.deposit_type||'fixed',value,holdMinutes,JSON.stringify(m.methods),m.alias,m.account,m.holder,m.bank,m.instructions,b.id);markSetup(b.id,'payment');res.json({ok:true})}catch(e){res.status(400).json({error:e.message})}
 });
 app.get('/api/businesses/:id/mercadopago/connect',auth,(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);if(!oauthConfigured())return res.status(503).json({error:'Mercado Pago OAuth todavía no está configurado en .env'});res.json({url:authorizationUrl(stateToken(b.id,Number(req.user.sub)))})});
 app.delete('/api/businesses/:id/mercadopago',auth,(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);db.prepare('UPDATE businesses SET mp_access_token_enc=NULL,mp_refresh_token_enc=NULL,mp_token_expires_at=NULL,mp_user_id=NULL,mp_connected_at=NULL WHERE id=?').run(b.id);res.json({ok:true})});
@@ -673,6 +680,7 @@ registerManualBookings(app,{auth,own,availabilityFor,bookingDetails,getBusinessP
 registerPlatformSupport(app,{auth,superOnly});
 export const featureWorker=registerFeatures(app,{auth,own,availabilityFor,bookingDetails,staffCanDoServices});
 
+registerMarketingPages(app,{distDir,frontendUrl:FRONTEND_URL,enabled:PRODUCTION});
 app.use('/api',(_req,res)=>res.status(404).json({error:'Ruta no encontrada'}));
 if(PRODUCTION){
   app.use(express.static(distDir,{index:false,dotfiles:'deny',setHeaders:(res,file)=>res.set('Cache-Control',file.includes(`${path.sep}assets${path.sep}`)?'public, max-age=31536000, immutable':'no-cache')}));

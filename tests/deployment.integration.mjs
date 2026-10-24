@@ -67,7 +67,7 @@ if(process.argv.includes('--child')) {
     const home=await fetch(base+'/');check(()=>assert.equal(home.status,200));check(()=>assert.match(home.headers.get('content-type'),/text\/html/));
     const html=await home.text();const script=html.match(/src="([^"]+\.js)"/)[1];
     const asset=await fetch(base+script);check(()=>assert.equal(asset.status,200));check(()=>assert.match(asset.headers.get('cache-control'),/immutable/));
-    const deep=await fetch(base+'/reservar/estudio');const deepHtml=await deep.text();check(()=>assert.equal(deep.status,200));check(()=>assert.equal(deepHtml,html));
+    const deep=await fetch(base+'/reservar/estudio');const deepHtml=await deep.text();check(()=>assert.equal(deep.status,200));check(()=>assert.ok(deepHtml.includes(script)));
     await request('/api/missing', 'GET',undefined,'',404);
     for(const route of ['/uploads/missing.png','/app.db','/.env','/assets/missing.js']){const response=await fetch(base+route);check(()=>assert.equal(response.status,404));}
     await request('/api/auth/login','POST',{email:baseEnv.SUPERADMIN_EMAIL,password:'admin1234'},'',401);
@@ -105,7 +105,7 @@ if(process.argv.includes('--child')) {
     fs.writeFileSync(path.join(data,'transfer-receipts','private-fixture'),'%PDF- private fixture');
     const hidden=await fetch(base+'/uploads/transfer-receipts/private-fixture');check(()=>assert.equal(hidden.status,404));
     const privatePage=await fetch(base+'/transfer-receipts/private-fixture'),privateHtml=await privatePage.text();check(()=>assert.equal(privatePage.status,200)); // SPA only, never the receipt bytes.
-    check(()=>assert.equal(privateHtml,html));
+    check(()=>assert.equal(privateHtml,deepHtml));
     const backup=spawnSync(process.execPath,[path.join(project,'server/backup.js')],{cwd:work,env:baseEnv,encoding:'utf8'});
     check(()=>assert.equal(backup.status,0,backup.stderr));
     const backups=fs.readdirSync(path.join(data,'backups'));check(()=>assert.equal(backups.length,1));
