@@ -75,9 +75,12 @@ try{
  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Argentina/Buenos_Aires',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
  db.prepare('UPDATE businesses SET booking_notice_min=1440 WHERE id=?').run(two.b.id);
  await req('/businesses/'+two.b.id+'/tools/exceptions','POST',{date:today,closed:false,start_time:'00:00',end_time:'23:59'},two.cookie);
+ const realNow=Date.now;Date.now=()=>Date.parse(today+'T12:00:00-03:00');
+ try{
  const internalSlots=(await req('/businesses/'+two.b.id+'/manual-bookings/availability','POST',{serviceIds:[foreign],date:today},two.cookie)).data.slots,publicSlots=(await req('/public/'+two.b.slug+'/availability?date='+today+'&serviceIds='+foreign)).data.slots;
  check(()=>assert.ok(internalSlots.length>0));check(()=>assert.equal(publicSlots.length,0));
  await req('/businesses/'+two.b.id+'/manual-bookings','POST',{serviceIds:[foreign],date:today,time:internalSlots[0],clientName:'En persona'},two.cookie,201);
+ }finally{Date.now=realNow}
  // QR drafts are independent, validated atomically, and stay readable.
  const initial=(await req(root+'/tools/qr','GET',undefined,one.cookie)).data;
  const settings={color_mode:'custom',primary:'#ffffff',accent:'#e9c5e0',background:'#121826',text_color:'#121826',font:'editorial',layout:'frame',background_image:'/images/beauty-example.jpeg',overlay:80,logo_size:200,show_logo_in_code:false};

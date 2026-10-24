@@ -407,3 +407,33 @@ export function getSetting(key, fallback='') {
 export function getPlan(slug) {
   return db.prepare('SELECT * FROM plans WHERE slug=? AND active=1').get(slug);
 }
+
+// Additive migration: existing services keep their explicit duration and plans.
+addColumn('services','duration_auto','INTEGER NOT NULL DEFAULT 0');
+addColumn('plans','basic_only','INTEGER NOT NULL DEFAULT 0');
+db.exec(`
+CREATE TABLE IF NOT EXISTS booking_participants(
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ booking_id INTEGER NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+ client_id INTEGER NOT NULL REFERENCES clients(id),
+ position INTEGER NOT NULL, name TEXT NOT NULL, phone TEXT NOT NULL, email TEXT,
+ start_time TEXT NOT NULL, end_time TEXT NOT NULL,
+ UNIQUE(booking_id,position)
+);
+CREATE INDEX IF NOT EXISTS booking_participants_booking ON booking_participants(booking_id);
+CREATE INDEX IF NOT EXISTS booking_participants_client ON booking_participants(client_id);
+CREATE TABLE IF NOT EXISTS client_reviews(
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ business_id INTEGER NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+ name TEXT NOT NULL, rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
+ body TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','published','hidden')),
+ created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS client_reviews_business ON client_reviews(business_id,status,created_at);
+CREATE TABLE IF NOT EXISTS review_submit_limits(key TEXT PRIMARY KEY, count INTEGER NOT NULL, expires_at INTEGER NOT NULL);
+`);
+if(!getSetting('starter_plan_added'))db.transaction(()=>{
+ db.prepare(`INSERT OR IGNORE INTO plans(slug,name,description,monthly_price_cents,annual_price_cents,max_services,max_promotions,max_posts,max_coupons,analytics_enabled,template_level,features_json,active,public_enabled,highlighted,display_order,max_staff,team_enabled,basic_only)
+ VALUES('adara-inicial','Adara Inicial','Para empezar con tu página y una agenda, con lo esencial.',990000,9900000,10,0,0,0,0,1,?,1,1,0,0,1,0,1)`).run(JSON.stringify(['Página con tu marca','Una agenda y reservas online','Hasta 10 servicios con imágenes','Plantillas esenciales','Clientes y reseñas moderadas','Cobros en tu cuenta','Sin promociones, cupones ni novedades']));
+ db.prepare("INSERT INTO platform_settings(key,value) VALUES('starter_plan_added','1')").run();
+})();

@@ -4,7 +4,7 @@ import {validDate} from './calendar-periods.js';
 const day=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Argentina/Buenos_Aires',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const idsOf=p=>{try{return JSON.parse(p.service_ids_json||'[]')}catch{return []}};
 export function publicPromotion(p){
- const ids=idsOf(p),services=ids.map(id=>db.prepare('SELECT id,name,price_cents,duration_min FROM services WHERE id=? AND business_id=? AND active=1').get(id,p.business_id));
+ const ids=idsOf(p),services=ids.map(id=>db.prepare('SELECT id,name,price_cents,duration_min,duration_auto FROM services WHERE id=? AND business_id=? AND active=1').get(id,p.business_id));
  const available=ids.length>0&&services.every(Boolean),base=available?services.reduce((s,x)=>s+x.price_cents,0):null;
  const after=p.pricing_mode==='fixed'?p.price_after_cents:base===null?null:base-Math.round(base*p.discount_percent/100);
  const before=p.price_before_cents??base;

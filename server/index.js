@@ -1,6 +1,8 @@
+import './production-env.js';
+import {registerReviews} from './reviews.js';
+import {participantsFor,groupSelection,validateGroupAvailability,storeParticipants,shiftedGroup,moveParticipants} from './group-bookings.js';
 import {registerHomeMeta} from './home-meta-tag.js';
 import {registerHomeAnalytics} from './home-analytics-tag.js';
-import './production-env.js';
 import {registerManualBookings} from './manual-bookings.js';
 import {registerPlatformSupport} from './platform-support.js';
 import {registerAccountSecurity} from './account-security.js';
@@ -75,6 +77,8 @@ const publicPlan=p=>({...p,features:safeJson(p.features_json,[])});
 const safeJson=(x,fallback)=>{try{return JSON.parse(x)}catch{return fallback}};
 const cents=x=>Math.max(0,Math.round(Number(x||0)*100));
 const nowIso=()=>new Date().toISOString();
+app.use('/api/businesses/:id',auth,(req,res,next)=>{const b=own(req.user.sub,req.params.id);if(b&&getBusinessPlan(b).basic_only&&/^\/(promotions|posts|coupons|tools)(\/|$)/.test(req.path))return res.status(403).json({error:'Esta herramienta está disponible desde Adara Individual.'});next()});
+registerReviews(app,{auth,own});
 export const billingWorker=registerPlatformBilling(app,{auth,own,superOnly,getBusinessPlan,publicPlan});
 const dateOnly=d=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Argentina/Buenos_Aires',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(d));
 const toMinutes=t=>{const[a,b]=String(t||'00:00').split(':').map(Number);return a*60+b};
@@ -108,8 +112,8 @@ function staffServices(staffId){return db.prepare('SELECT service_id FROM staff_
 function staffCanDoServices(staffId,serviceIds){const assigned=staffServices(staffId);if(!assigned.length)return true;return serviceIds.every(id=>assigned.includes(Number(id)))}
 function activeBookingsForDate(businessId,date,excludeBookingId=0,staffId=null){
   cleanupExpiredHolds(businessId);
-  if(staffId)return db.prepare(`SELECT start_time,end_time FROM bookings WHERE business_id=? AND date=? AND status IN ('confirmed','pending_payment') AND id!=? AND staff_id=?`).all(businessId,date,Number(excludeBookingId||0),Number(staffId));
-  return db.prepare(`SELECT start_time,end_time FROM bookings WHERE business_id=? AND date=? AND status IN ('confirmed','pending_payment') AND id!=? AND staff_id IS NULL`).all(businessId,date,Number(excludeBookingId||0));
+  if(staffId)return db.prepare(`SELECT COALESCE(bp.start_time,bk.start_time) start_time,COALESCE(bp.end_time,bk.end_time) end_time FROM bookings bk LEFT JOIN booking_participants bp ON bp.booking_id=bk.id WHERE bk.business_id=? AND bk.date=? AND bk.status IN ('confirmed','pending_payment') AND bk.id!=? AND bk.staff_id=?`).all(businessId,date,Number(excludeBookingId||0),Number(staffId));
+  return db.prepare(`SELECT COALESCE(bp.start_time,bk.start_time) start_time,COALESCE(bp.end_time,bk.end_time) end_time FROM bookings bk LEFT JOIN booking_participants bp ON bp.booking_id=bk.id WHERE bk.business_id=? AND bk.date=? AND bk.status IN ('confirmed','pending_payment') AND bk.id!=? AND bk.staff_id IS NULL`).all(businessId,date,Number(excludeBookingId||0));
 }
 function availabilityFor({business,date,services,partySize=1,excludeBookingId=0,staffId=null,manual=false}){
   if(!date||!services?.length)return [];
@@ -138,6 +142,7 @@ function calculatePayment(business,totalCents){
 }
 
 function computeQuote({business,services,partySize=1,couponCode='',promotionId,date='',packCode='',rewardCode=''}){
+  if(getBusinessPlan(business).basic_only&&(promotionId||couponCode||packCode||rewardCode))throw new Error('Promociones, cupones y beneficios avanzados están disponibles desde Adara Individual.');
   const promotion=resolvePromotion(business,services,promotionId,date);
   if(promotion&&partySize!==undefined&&!Number.isInteger(Number(partySize)))throw new Error('Elegí una cantidad entera de personas.');
   if(promotion&&(couponCode||packCode||rewardCode))throw new Error('La promoción no se combina con cupones, packs o canjes.');
@@ -179,6 +184,7 @@ function bookingDetails(id){
   const held=db.prepare('SELECT business_id FROM bookings WHERE id=?').get(id);if(held)cleanupExpiredHolds(held.business_id);
   const booking=db.prepare(`SELECT bk.*,c.name client_name,c.email client_email,c.phone client_phone,b.name business_name,b.slug business_slug,b.cancellation_hours,b.cancellation_policy,s.name staff_name FROM bookings bk JOIN clients c ON c.id=bk.client_id JOIN businesses b ON b.id=bk.business_id LEFT JOIN staff s ON s.id=bk.staff_id WHERE bk.id=?`).get(id);
   if(!booking)return null;
+  booking.participants=participantsFor(id);
   booking.items=db.prepare('SELECT * FROM booking_items WHERE booking_id=? ORDER BY id').all(id);
   booking.manage_url=booking.manage_token?`${FRONTEND_URL}/mi-reserva/${booking.manage_token}`:'';
   return decoratePayment(booking);
@@ -279,7 +285,7 @@ app.post('/api/auth/logout',(_req,res)=>res.clearCookie('session').json({ok:true
 app.get('/api/me',auth,(req,res)=>{
   const u=db.prepare('SELECT id,name,email,role,email_verified,created_at FROM users WHERE id=?').get(Number(req.user.sub));
   for(const b of db.prepare('SELECT id FROM businesses WHERE owner_id=?').all(Number(req.user.sub)))refreshBillingState(b.id);
-  const businesses=db.prepare(`SELECT b.*,p.name plan_name,p.max_services,p.max_promotions,p.max_posts,p.max_coupons,p.analytics_enabled,p.template_level,p.max_staff,p.team_enabled FROM businesses b JOIN plans p ON p.slug=b.plan_slug WHERE b.owner_id=?`).all(Number(req.user.sub));
+  const businesses=db.prepare(`SELECT b.*,p.name plan_name,p.max_services,p.max_promotions,p.max_posts,p.max_coupons,p.analytics_enabled,p.template_level,p.max_staff,p.team_enabled,p.basic_only FROM businesses b JOIN plans p ON p.slug=b.plan_slug WHERE b.owner_id=?`).all(Number(req.user.sub));
   res.json({user:u,businesses:businesses.map(b=>({...b,subscription_access:billingAccess(b)}))});
 });
 
@@ -290,11 +296,11 @@ app.get('/api/businesses/:id/dashboard',auth,(req,res)=>{
   const stats={
     services:db.prepare('SELECT count(*) n FROM services WHERE business_id=? AND active=1').get(b.id).n,
     clients:db.prepare('SELECT count(*) n FROM clients WHERE business_id=?').get(b.id).n,
-    today:db.prepare(`SELECT count(*) n FROM bookings WHERE business_id=? AND date=? AND status!='cancelled'`).get(b.id,today).n,
-    upcoming:db.prepare(`SELECT count(*) n FROM bookings WHERE business_id=? AND date>=? AND status IN ('confirmed','pending_payment')`).get(b.id,today).n,
+    today:db.prepare(`SELECT COALESCE(sum(CASE WHEN EXISTS(SELECT 1 FROM booking_participants bp WHERE bp.booking_id=bookings.id) THEN party_size ELSE 1 END),0) n FROM bookings WHERE business_id=? AND date=? AND status!='cancelled'`).get(b.id,today).n,
+    upcoming:db.prepare(`SELECT COALESCE(sum(CASE WHEN EXISTS(SELECT 1 FROM booking_participants bp WHERE bp.booking_id=bookings.id) THEN party_size ELSE 1 END),0) n FROM bookings WHERE business_id=? AND date>=? AND status IN ('confirmed','pending_payment')`).get(b.id,today).n,
     paid_cents:db.prepare(`SELECT COALESCE(sum(amount_paid_cents),0) n FROM bookings WHERE business_id=? AND payment_status='approved'`).get(b.id).n
   };
-  const upcoming=db.prepare(`SELECT bk.*,c.name client FROM bookings bk JOIN clients c ON c.id=bk.client_id WHERE bk.business_id=? AND bk.date>=? AND bk.status IN ('confirmed','pending_payment') ORDER BY bk.date,bk.start_time LIMIT 10`).all(b.id,today).map(x=>({...x,items:db.prepare('SELECT service_name FROM booking_items WHERE booking_id=?').all(x.id).map(i=>i.service_name)}));
+  const upcoming=db.prepare(`SELECT bk.*,c.name client FROM bookings bk JOIN clients c ON c.id=bk.client_id WHERE bk.business_id=? AND bk.date>=? AND bk.status IN ('confirmed','pending_payment') ORDER BY bk.date,bk.start_time LIMIT 10`).all(b.id,today).map(x=>({...x,participants:participantsFor(x.id),items:db.prepare('SELECT service_name FROM booking_items WHERE booking_id=?').all(x.id).map(i=>i.service_name)}));
   res.json({business:b,plan:publicPlan(getBusinessPlan(b)),stats,upcoming});
 });
 
@@ -302,15 +308,20 @@ app.get('/api/businesses/:id/services',auth,(req,res)=>{const b=own(req.user.sub
 app.post('/api/businesses/:id/services',auth,(req,res)=>{
   const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);if(!enforceCountLimit(res,b,'services','max_services'))return;
   const x=req.body||{};if(!x.name)return res.status(400).json({error:'Escribí el nombre del servicio'});
+  const auto=x.duration_auto===true||x.duration_auto===1;
+  if(x.duration_auto!==undefined&&![true,false,0,1].includes(x.duration_auto))return res.status(400).json({error:'Revisá la duración automática.'});
   let images;try{images=galleryFromRequest(x,'images','image_url')}catch(e){return res.status(400).json({error:e.message})}
-  const r=db.prepare(`INSERT INTO services(business_id,name,description,image_url,price_cents,duration_min,active,group_discount_enabled,group_min_people,group_discount_percent,images_json) VALUES(?,?,?,?,?,?,1,?,?,?,?)`).run(b.id,String(x.name).trim(),x.description||'',images[0]||'',cents(x.price),Math.max(5,Number(x.duration||60)),x.group_discount_enabled?1:0,Math.max(2,Number(x.group_min_people||2)),Math.max(0,Math.min(100,Number(x.group_discount_percent||0))),JSON.stringify(images));
+  const r=db.prepare(`INSERT INTO services(business_id,name,description,image_url,price_cents,duration_min,active,group_discount_enabled,group_min_people,group_discount_percent,images_json) VALUES(?,?,?,?,?,?,1,?,?,?,?)`).run(b.id,String(x.name).trim(),x.description||'',images[0]||'',cents(x.price),auto?Number(b.slot_interval_min||30):Math.max(5,Number(x.duration||60)),x.group_discount_enabled?1:0,Math.max(2,Number(x.group_min_people||2)),Math.max(0,Math.min(100,Number(x.group_discount_percent||0))),JSON.stringify(images));
+  db.prepare('UPDATE services SET duration_auto=? WHERE id=?').run(auto?1:0,r.lastInsertRowid);
   res.json({id:r.lastInsertRowid});
 });
 app.put('/api/businesses/:id/services/:sid',auth,(req,res)=>{
   const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);const x=req.body||{},current=db.prepare('SELECT * FROM services WHERE id=? AND business_id=?').get(req.params.sid,b.id);if(!current)return res.status(404).json({error:'Servicio no encontrado'});
+  const auto=x.duration_auto===undefined?Boolean(current.duration_auto):x.duration_auto===true||x.duration_auto===1;
+  if(x.duration_auto!==undefined&&![true,false,0,1].includes(x.duration_auto))return res.status(400).json({error:'Revisá la duración automática.'});
   let images;try{images=galleryFromRequest(x,'images','image_url',current)}catch(e){return res.status(400).json({error:e.message})}
   if(!String(x.name||'').trim())return res.status(400).json({error:'Escribí el nombre del servicio'});
-  db.prepare(`UPDATE services SET name=?,description=?,image_url=?,price_cents=?,duration_min=?,active=?,group_discount_enabled=?,group_min_people=?,group_discount_percent=?,images_json=? WHERE id=? AND business_id=?`).run(x.name,x.description||'',images[0]||'',cents(x.price),Math.max(5,Number(x.duration||60)),x.active===false?0:1,x.group_discount_enabled?1:0,Math.max(2,Number(x.group_min_people||2)),Math.max(0,Math.min(100,Number(x.group_discount_percent||0))),JSON.stringify(images),req.params.sid,b.id);res.json({ok:true});
+  db.prepare(`UPDATE services SET name=?,description=?,image_url=?,price_cents=?,duration_min=?,active=?,group_discount_enabled=?,group_min_people=?,group_discount_percent=?,images_json=? WHERE id=? AND business_id=?`).run(x.name,x.description||'',images[0]||'',cents(x.price),auto?Number(b.slot_interval_min||30):Math.max(5,Number(x.duration||60)),x.active===false?0:1,x.group_discount_enabled?1:0,Math.max(2,Number(x.group_min_people||2)),Math.max(0,Math.min(100,Number(x.group_discount_percent||0))),JSON.stringify(images),req.params.sid,b.id);db.prepare('UPDATE services SET duration_auto=? WHERE id=? AND business_id=?').run(auto?1:0,req.params.sid,b.id);res.json({ok:true});
 });
 app.delete('/api/businesses/:id/services/:sid',auth,(req,res)=>{
   const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);
@@ -344,14 +355,14 @@ app.post('/api/businesses/:id/upload',auth,(req,res,next)=>upload.single('image'
 
 app.get('/api/businesses/:id/clients',auth,(req,res)=>{
   const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);
-  const rows=db.prepare(`SELECT c.*,COUNT(bk.id) booking_count,MAX(bk.date) last_booking,COALESCE(SUM(CASE WHEN bk.payment_status='approved' THEN bk.amount_paid_cents ELSE 0 END),0) paid_cents FROM clients c LEFT JOIN bookings bk ON bk.client_id=c.id WHERE c.business_id=? GROUP BY c.id ORDER BY c.id DESC`).all(b.id);
+  const rows=db.prepare(`SELECT c.*,COUNT(bk.id) booking_count,MAX(bk.date) last_booking,COALESCE(SUM(CASE WHEN bk.payment_status='approved' THEN CASE WHEN EXISTS(SELECT 1 FROM booking_participants bp WHERE bp.booking_id=bk.id) THEN CAST(bk.amount_paid_cents/bk.party_size AS INTEGER) ELSE bk.amount_paid_cents END ELSE 0 END),0) paid_cents FROM clients c LEFT JOIN bookings bk ON (bk.client_id=c.id OR EXISTS(SELECT 1 FROM booking_participants bp WHERE bp.booking_id=bk.id AND bp.client_id=c.id)) WHERE c.business_id=? GROUP BY c.id ORDER BY c.id DESC`).all(b.id);
   res.json(rows);
 });
 app.patch('/api/businesses/:id/clients/:cid',auth,(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);db.prepare('UPDATE clients SET notes=? WHERE id=? AND business_id=?').run(req.body?.notes||'',req.params.cid,b.id);res.json({ok:true})});
 
 app.get('/api/businesses/:id/bookings',auth,(req,res)=>{
   const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);cleanupExpiredHolds(b.id);
-  const rows=db.prepare(`SELECT bk.*,c.name client,c.phone,c.email,s.name staff_name FROM bookings bk JOIN clients c ON c.id=bk.client_id LEFT JOIN staff s ON s.id=bk.staff_id WHERE bk.business_id=? ORDER BY bk.date DESC,bk.start_time DESC`).all(b.id).map(x=>({...x,items:db.prepare('SELECT service_name,price_cents,duration_min,quantity,line_subtotal_cents,line_discount_cents FROM booking_items WHERE booking_id=?').all(x.id)}));
+  const rows=db.prepare(`SELECT bk.*,c.name client,c.phone,c.email,s.name staff_name FROM bookings bk JOIN clients c ON c.id=bk.client_id LEFT JOIN staff s ON s.id=bk.staff_id WHERE bk.business_id=? ORDER BY bk.date DESC,bk.start_time DESC`).all(b.id).map(x=>({...x,participants:participantsFor(x.id),items:db.prepare('SELECT service_name,price_cents,duration_min,quantity,line_subtotal_cents,line_discount_cents FROM booking_items WHERE booking_id=?').all(x.id)}));
   res.json(rows.map(decoratePayment));
 });
 app.patch('/api/businesses/:id/bookings/:bid',auth,(req,res)=>{
@@ -367,15 +378,18 @@ app.patch('/api/businesses/:id/bookings/:bid',auth,(req,res)=>{
   const date=String(x.date||current.date),startTime=String(x.start_time||current.start_time);
   const items=db.prepare(`SELECT s.* FROM booking_items bi JOIN services s ON s.id=bi.service_id WHERE bi.booking_id=? ORDER BY bi.id`).all(current.id);
   if(!items.length)return res.status(409).json({error:'El turno no tiene servicios válidos para calcular su duración'});
+  let group;try{group=shiftedGroup(current,date,startTime)}catch(e){return res.status(400).json({error:e.message})}
   if(date!==current.date||startTime!==current.start_time||(!['confirmed','pending_payment'].includes(current.status)&&['confirmed','pending_payment'].includes(status))){
-    const slots=availabilityFor({business:b,date,services:items,partySize:current.party_size,excludeBookingId:current.id,staffId:current.staff_id||null,manual:current.booking_source==='manual'});
+    if(group){try{validateGroupAvailability(group,{business:b,date,services:items,excludeBookingId:current.id,staffId:current.staff_id||null,manual:current.booking_source==='manual'},availabilityFor)}catch(e){return res.status(409).json({error:e.message})}}
+    const slots=availabilityFor({business:b,date,services:items,partySize:group?1:current.party_size,excludeBookingId:current.id,staffId:current.staff_id||null,manual:current.booking_source==='manual'});
     if(!slots.includes(startTime))return res.status(409).json({error:'Ese horario no está disponible para la duración completa del turno'});
   }
   const duration=items.reduce((sum,z)=>sum+Number(z.duration_min||0),0)*Math.max(1,Number(current.party_size||1));
-  const endTime=fromMinutes(toMinutes(startTime)+duration);
+  const endTime=group?.end||fromMinutes(toMinutes(startTime)+duration);
   const client=db.prepare('SELECT * FROM clients WHERE id=? AND business_id=?').get(current.client_id,b.id);
   const email=String(x.email??client?.email??'').trim().toLowerCase();if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return res.status(400).json({error:'Revisá el email del cliente'});
   const tx=db.transaction(()=>{
+    moveParticipants(current.id,group);
     db.prepare('UPDATE bookings SET date=?,start_time=?,end_time=?,status=?,notes=? WHERE id=? AND business_id=?').run(date,startTime,endTime,status,String(x.notes??current.notes??''),current.id,b.id);
     if(client)db.prepare('UPDATE clients SET name=?,phone=?,email=? WHERE id=? AND business_id=?').run(String(x.client_name??client.name??'').trim(),String(x.phone??client.phone??'').trim(),email||null,client.id,b.id);
   });
@@ -414,7 +428,7 @@ app.get('/api/businesses/:id/schedule',auth,(req,res)=>{
 app.put('/api/businesses/:id/schedule',auth,(req,res)=>{
   const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);const rows=Array.isArray(req.body?.schedule)?req.body.schedule:[];
   let interval;try{interval=validateSlotInterval(req.body?.slot_interval_min,b.slot_interval_min)}catch(e){return res.status(400).json({error:e.message})}
-  const tx=db.transaction(()=>{for(const row of rows){if(Number(row.weekday)<0||Number(row.weekday)>6)continue;db.prepare(`INSERT INTO schedules(business_id,weekday,start_time,end_time,active) VALUES(?,?,?,?,?) ON CONFLICT(business_id,weekday) DO UPDATE SET start_time=excluded.start_time,end_time=excluded.end_time,active=excluded.active`).run(b.id,Number(row.weekday),row.start_time||'09:00',row.end_time||'18:00',row.active?1:0)}db.prepare('UPDATE businesses SET slot_interval_min=?,booking_horizon_days=? WHERE id=?').run(interval,Math.max(7,Math.min(365,Number(req.body?.booking_horizon_days||90))),b.id)});tx();res.json({ok:true})
+  const tx=db.transaction(()=>{for(const row of rows){if(Number(row.weekday)<0||Number(row.weekday)>6)continue;db.prepare(`INSERT INTO schedules(business_id,weekday,start_time,end_time,active) VALUES(?,?,?,?,?) ON CONFLICT(business_id,weekday) DO UPDATE SET start_time=excluded.start_time,end_time=excluded.end_time,active=excluded.active`).run(b.id,Number(row.weekday),row.start_time||'09:00',row.end_time||'18:00',row.active?1:0)}db.prepare('UPDATE businesses SET slot_interval_min=?,booking_horizon_days=? WHERE id=?').run(interval,Math.max(7,Math.min(365,Number(req.body?.booking_horizon_days||90))),b.id);db.prepare('UPDATE services SET duration_min=? WHERE business_id=? AND duration_auto=1').run(interval,b.id)});tx();res.json({ok:true})
 });
 app.post('/api/businesses/:id/blocks',auth,(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);const x=req.body||{};if(!validDate(x.date))return res.status(400).json({error:'Elegí una fecha válida'});if(!x.all_day&&(!validTime(x.start_time)||!validTime(x.end_time)||x.start_time>=x.end_time))return res.status(400).json({error:'El horario hasta debe ser posterior al horario desde'});const r=db.prepare('INSERT INTO blocks(business_id,date,start_time,end_time,all_day,reason) VALUES(?,?,?,?,?,?)').run(b.id,x.date,x.all_day?null:x.start_time||null,x.all_day?null:x.end_time||null,x.all_day?1:0,x.reason||'');res.json({id:r.lastInsertRowid})});
 app.delete('/api/businesses/:id/blocks/:bid',auth,(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);db.prepare('DELETE FROM blocks WHERE id=? AND business_id=?').run(req.params.bid,b.id);res.json({ok:true})});
@@ -444,7 +458,7 @@ app.put('/api/businesses/:id/settings',auth,(req,res)=>{
   db.prepare(`UPDATE businesses SET name=?,category=?,phone=?,instagram=?,tiktok=?,website=?,address=?,public_email=?,notification_email=?,show_whatsapp_float=?,whatsapp_message=?,booking_horizon_days=?,slot_interval_min=?,booking_notice_min=?,cancellation_hours=?,allow_group_bookings=?,max_party_size=?,require_email=?,show_address=?,seo_title=?,seo_description=?,cancellation_policy=?,confirmation_message=?,show_services=?,show_promotions=?,show_posts=?,show_faqs=?,show_footer_contact=?,show_booking=?,show_service_duration=? WHERE id=?`).run(
     String(x.name||b.name).trim(),String(x.category||b.category).trim(),String(x.phone||'').trim(),String(x.instagram||'').trim(),String(x.tiktok||'').trim(),String(x.website||'').trim(),String(x.address||'').trim(),publicEmail,notificationEmail,x.show_whatsapp_float===false?0:1,String(x.whatsapp_message||'Hola, quiero consultar por un turno').slice(0,300),
     Math.max(7,Math.min(365,Number(x.booking_horizon_days??b.booking_horizon_days??90))),interval,Math.max(0,Math.min(10080,Number(x.booking_notice_min??b.booking_notice_min??120))),Math.max(0,Math.min(720,Number(x.cancellation_hours??b.cancellation_hours??24))),x.allow_group_bookings===false?0:1,Math.max(1,Math.min(10,Number(x.max_party_size??b.max_party_size??6))),x.require_email?1:0,x.show_address===false?0:1,String(x.seo_title||'').slice(0,70),String(x.seo_description||'').slice(0,180),String(x.cancellation_policy||'').slice(0,1200),String(x.confirmation_message||'').slice(0,600),x.show_services===false?0:1,x.show_promotions===false?0:1,x.show_posts===false?0:1,x.show_faqs===false?0:1,x.show_footer_contact===false?0:1,x.show_booking===false?0:1,showDuration,b.id
-  );res.json({ok:true});
+  );db.prepare('UPDATE services SET duration_min=? WHERE business_id=? AND duration_auto=1').run(interval,b.id);res.json({ok:true});
 });
 
 app.get('/api/businesses/:id/payment-settings',auth,(req,res)=>{
@@ -477,7 +491,7 @@ app.get('/api/public/:slug',(req,res)=>{
   const b=db.prepare(`SELECT b.*,p.name plan_name FROM businesses b JOIN plans p ON p.slug=b.plan_slug WHERE b.slug=? AND b.status='active'`).get(req.params.slug);if(!b)return res.status(404).json({error:'Negocio no encontrado'});
   const today=dateOnly(new Date());
   const promotions=db.prepare(`SELECT * FROM promotions WHERE business_id=? AND active=1 AND (start_date IS NULL OR start_date<=?) AND (end_date IS NULL OR end_date>=?) ORDER BY id DESC`).all(b.id,today,today).map(publicPromotion);
-  refreshBillingState(b.id);const plan=getBusinessPlan(b);const publicBusiness={...b,show_booking:b.show_booking&&billingAccess(db.prepare('SELECT * FROM businesses WHERE id=?').get(b.id))?1:0};for(const key of Object.keys(publicBusiness)){if(key.endsWith('_enc')||['owner_id','notification_email','admin_notes','custom_monthly_price_cents','custom_annual_price_cents','mp_user_id','bank_alias','bank_account','bank_holder','bank_name','bank_instructions','subscription_paid_until','subscription_managed','subscription_status','trial_ends_at'].includes(key))delete publicBusiness[key];}const staff=Number(plan.max_staff||1)>1?db.prepare('SELECT * FROM staff WHERE business_id=? AND active=1 ORDER BY display_order,id').all(b.id).map(x=>({...x,service_ids:staffServices(x.id),schedule:staffSchedule(x.id)})):[];res.json({packs_available:Boolean(db.prepare('SELECT 1 FROM packs WHERE business_id=? AND active=1').get(b.id)),exceptions:db.prepare('SELECT date,staff_id,closed,start_time,end_time FROM calendar_exceptions WHERE business_id=?').all(b.id),business:{...businessGallery(publicBusiness),max_staff:Number(plan.max_staff||1),team_enabled:Number(plan.team_enabled||0)},services:db.prepare('SELECT * FROM services WHERE business_id=? AND active=1 ORDER BY display_order,id').all(b.id).map(serviceGallery),promotions,posts:db.prepare('SELECT * FROM posts WHERE business_id=? AND active=1 ORDER BY id DESC').all(b.id),faqs:db.prepare('SELECT * FROM faqs WHERE business_id=? AND active=1 ORDER BY display_order,id').all(b.id),schedule:businessSchedule(b.id),staff});
+  refreshBillingState(b.id);const plan=getBusinessPlan(b);const publicBusiness={...b,...(plan.basic_only?{show_promotions:0,show_posts:0,loyalty_enabled:0,waitlist_enabled:0}:{}),show_booking:b.show_booking&&billingAccess(db.prepare('SELECT * FROM businesses WHERE id=?').get(b.id))?1:0};for(const key of Object.keys(publicBusiness)){if(key.endsWith('_enc')||['owner_id','notification_email','admin_notes','custom_monthly_price_cents','custom_annual_price_cents','mp_user_id','bank_alias','bank_account','bank_holder','bank_name','bank_instructions','subscription_paid_until','subscription_managed','subscription_status','trial_ends_at'].includes(key))delete publicBusiness[key];}const staff=Number(plan.max_staff||1)>1?db.prepare('SELECT * FROM staff WHERE business_id=? AND active=1 ORDER BY display_order,id').all(b.id).map(x=>({...x,service_ids:staffServices(x.id),schedule:staffSchedule(x.id)})):[];res.json({packs_available:!plan.basic_only&&Boolean(db.prepare('SELECT 1 FROM packs WHERE business_id=? AND active=1').get(b.id)),exceptions:db.prepare('SELECT date,staff_id,closed,start_time,end_time FROM calendar_exceptions WHERE business_id=?').all(b.id),business:{...businessGallery(publicBusiness),max_staff:Number(plan.max_staff||1),basic_only:Number(plan.basic_only||0),team_enabled:Number(plan.team_enabled||0)},services:db.prepare('SELECT * FROM services WHERE business_id=? AND active=1 ORDER BY display_order,id').all(b.id).map(serviceGallery),promotions:plan.basic_only?[]:promotions,posts:plan.basic_only?[]:db.prepare('SELECT * FROM posts WHERE business_id=? AND active=1 ORDER BY id DESC').all(b.id),faqs:db.prepare('SELECT * FROM faqs WHERE business_id=? AND active=1 ORDER BY display_order,id').all(b.id),schedule:businessSchedule(b.id),staff});
 });
 app.get('/api/public/:slug/availability',(req,res)=>{
   const b=db.prepare(`SELECT * FROM businesses WHERE slug=? AND status='active' AND show_booking=1`).get(req.params.slug);if(!b)return res.sendStatus(404);
@@ -498,13 +512,13 @@ app.post('/api/public/:slug/bookings',async(req,res)=>{
   const b=db.prepare(`SELECT * FROM businesses WHERE slug=? AND status='active' AND show_booking=1`).get(req.params.slug);if(!b)return res.status(404).json({error:'Negocio no encontrado'});
   const x=req.body||{},ids=Array.isArray(x.serviceIds)?[...new Set(x.serviceIds.map(Number).filter(Boolean))]:[];if(!ids.length)return res.status(400).json({error:'Elegí al menos un servicio'});
   const marks=ids.map(()=>'?').join(',');const services=db.prepare(`SELECT * FROM services WHERE business_id=? AND active=1 AND id IN (${marks})`).all(b.id,...ids);if(services.length!==ids.length)return res.status(400).json({error:'Uno de los servicios ya no está disponible'});
-  let quote,benefits;try{quote=computeQuote({business:b,services,partySize:x.partySize,couponCode:x.couponCode,promotionId:x.promotionId,date:x.date,packCode:x.packCode,rewardCode:x.rewardCode});benefits=applyBenefits(b,x,quote,services);if(b.terms_required&&!x.acceptTerms)throw new Error('Aceptá los términos para reservar')}catch(e){return res.status(400).json({error:e.message||'No se pudo aplicar el descuento'})}
+  let quote,benefits,group;try{quote=computeQuote({business:b,services,partySize:x.partySize,couponCode:x.couponCode,promotionId:x.promotionId,date:x.date,packCode:x.packCode,rewardCode:x.rewardCode});group=groupSelection(b,x,quote,services);if(group){const lead=group.people[0];x.clientName=lead.name;x.phone=lead.phone;x.email=lead.email;if(x.packCode||x.rewardCode||x.clientAccess)throw new Error('Los beneficios privados se usan en reservas individuales.')}benefits=applyBenefits(b,x,quote,services);if(group){benefits.waiveAdvance=false;for(const person of group.people){const checked=applyBenefits(b,{phone:person.phone,email:person.email},quote,services);if(checked.fullPayment)benefits.fullPayment=true}}if(b.terms_required&&!x.acceptTerms)throw new Error('Aceptá los términos para reservar')}catch(e){return res.status(400).json({error:e.message||'No se pudo aplicar el descuento'})}
   const plan=getBusinessPlan(b),activeStaff=Number(plan.max_staff||1)>1?db.prepare('SELECT * FROM staff WHERE business_id=? AND active=1 ORDER BY display_order,id').all(b.id):[];let staffId=x.staffId?Number(x.staffId):null,staff=null;if(Number(plan.max_staff||1)<=1)staffId=null;if(activeStaff.length){if(!staffId)return res.status(400).json({error:'Elegí con qué profesional querés reservar'});staff=activeStaff.find(z=>Number(z.id)===staffId);if(!staff||!staffCanDoServices(staff.id,ids))return res.status(400).json({error:'Esa profesional no realiza todos los servicios seleccionados'})}
   refreshBillingState(b.id);if(!billingAccess(db.prepare('SELECT * FROM businesses WHERE id=?').get(b.id)))return res.status(402).json({error:'Este negocio no está recibiendo nuevas reservas online. Contactá al profesional.'});
-  const available=availabilityFor({business:b,date:x.date,services,partySize:quote.party_size,staffId});if(!available.includes(x.time))return res.status(409).json({error:'Ese horario ya no está disponible. Elegí otro.'});
+  if(group){try{validateGroupAvailability(group,{business:b,date:x.date,services,staffId},availabilityFor)}catch(e){return res.status(409).json({error:e.message})}x.time=group.start}else{const available=availabilityFor({business:b,date:x.date,services,partySize:quote.party_size,staffId});if(!available.includes(x.time))return res.status(409).json({error:'Ese horario ya no está disponible. Elegí otro.'})}
   if(!x.clientName||!x.phone)return res.status(400).json({error:'Completá tu nombre y WhatsApp'});
   if(b.require_email&&!String(x.email||'').trim())return res.status(400).json({error:'Completá tu email para reservar'});
-  const start=toMinutes(x.time),end=fromMinutes(start+quote.duration_min),payment=benefits.waiveAdvance?{mode:'none',due:0}:benefits.fullPayment?{mode:'total',due:quote.total_cents}:calculatePayment(b,quote.total_cents);
+  const start=toMinutes(x.time),end=group?.end||fromMinutes(start+quote.duration_min),payment=benefits.waiveAdvance?{mode:'none',due:0}:benefits.fullPayment?{mode:'total',due:quote.total_cents}:calculatePayment(b,quote.total_cents);
   const allowedMethods=paymentMethods(b),method=payment.due>0?String(x.paymentMethod||allowedMethods[0]||''):'none';if(payment.due>0&&!allowedMethods.includes(method))return res.status(400).json({error:'Elegí un medio de pago habilitado por el profesional'});
   if(payment.due>0&&method==='mercadopago'&&!b.mp_access_token_enc&&!DEMO_PAYMENTS)return res.status(503).json({error:'Esta profesional todavía no conectó Mercado Pago para recibir pagos online'});
   if(x.repeatDays&&(b.payment_mode!=='none'||x.packCode||x.rewardCode||x.couponCode||x.promotionId||benefits.fullPayment))return res.status(400).json({error:'La repetición automática desde la web requiere reservas sin pago online ni beneficios. Coordiná la serie con el profesional.'});
@@ -515,15 +529,14 @@ app.post('/api/public/:slug/bookings',async(req,res)=>{
     else db.prepare('UPDATE clients SET name=?,phone=? WHERE id=?').run(String(x.clientName).trim(),String(x.phone).trim(),client.id);
     db.prepare('UPDATE clients SET phone_normalized=? WHERE id=?').run(normalizePhone(x.phone),client.id);
     cleanupExpiredHolds(b.id);
-    const clash=staffId?db.prepare(`SELECT 1 FROM bookings WHERE business_id=? AND date=? AND status IN ('confirmed','pending_payment') AND start_time<? AND end_time>? AND staff_id=? LIMIT 1`).get(b.id,x.date,end,x.time,staffId):db.prepare(`SELECT 1 FROM bookings WHERE business_id=? AND date=? AND status IN ('confirmed','pending_payment') AND start_time<? AND end_time>? AND staff_id IS NULL LIMIT 1`).get(b.id,x.date,end,x.time);
-    const blocked=db.prepare(`SELECT 1 FROM blocks WHERE business_id=? AND date=? AND (all_day=1 OR (start_time<? AND end_time>?)) LIMIT 1`).get(b.id,x.date,end,x.time);
-    if(clash||blocked)throw new Error('slot_taken');
+    if(group)validateGroupAvailability(group,{business:b,date:x.date,services,staffId},availabilityFor);else if(!availabilityFor({business:b,date:x.date,services,partySize:quote.party_size,staffId}).includes(x.time))throw new Error('slot_taken');
     const status=payment.due>0?'pending_payment':'confirmed',payStatus=payment.due>0?'pending':'not_required',hold=payment.due>0?new Date(Math.min(Date.now()+b.payment_hold_minutes*60*1000,Date.parse(`${x.date}T${x.time}:00-03:00`))).toISOString():null;
-    const names=(quote.promotion?quote.promotion.title+' · ':'')+services.map(s=>s.name).join(' + '),summary=quote.party_size>1?`${names} · ${quote.party_size} personas`:names,manageToken=crypto.randomBytes(24).toString('hex');
+    const names=(quote.promotion?quote.promotion.title+' · ':'')+services.map(s=>s.name).join(' + '),summary=(quote.party_size>1?`${names} · ${quote.party_size} personas`:names)+(group?' · '+group.people.map(p=>p.time).join(' / '):''),manageToken=crypto.randomBytes(24).toString('hex');
     const r=db.prepare(`INSERT INTO bookings(business_id,client_id,date,start_time,end_time,status,payment_status,payment_mode,party_size,subtotal_cents,group_discount_cents,coupon_discount_cents,coupon_id,coupon_code,total_cents,amount_due_cents,selection_summary,notes,hold_expires_at,manage_token,staff_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(b.id,client.id,x.date,x.time,end,status,payStatus,payment.mode,quote.party_size,quote.subtotal_cents,quote.group_discount_cents,quote.coupon_discount_cents,quote.coupon?.id||null,quote.coupon?.code||null,quote.total_cents,payment.due,summary,x.notes||'',hold,manageToken,staffId);
     for(const item of quote.items)db.prepare('INSERT INTO booking_items(booking_id,service_id,service_name,price_cents,duration_min,quantity,line_subtotal_cents,line_discount_cents) VALUES(?,?,?,?,?,?,?,?)').run(r.lastInsertRowid,item.id,item.name,item.price_cents,item.duration_min,item.quantity,item.line_subtotal_cents,item.line_discount_cents);
     db.prepare('UPDATE bookings SET payment_method=?,payment_details_json=?,payment_waived=? WHERE id=?').run(method,method==='bank_transfer'?JSON.stringify(bankDetails(b)):null,benefits.waiveAdvance?1:0,Number(r.lastInsertRowid));
     if(quote.promotion){db.prepare('UPDATE bookings SET promotion_id=?,promotion_title=?,promotion_discount_cents=?,promotion_before_cents=? WHERE id=?').run(quote.promotion.id,quote.promotion.title,quote.promotion_discount_cents,quote.promotion.price_before_cents,Number(r.lastInsertRowid));for(const item of quote.items)db.prepare('UPDATE booking_items SET line_promotion_discount_cents=? WHERE booking_id=? AND service_id=?').run(item.line_promotion_discount_cents||0,Number(r.lastInsertRowid),item.id)}
+    storeParticipants(Number(r.lastInsertRowid),b,group,findClient);
     storeBenefits(Number(r.lastInsertRowid),b,x,benefits,quote);
     db.prepare("INSERT INTO analytics_events(business_id,event) VALUES(?,'booking_created')").run(b.id);
     const recurring=x.repeatDays?reserveSeries({b,original:db.prepare('SELECT * FROM bookings WHERE id=?').get(r.lastInsertRowid),options:{interval_days:x.repeatDays,count:x.repeatCount||1},availabilityFor}):[];
@@ -545,7 +558,7 @@ app.post('/api/public/:slug/bookings',async(req,res)=>{
   res.json({ok:true,booking,payment:{required:true,demo:true,amount_cents:payment.due}});
 });
 app.get('/api/public/:slug/bookings/:id/status',(req,res)=>{
-  const b=db.prepare('SELECT * FROM businesses WHERE slug=?').get(req.params.slug);if(!b)return res.sendStatus(404);cleanupExpiredHolds(b.id);const bk=db.prepare('SELECT id,status,payment_mode,payment_method,payment_details_json,payment_waived,payment_status,party_size,subtotal_cents,group_discount_cents,coupon_discount_cents,coupon_code,promotion_id,promotion_title,promotion_discount_cents,promotion_before_cents,total_cents,amount_due_cents,amount_paid_cents,selection_summary,date,start_time,end_time,manage_token,hold_expires_at,payment_review_required FROM bookings WHERE id=? AND business_id=?').get(req.params.id,b.id);if(!bk||req.query.token!==bk.manage_token)return res.status(404).json({error:'Reserva no encontrada'});res.json({...decoratePayment(bk),manage_url:bk.manage_token?`${FRONTEND_URL}/mi-reserva/${bk.manage_token}`:''});
+  const b=db.prepare('SELECT * FROM businesses WHERE slug=?').get(req.params.slug);if(!b)return res.sendStatus(404);cleanupExpiredHolds(b.id);const bk=db.prepare('SELECT id,status,payment_mode,payment_method,payment_details_json,payment_waived,payment_status,party_size,subtotal_cents,group_discount_cents,coupon_discount_cents,coupon_code,promotion_id,promotion_title,promotion_discount_cents,promotion_before_cents,total_cents,amount_due_cents,amount_paid_cents,selection_summary,date,start_time,end_time,manage_token,hold_expires_at,payment_review_required FROM bookings WHERE id=? AND business_id=?').get(req.params.id,b.id);if(!bk||req.query.token!==bk.manage_token)return res.status(404).json({error:'Reserva no encontrada'});res.json({...decoratePayment(bk),participants:participantsFor(bk.id),manage_url:bk.manage_token?`${FRONTEND_URL}/mi-reserva/${bk.manage_token}`:''});
 });
 app.post('/api/public/:slug/bookings/:id/demo-approve',async(req,res)=>{
   if(!DEMO_PAYMENTS)return res.sendStatus(404);const b=db.prepare('SELECT * FROM businesses WHERE slug=?').get(req.params.slug);if(!b)return res.sendStatus(404);cleanupExpiredHolds(b.id);const bk=db.prepare(`SELECT * FROM bookings WHERE id=? AND business_id=? AND status='pending_payment'`).get(req.params.id,b.id);if(!bk||bk.payment_method==='bank_transfer'||req.body?.token!==bk.manage_token||Date.parse(bk.hold_expires_at)<=Date.now())return res.status(409).json({error:'La reserva no está pendiente de pago'});db.prepare(`UPDATE bookings SET status='confirmed',payment_status='approved',amount_paid_cents=amount_due_cents,hold_expires_at=NULL WHERE id=?`).run(bk.id);const booking=bookingDetails(bk.id);await emailBooking(booking);await emailProfessional(booking,'paid');res.json({ok:true,booking});
@@ -558,7 +571,7 @@ app.get('/api/public/manage-booking/:token',(req,res)=>{
   const booking=db.prepare(`SELECT bk.*,c.name client_name,c.email client_email,c.phone client_phone,b.name business_name,b.slug business_slug,b.cancellation_hours,b.cancellation_policy,b.phone business_phone,s.name staff_name FROM bookings bk JOIN clients c ON c.id=bk.client_id JOIN businesses b ON b.id=bk.business_id LEFT JOIN staff s ON s.id=bk.staff_id WHERE bk.manage_token=?`).get(req.params.token);
   if(!booking)return res.status(404).json({error:'No encontramos esa reserva'});
   const items=db.prepare('SELECT service_id,service_name,price_cents,duration_min,quantity FROM booking_items WHERE booking_id=? ORDER BY id').all(booking.id);
-  const series=booking.series_id?db.prepare('SELECT date,start_time,status,manage_token FROM bookings WHERE series_id=? AND client_id=? AND business_id=? ORDER BY date').all(booking.series_id,booking.client_id,booking.business_id).map(x=>({...x,manage_url:`${FRONTEND_URL}/mi-reserva/${x.manage_token}`})):[];res.json({...decoratePayment(booking),items,series,can_change:bookingCanChange(booking),manage_url:`${FRONTEND_URL}/mi-reserva/${booking.manage_token}`});
+  const series=booking.series_id?db.prepare('SELECT date,start_time,status,manage_token FROM bookings WHERE series_id=? AND client_id=? AND business_id=? ORDER BY date').all(booking.series_id,booking.client_id,booking.business_id).map(x=>({...x,manage_url:`${FRONTEND_URL}/mi-reserva/${x.manage_token}`})):[];res.json({...decoratePayment(booking),participants:participantsFor(booking.id),items,series,can_change:bookingCanChange(booking),manage_url:`${FRONTEND_URL}/mi-reserva/${booking.manage_token}`});
 });
 app.get('/api/public/manage-booking/:token/availability',(req,res)=>{
   const found=db.prepare('SELECT id FROM bookings WHERE manage_token=?').get(req.params.token),booking=found?bookingDetails(found.id):null;
@@ -568,7 +581,7 @@ app.get('/api/public/manage-booking/:token/availability',(req,res)=>{
   const ids=[...new Set(booking.items.map(x=>Number(x.service_id)).filter(Boolean))];
   const marks=ids.map(()=>'?').join(',');const services=ids.length?db.prepare(`SELECT * FROM services WHERE business_id=? AND id IN (${marks})`).all(booking.business_id,...ids):[];
   if(services.length!==ids.length)return res.status(409).json({error:'Uno de los servicios ya no está disponible'});
-  const slots=availabilityFor({business,date:String(req.query.date||''),services,partySize:booking.party_size,excludeBookingId:booking.id,staffId:booking.staff_id||null});
+  const group=participantsFor(booking.id).length>0;let slots=availabilityFor({business,date:String(req.query.date||''),services,partySize:group?1:booking.party_size,excludeBookingId:booking.id,staffId:booking.staff_id||null});if(group)slots=slots.filter(time=>{try{validateGroupAvailability(shiftedGroup(booking,String(req.query.date||''),time),{business,date:String(req.query.date||''),services,excludeBookingId:booking.id,staffId:booking.staff_id||null},availabilityFor);return true}catch{return false}});
   res.json({slots});
 });
 app.post('/api/public/manage-booking/:token/cancel',async(req,res)=>{
@@ -587,9 +600,10 @@ app.post('/api/public/manage-booking/:token/reschedule',async(req,res)=>{
   const business=db.prepare('SELECT * FROM businesses WHERE id=?').get(booking.business_id),ids=[...new Set(booking.items.map(x=>Number(x.service_id)).filter(Boolean))];
   const marks=ids.map(()=>'?').join(',');const services=ids.length?db.prepare(`SELECT * FROM services WHERE business_id=? AND id IN (${marks})`).all(booking.business_id,...ids):[];
   if(services.length!==ids.length)return res.status(409).json({error:'Uno de los servicios ya no está disponible'});
-  const slots=availabilityFor({business,date,services,partySize:booking.party_size,excludeBookingId:booking.id,staffId:booking.staff_id||null});if(!slots.includes(time))return res.status(409).json({error:'Ese horario ya no está disponible'});
-  const duration=services.reduce((sum,x)=>sum+Number(x.duration_min||0),0)*Math.max(1,Number(booking.party_size||1)),end=fromMinutes(toMinutes(time)+duration);
-  db.prepare('UPDATE bookings SET date=?,start_time=?,end_time=?,attendance_confirmed_at=NULL WHERE id=?').run(date,time,end,booking.id);
+  let group;try{group=shiftedGroup(booking,date,time);if(group)validateGroupAvailability(group,{business,date,services,excludeBookingId:booking.id,staffId:booking.staff_id||null},availabilityFor)}catch(e){return res.status(409).json({error:e.message})}const slots=availabilityFor({business,date,services,partySize:group?1:booking.party_size,excludeBookingId:booking.id,staffId:booking.staff_id||null});if(!slots.includes(time))return res.status(409).json({error:'Ese horario ya no está disponible'});
+  const duration=services.reduce((sum,x)=>sum+Number(x.duration_min||0),0)*Math.max(1,Number(booking.party_size||1)),end=group?.end||fromMinutes(toMinutes(time)+duration);
+  db.transaction(()=>{moveParticipants(booking.id,group);
+  db.prepare('UPDATE bookings SET date=?,start_time=?,end_time=?,attendance_confirmed_at=NULL WHERE id=?').run(date,time,end,booking.id)})();
   const updated=bookingDetails(booking.id);await emailBooking(updated);await emailProfessional(updated,'rescheduled');res.json({ok:true,booking:{...updated,can_change:bookingCanChange(updated)}});
 });
 
@@ -648,7 +662,7 @@ app.put('/api/admin/plans/:slug',auth,superOnly,(req,res)=>{
   const p=db.prepare('SELECT * FROM plans WHERE slug=?').get(req.params.slug);if(!p)return res.sendStatus(404);const x=req.body||{};
   const nextPublic=x.public_enabled===undefined?p.public_enabled:(x.public_enabled?1:0),nextActive=x.active===undefined?p.active:(x.active?1:0);
   if((!nextPublic||!nextActive)&&p.public_enabled&&p.active){const others=db.prepare('SELECT count(*) n FROM plans WHERE slug!=? AND active=1 AND public_enabled=1').get(p.slug).n;if(!others)return res.status(400).json({error:'Debe quedar al menos un plan público y activo'})}
-  db.prepare(`UPDATE plans SET name=?,description=?,monthly_price_cents=?,annual_price_cents=?,max_services=?,max_promotions=?,max_posts=?,max_coupons=?,analytics_enabled=?,template_level=?,features_json=?,active=?,public_enabled=?,highlighted=?,display_order=?,max_staff=?,team_enabled=? WHERE slug=?`).run(x.name||p.name,x.description??p.description,cents(x.monthly_price??p.monthly_price_cents/100),cents(x.annual_price??p.annual_price_cents/100),Math.max(1,Number(x.max_services??p.max_services)),Math.max(0,Number(x.max_promotions??p.max_promotions)),Math.max(0,Number(x.max_posts??p.max_posts)),Math.max(0,Number(x.max_coupons??p.max_coupons)),x.analytics_enabled===undefined?p.analytics_enabled:(x.analytics_enabled?1:0),Math.max(1,Math.min(3,Number(x.template_level??p.template_level))),JSON.stringify(Array.isArray(x.features)?x.features:publicPlan(p).features),nextActive,nextPublic,x.highlighted===undefined?p.highlighted:(x.highlighted?1:0),Number(x.display_order??p.display_order),Math.max(1,Number(x.max_staff??p.max_staff??1)),Math.max(1,Number(x.max_staff??p.max_staff??1))>1?1:0,p.slug);res.json({ok:true});
+  db.prepare(`UPDATE plans SET name=?,description=?,monthly_price_cents=?,annual_price_cents=?,max_services=?,max_promotions=?,max_posts=?,max_coupons=?,analytics_enabled=?,template_level=?,features_json=?,active=?,public_enabled=?,highlighted=?,display_order=?,max_staff=?,team_enabled=? WHERE slug=?`).run(x.name||p.name,x.description??p.description,cents(x.monthly_price??p.monthly_price_cents/100),cents(x.annual_price??p.annual_price_cents/100),Math.max(1,Number(x.max_services??p.max_services)),Math.max(0,Number(x.max_promotions??p.max_promotions)),Math.max(0,Number(x.max_posts??p.max_posts)),Math.max(0,Number(x.max_coupons??p.max_coupons)),x.analytics_enabled===undefined?p.analytics_enabled:(x.analytics_enabled?1:0),Math.max(1,Math.min(3,Number(x.template_level??p.template_level))),JSON.stringify(Array.isArray(x.features)?x.features:publicPlan(p).features),nextActive,nextPublic,x.highlighted===undefined?p.highlighted:(x.highlighted?1:0),Number(x.display_order??p.display_order),Math.max(1,Number(x.max_staff??p.max_staff??1)),Math.max(1,Number(x.max_staff??p.max_staff??1))>1?1:0,p.slug);if(x.basic_only!==undefined)db.prepare('UPDATE plans SET basic_only=? WHERE slug=?').run(x.basic_only?1:0,p.slug);res.json({ok:true});
 });
 app.delete('/api/admin/plans/:slug',auth,superOnly,(req,res)=>{const p=db.prepare('SELECT * FROM plans WHERE slug=?').get(req.params.slug);if(!p)return res.sendStatus(404);const used=db.prepare('SELECT count(*) n FROM businesses WHERE plan_slug=?').get(p.slug).n;const contracted=db.prepare('SELECT 1 FROM platform_subscriptions WHERE plan_slug=? LIMIT 1').get(p.slug);if(used||contracted)return res.status(409).json({error:'No podés eliminar un plan que ya tiene cuentas. Podés ocultarlo o desactivarlo.'});const visible=db.prepare('SELECT count(*) n FROM plans WHERE slug!=? AND active=1 AND public_enabled=1').get(p.slug).n;if(p.active&&p.public_enabled&&!visible)return res.status(400).json({error:'Debe quedar al menos un plan público'});db.prepare('DELETE FROM plans WHERE slug=?').run(p.slug);res.json({ok:true})});
 app.get('/api/admin/settings',auth,superOnly,(_req,res)=>res.json({trial_days:Number(getSetting('trial_days','15')),...homeContact(),billing:billingConfiguration(),demo_payments:DEMO_PAYMENTS,mp_oauth_configured:oauthConfigured(),email_configured:Boolean(process.env.RESEND_API_KEY)}));

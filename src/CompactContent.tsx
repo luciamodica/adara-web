@@ -1,0 +1,8 @@
+import {useState} from 'react';
+import {money} from './api';
+import ExpandableText from './ExpandableText';
+import {ZoomImage} from './ImageCarousel';
+export default function CompactContent({items,type,b,onPromotion}:any){
+ const [all,setAll]=useState(false),promotions=type==='promotions',shown=all?items:items.slice(0,3);
+ return <section id={promotions?'promociones':'novedades'} className={promotions?'promoArea compactContent':'storeSection soft publicContainer compactContent'}><div className={promotions?'publicContainer':''}><span className="sectionLabel">{promotions?'PROMOCIONES':'NOVEDADES'}</span>{!promotions&&<h2>Lo nuevo en {b.name}.</h2>}<div className={promotions?'promoCards':'newsGrid'}>{shown.map((item:any)=><article key={item.id}>{item.image_url&&<ZoomImage src={item.image_url} alt={item.title}/>}<div>{promotions?item.display_discount_percent>0&&<span className="compactDiscount">{item.display_discount_percent}% OFF</span>:<small>{new Date(item.created_at).toLocaleDateString('es-AR')}</small>}<h3>{item.title}</h3><ExpandableText text={promotions?item.description:item.body}/>{promotions&&item.price_after_cents!==null&&<div className="promotionPublicPrice">{item.price_before_cents>item.price_after_cents&&<del>{money(item.price_before_cents)}</del>}<b>{money(item.price_after_cents)}</b></div>}{promotions&&!!b.show_booking&&item.reservable&&<a className="storeButton" href="#reservar" onClick={()=>onPromotion(item.id)}>Reservar promoción</a>}</div></article>)}</div>{items.length>3&&<button className="contentShowAll" type="button" aria-expanded={all} onClick={()=>setAll(!all)}>{all?'Mostrar menos':`Ver todas las ${promotions?'promociones':'novedades'} (${items.length})`}</button>}</div></section>;
+}
