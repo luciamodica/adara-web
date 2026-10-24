@@ -1,0 +1,8 @@
+[
+ {"id":"payments","name":"Mercado Pago","description":"Cobrá señas y pagos en tu cuenta."},
+ {"id":"calendar","name":"Google Calendar","description":"Llevá tus turnos a tu calendario."},
+ {"id":"whatsapp","name":"WhatsApp","description":"Compartí tu enlace y prepará avisos."},
+ {"id":"email","name":"Email","description":"Enviá confirmaciones y avisos de reservas."},
+ {"id":"analytics","name":"Google Analytics","description":"Medí visitas y eventos de reserva."},
+ {"id":"meta","name":"Meta Pixel","description":"Medí eventos para tus campañas."}
+]

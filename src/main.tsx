@@ -9,6 +9,7 @@ import './home-compact.css';
 import './public-customization.css';
 import './customer-experience.css';
 import './growth.css';
+import './mobile-compact.css';
 import {BRAND} from './brand';
 Object.entries(BRAND.colors).forEach(([key,value])=>document.documentElement.style.setProperty(`--adara-${key}`,value));
 createRoot(document.getElementById('root')!).render(<><HomeAnalytics/><Router/></>);
