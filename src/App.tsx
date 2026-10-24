@@ -29,6 +29,8 @@ import {
   Users,WalletCards,XCircle,LockKeyhole,ArrowRight,Eye,RefreshCw,Ban,ExternalLink,CircleHelp
 } from 'lucide-react';
 import {api,money,pesos,fmtDate} from './api';
+import {BRAND} from './brand';
+import './signup.css';
 import Landing from './Landing';
 import PaymentNotice,{holdTime,paymentStatusLabel} from './PaymentNotice';
 import {Tools,WaitingForm,Tracking,trackBooking} from './Tools';
@@ -64,18 +66,51 @@ function Auth({register}:{register:boolean}){
   const[legalAccepted,setLegalAccepted]=useState(false);
   const q=new URLSearchParams(location.search),[plans,setPlans]=useState<any[]>([]),[cycle,setCycle]=useState(q.get('cycle')==='annual'?'annual':'monthly');
   const[f,setF]=useState<any>({name:'',businessName:'',category:'',email:'',password:'',plan:q.get('plan')||''}),[err,setErr]=useState(''),[verify,setVerify]=useState<any>();
-  useEffect(()=>{if(register)api('/public/plans').then((x:any[])=>{setPlans(x);setF((v:any)=>({...v,plan:x.some(p=>p.slug===v.plan)?v.plan:(x[0]?.slug||'')}))})},[register]);
-  const submit=async(e:any)=>{e.preventDefault();setErr('');try{const r=await api('/auth/'+(register?'register':'login'),{method:'POST',body:JSON.stringify({...f,billingCycle:cycle,accept_legal:legalAccepted,legal_version:legal?.version})});if(register){trackHomeEvent('sign_up');setVerify(r)}else navigate(r.role==='superadmin'?'/super-admin':'/admin')}catch(e:any){setErr(e.message)}};
+  const[trialDays,setTrialDays]=useState<number>(BRAND.trialDays),[showPlans,setShowPlans]=useState(false),[plansLoading,setPlansLoading]=useState(register),[plansError,setPlansError]=useState(''),[plansAttempt,setPlansAttempt]=useState(0),[submitting,setSubmitting]=useState(false);
+  useEffect(()=>{
+    if(!register)return;
+    let active=true;
+    setPlansLoading(true);setPlansError('');
+    api('/public/plans').then((list:any[])=>{
+      if(!active)return;
+      setPlans(list);
+      setF((value:any)=>({...value,plan:list.some(plan=>plan.slug===value.plan)?value.plan:(list[0]?.slug||'')}));
+      if(!list.length)setPlansError('No hay planes disponibles en este momento. Intentá nuevamente más tarde.');
+    }).catch(()=>{if(active)setPlansError('No pudimos cargar los planes. Intentá nuevamente.')}).finally(()=>{if(active)setPlansLoading(false)});
+    api('/public/config').then((config:any)=>{if(active)setTrialDays(Number(config.trial_days)||BRAND.trialDays)}).catch(()=>{});
+    return()=>{active=false};
+  },[register,plansAttempt]);
+  const selectedPlan=plans.find(plan=>plan.slug===f.plan);
+  const blocked=register&&(plansLoading||!!plansError||!selectedPlan||legalLoading||!!legalError||(!!legal?.published&&!legalAccepted));
+  const submit=async(e:any)=>{
+    e.preventDefault();if(submitting||blocked)return;setErr('');setSubmitting(true);
+    try{
+      const response=await api('/auth/'+(register?'register':'login'),{method:'POST',body:JSON.stringify({...f,billingCycle:cycle,accept_legal:legalAccepted,legal_version:legal?.version})});
+      if(register){trackHomeEvent('sign_up');setVerify(response)}else navigate(response.role==='superadmin'?'/super-admin':'/admin');
+    }catch(error:any){setErr(error.message)}finally{setSubmitting(false)}
+  };
   const resend=async()=>{if(!verify?.email)return;try{const r=await api('/auth/resend-verification',{method:'POST',body:JSON.stringify({email:verify.email})});setVerify({...verify,...r})}catch(e:any){setErr(e.message)}};
   if(verify)return <div className="authBg"><div className="authCard verifyCard"><span className="kicker">VERIFICACIÓN DE EMAIL</span><h2>Revisá tu correo.</h2><p>Tenés que verificar <b>{verify.email}</b> antes de entrar al panel.</p>{err&&<div className="error">{err}</div>}{verify.emailSent?<p className="successBox"><CheckCircle2/> El email fue enviado.</p>:verify.devVerifyUrl?<><p className="devNote">Modo local: usá este enlace para probar la verificación sin configurar todavía un proveedor de correo.</p><button className="dark full" onClick={()=>navigate(verify.devVerifyUrl)}>Verificar email en desarrollo</button></>:<p className="error">No pudimos enviar el email. Intentá reenviar el enlace en unos minutos.</p>}<button className="outline full" type="button" onClick={resend}>Reenviar enlace</button><button className="link full" onClick={()=>navigate('/login')}>Ir a Ingresar</button></div></div>;
-  const onlyPlan=plans.length===1?plans[0]:null;
-  return <div className="authBg"><form className={'authCard '+(register?'wideAuth':'')} onSubmit={submit}><Logo/><span className="kicker">{register?'EMPEZÁ A CONSTRUIR TU ESPACIO':'QUÉ BUENO VERTE DE NUEVO'}</span><h2>{register?'Creá tu cuenta profesional':'Ingresá a tu panel'}</h2>{register&&<p>Probá tu página, agenda y panel antes de activar la suscripción.</p>}
-    {!register&&q.get('passwordChanged')==='1'&&<div role="status" className="successBox"><CheckCircle2/>Contraseña actualizada. Ingresá con tu nueva contraseña.</div>}{err&&<div className="error">{err}</div>}
-    {register&&<><div className="two"><label>Tu nombre<input required value={f.name} onChange={e=>setF({...f,name:e.target.value})}/></label><label>Nombre de tu negocio<input required value={f.businessName} onChange={e=>setF({...f,businessName:e.target.value})}/></label></div><label>Rubro<select aria-label="Rubro" required value={f.category} onChange={e=>setF({...f,category:e.target.value})}><option value="" disabled>Elegí tu rubro</option>{CATEGORY_OPTIONS.map(x=><option key={x}>{x}</option>)}</select></label><div className="signupPlansHeader"><div><b>{onlyPlan?'Tu suscripción':'Elegí tu plan'}</b><small>{onlyPlan?'El mismo plan con modalidad mensual o anual.':'Podés cambiarlo más adelante.'}</small></div><div className="toggle compact"><button type="button" className={cycle==='monthly'?'on':''} onClick={()=>setCycle('monthly')}>Mensual</button><button type="button" className={cycle==='annual'?'on':''} onClick={()=>setCycle('annual')}>Anual</button></div></div>{onlyPlan?<div className="singlePlanChoice"><div><span className="kicker">ADARA WEB</span><h3>{onlyPlan.name}</h3><p>{onlyPlan.description}</p></div><strong>{money(cycle==='annual'?onlyPlan.annual_price_cents:onlyPlan.monthly_price_cents)} <small>/ {cycle==='annual'?'año':'mes'}</small></strong><div>{(onlyPlan.features||[]).slice(0,5).map((x:string)=><span key={x}>✓ {x}</span>)}</div></div>:<div className="signupPlans">{plans.map(p=><button type="button" key={p.slug} className={f.plan===p.slug?'selected':''} onClick={()=>setF({...f,plan:p.slug})}><b>{p.name}</b><span>{money(cycle==='annual'?p.annual_price_cents:p.monthly_price_cents)} / {cycle==='annual'?'año':'mes'}</span><small>Hasta {p.max_services} servicios</small></button>)}</div>}</>}
-    <div className={register?'two':''}><label>Email<input type="email" required value={f.email} onChange={e=>setF({...f,email:e.target.value})}/></label><label>Contraseña<input type="password" minLength={8} required value={f.password} onChange={e=>setF({...f,password:e.target.value})}/></label></div>
+  return <div className="authBg"><form className={'authCard '+(register?'wideAuth signupCard':'')} onSubmit={submit} aria-busy={submitting}><Logo/><span className="kicker">{register?'TU NEGOCIO, MÁS SIMPLE':'QUÉ BUENO VERTE DE NUEVO'}</span>{register?<h1>Creá tu cuenta profesional</h1>:<h2>Ingresá a tu panel</h2>}{register&&<><p>Empezá por tus datos. Después, personalizá tu página y tu agenda.</p><div className="signupReassurance"><ShieldCheck size={22} aria-hidden="true"/><div><b>{trialDays} días de prueba gratis</b><span>Sin tarjeta para comenzar. Probás antes de suscribirte.</span></div></div></>}
+    {!register&&q.get('passwordChanged')==='1'&&<div role="status" className="successBox"><CheckCircle2/>Contraseña actualizada. Ingresá con tu nueva contraseña.</div>}{err&&<div role="alert" className="error">{err}</div>}
+    {register&&<><div className="two"><label>Tu nombre<input name="name" autoComplete="name" required value={f.name} onChange={e=>setF({...f,name:e.target.value})}/></label><label>Nombre de tu negocio<input name="businessName" autoComplete="organization" required value={f.businessName} onChange={e=>setF({...f,businessName:e.target.value})}/></label></div><label>Rubro<select aria-label="Rubro" required value={f.category} onChange={e=>setF({...f,category:e.target.value})}><option value="" disabled>Elegí tu rubro</option>{CATEGORY_OPTIONS.map(x=><option key={x}>{x}</option>)}</select></label></>}
+    <div className={register?'two':''}><label>Email<input name="email" type="email" autoComplete={register?'email':'username'} autoCapitalize="none" required value={f.email} onChange={e=>setF({...f,email:e.target.value})}/></label><label>Contraseña<input name="password" type="password" autoComplete={register?'new-password':'current-password'} aria-describedby={register?'signup-password-help':undefined} minLength={8} required value={f.password} onChange={e=>setF({...f,password:e.target.value})}/>{register&&<small id="signup-password-help" className="signupFieldHint">Al menos 8 caracteres.</small>}</label></div>
+    {register&&<>
+      {plansLoading&&<p role="status" className="signupLoading">Cargando tu prueba gratuita…</p>}
+      {plansError&&<div role="alert" className="error">{plansError}<button type="button" className="outline" onClick={()=>setPlansAttempt(value=>value+1)}>Reintentar</button></div>}
+      {!plansLoading&&!plansError&&selectedPlan&&<section className="signupTrial" aria-label="Plan de tu prueba gratuita">
+        <div className="signupTrialHeader"><div><span>TU PRUEBA INCLUYE</span><b>{selectedPlan.name}</b></div><button type="button" aria-expanded={showPlans} aria-controls="signup-plan-options" onClick={()=>setShowPlans(value=>!value)}>{showPlans?'Listo':plans.length===1?'Cambiar período':'Cambiar plan'}</button></div>
+        <p>{Number(selectedPlan.max_staff||1)>1?`Hasta ${selectedPlan.max_staff} integrantes con agendas independientes.`:'Tu página profesional y una agenda para tu negocio.'}</p>
+        <div id="signup-plan-options" hidden={!showPlans}>
+          {plans.length>1&&<fieldset className="signupPlanOptions"><legend>Elegí qué plan querés probar</legend>{plans.map(plan=><label className={f.plan===plan.slug?'signupPlanOption selected':'signupPlanOption'} key={plan.slug}><input type="radio" name="signup-plan" value={plan.slug} checked={f.plan===plan.slug} onChange={()=>setF({...f,plan:plan.slug})}/><span><b>{plan.name}</b><small>{plan.description}</small></span><strong>{money(cycle==='annual'?plan.annual_price_cents:plan.monthly_price_cents)}<small> / {cycle==='annual'?'año':'mes'}</small></strong></label>)}</fieldset>}
+          <div className="signupCycle"><span>Si decidís continuar, preferís pagar:</span><div className="toggle compact" role="group" aria-label="Período de facturación"><button type="button" aria-pressed={cycle==='monthly'} className={cycle==='monthly'?'on':''} onClick={()=>setCycle('monthly')}>Mensual</button><button type="button" aria-pressed={cycle==='annual'} className={cycle==='annual'?'on':''} onClick={()=>setCycle('annual')}>Anual</button></div></div>
+        </div>
+        <small className="signupTrialPrice">Después de la prueba: <b>{money(cycle==='annual'?selectedPlan.annual_price_cents:selectedPlan.monthly_price_cents)} / {cycle==='annual'?'año':'mes'}</b>. Activás la suscripción desde tu panel.</small>
+      </section>}
+    </>}
     {register&&legalError&&<div role="alert" className="error">{legalError}<button type="button" className="outline" onClick={refreshLegal}>Reintentar</button></div>}
     {register&&legal?.published&&<label className="legalSignupConsent"><input type="checkbox" required checked={legalAccepted} onChange={e=>setLegalAccepted(e.target.checked)}/><span>Leí y acepto los <a href="/terminos" target="_blank" rel="noopener noreferrer">términos y condiciones</a> y tomé conocimiento de la <a href="/privacidad" target="_blank" rel="noopener noreferrer">política de privacidad</a>.</span></label>}
-    <button className="dark full" disabled={register&&(legalLoading||!!legalError||(!!legal?.published&&!legalAccepted))}>{register?'Crear mi cuenta':'Ingresar'}</button>{!register&&<button type="button" className="link full" onClick={()=>navigate('/olvide-contrasena')}>Olvidé mi contraseña</button>}<button type="button" className="link full" onClick={()=>navigate(register?'/login':'/registro')}>{register?'Ya tengo una cuenta':'Quiero crear mi espacio'}</button><button type="button" className="link full muted" onClick={()=>navigate('/')}>← Volver al inicio</button>
+    <button className="dark full" disabled={submitting||blocked}>{submitting?(register?'Creando tu cuenta…':'Ingresando…'):(register?'Crear mi cuenta gratis':'Ingresar')}</button>{register&&<p className="signupNextStep">El próximo paso es verificar tu email.</p>}{!register&&<button type="button" className="link full" onClick={()=>navigate('/olvide-contrasena')}>Olvidé mi contraseña</button>}<button type="button" className="link full" onClick={()=>navigate(register?'/login':'/registro')}>{register?'Ya tengo una cuenta':'Quiero crear mi espacio'}</button><button type="button" className="link full muted" onClick={()=>navigate('/')}>← Volver al inicio</button>
   </form></div>
 }
 

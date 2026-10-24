@@ -2,6 +2,15 @@
 
 Plataforma SaaS para negocios de belleza. El plan Individual incluye una sola profesional y el plan Equipo permite varias agendas. Cada cuenta tiene su propio panel, página pública premium, agenda, servicios, clientas, promociones, cupones, novedades y configuración de pagos.
 
+## Portada y registro
+
+- La portada permite elegir un servicio, un día y un horario en una demostración interactiva. El resultado muestra la confirmación del cliente y un resumen para la agenda. Son datos de ejemplo: no se crean reservas ni se contactan las APIs de pagos.
+- El registro presenta primero los datos de la cuenta y resume el plan de prueba. **Cambiar plan** permite elegir otro plan o período, conservando también las selecciones de los enlaces de precios.
+- Los planes, importes y días de prueba se consultan desde la configuración pública de la plataforma. Si falla la carga de planes se ofrece un reintento; el envío muestra su estado y evita nuevos intentos mientras está pendiente.
+- El código de los paneles se carga al salir de la portada mediante `Router.tsx`, para reducir el JavaScript inicial. Las rutas y el despliegue en Render conservan su configuración.
+
+Validación: `npm run build`, `npm test` y revisión visual de la portada y del registro, incluyendo anchos de 320 y 390 píxeles.
+
 ## Inicio rápido en Windows PowerShell (instalación nueva)
 
 ```powershell

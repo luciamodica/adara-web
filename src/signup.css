@@ -1,0 +1,47 @@
+.authBg .authCard.signupCard{width:min(720px,100%)}
+.signupCard h1{font-size:32px;letter-spacing:-.04em;line-height:1.2;margin:8px 0 12px}
+.signupCard>p{font-size:14px;line-height:1.7}
+.signupCard .signupReassurance{display:flex;align-items:center;gap:12px;margin:22px 0;padding:15px 17px;background:#edf5ff;border:1px solid #dbe6f2;border-radius:12px;color:#0758df}
+.signupReassurance svg{flex-shrink:0}
+.signupReassurance>div{display:grid;gap:4px}
+.signupReassurance b{font-size:14px}
+.signupReassurance span{font-size:12px;color:#435d7b;line-height:1.6}
+.signupCard .signupFieldHint{font-size:11px;font-weight:400;color:#61748c}
+.signupCard .two{align-items:start}
+.signupCard .signupTrial{border:1px solid #dbe6f2;border-radius:12px;padding:18px;margin:10px 0 22px;background:#f8fbff}
+.signupTrialHeader{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.signupTrialHeader>div{display:grid;gap:5px}
+.signupTrialHeader>div>span{font-size:10px;letter-spacing:.08em;color:#61748c;font-weight:700}
+.signupTrialHeader b{font-size:16px}
+.signupTrialHeader>button{border:1px solid #dbe6f2;border-radius:8px;min-height:44px;padding:8px 12px;background:white;color:#0758df;font-size:12px;font-weight:650;white-space:nowrap}
+.signupCard .signupTrial>p{margin:10px 0 13px;font-size:12px;line-height:1.7;color:#435d7b}
+.signupTrialPrice{display:block;font-size:11px;color:#435d7b;line-height:1.8;border-top:1px solid #dbe6f2;padding-top:12px}
+.signupTrialPrice b{font-weight:650}
+.signupPlanOptions{min-width:0;border:0;padding:0;margin:20px 0 14px}
+.signupPlanOptions legend{font-size:12px;font-weight:650;margin-bottom:10px;padding:0}
+.signupCard .signupPlanOption{display:flex;align-items:center;gap:10px;padding:13px 11px;border:1px solid #dbe6f2;border-radius:9px;margin:8px 0;background:#fff;cursor:pointer}
+.signupCard .signupPlanOption.selected{border-color:#0758df;box-shadow:inset 0 0 0 1px #0758df;background:#edf5ff}
+.signupCard .signupPlanOption input{width:16px;height:16px;margin:0;padding:0;flex-shrink:0;accent-color:#0758df}
+.signupPlanOption>span{flex:1;display:grid;gap:4px;min-width:0}
+.signupPlanOption b{font-size:12px}
+.signupPlanOption small{display:block;font-size:10px;line-height:1.6;font-weight:400;color:#435d7b}
+.signupPlanOption strong{font-size:13px;white-space:nowrap;text-align:right}
+.signupCycle{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 0}
+.signupCycle>span{font-size:12px;line-height:1.6;color:#435d7b}
+.signupCycle .toggle button{min-height:44px}
+.signupCard .signupNextStep{text-align:center;margin:10px 0 2px;font-size:11px;color:#61748c}
+.signupCard .signupLoading{font-size:12px;color:#61748c}
+.signupCard .error .outline{display:block;margin-top:10px}
+.signupCard .signupTrial button:focus-visible,.signupCard .signupPlanOption:has(input:focus-visible){outline:3px solid #0758df;outline-offset:3px}
+.signupCard button:disabled{cursor:default;opacity:.6}
+@media(min-width:601px){.signupCard .two{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){
+  .signupCard h1{font-size:28px}
+  .signupCard .signupTrial{padding:15px}
+  .signupCycle{align-items:flex-start;flex-direction:column}
+  .signupCard .signupPlanOption{flex-wrap:wrap}
+  .signupPlanOption>span{flex-basis:calc(100% - 26px)}
+  .signupPlanOption strong{margin-left:26px;text-align:left}
+  .signupPlanOption strong small{display:inline}
+  .signupCard input:not([type=checkbox]):not([type=radio]),.signupCard select{font-size:16px}
+}

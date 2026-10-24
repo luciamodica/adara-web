@@ -1,0 +1,61 @@
+.platformHome .productStage.bookingStage{padding:22px;scroll-margin-top:24px}
+.bookingDemoIntro{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;font-size:11px;color:#435d7b}
+.bookingDemoEyebrow{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:750;letter-spacing:.08em}
+.bookingDemoEyebrow i{height:7px;width:7px;flex-shrink:0;background:#219667;border-radius:50%}
+.bookingDemoCard{background:#fff;border:1px solid #dbe6f2;border-radius:18px;box-shadow:0 15px 40px #0758df0b;overflow:hidden}
+.bookingDemoBrand{display:flex;align-items:center;gap:12px;padding:19px 24px;border-bottom:1px solid #eaf0f7}
+.bookingDemoBrand>span{width:39px;height:39px;display:grid;place-items:center;border-radius:12px;background:#10243a;color:#fff;font-size:13px;font-weight:700}
+.bookingDemoBrand>div{display:grid;gap:1px;flex:1}
+.bookingDemoBrand b{font-size:14px}
+.bookingDemoBrand small{font-size:11px;color:#61748c}
+.bookingDemoBrand>svg{color:#0758df}
+.bookingDemoForm,.bookingDemoConfirmation{padding:23px 24px}
+.platformHome .bookingDemoCard h2{font-size:23px;letter-spacing:-.04em;line-height:1.3}
+.platformHome .bookingDemoCard h2+p{font-size:12px;color:#61748c;margin-top:5px}
+.bookingDemoService{display:grid;gap:8px;margin-top:22px;font-size:12px;font-weight:700}
+.bookingDemoService select{width:100%;min-width:0;padding:12px;border:1px solid #dbe6f2;border-radius:9px;color:#10243a;background:#fff;font-family:inherit;font-size:13px;font-weight:500;min-height:46px}
+.bookingDemoDates,.bookingDemoTimes{border:0;padding:0;margin:18px 0 0;min-width:0}
+.bookingDemoDates legend,.bookingDemoTimes legend{padding:0;margin-bottom:8px;font-size:12px;font-weight:700}
+.bookingDemoDates>div,.bookingDemoTimes>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.bookingDemoDates label,.bookingDemoTimes label{position:relative;display:flex;align-items:center;justify-content:center;gap:5px;border:1px solid #dbe6f2;border-radius:9px;cursor:pointer;min-height:44px;font-size:12px;color:#435d7b;background:#fff}
+.bookingDemoDates label{flex-direction:column;gap:1px;padding:10px 4px}
+.bookingDemoDates label>span{font-size:11px;text-transform:capitalize}
+.bookingDemoDates b{font-size:14px}
+.bookingDemoDates label.selected,.bookingDemoTimes label.selected{border-color:#0758df;background:#edf5ff;color:#0758df;box-shadow:inset 0 0 0 1px #0758df}
+.bookingDemoDates input,.bookingDemoTimes input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.bookingDemoDates label:has(input:focus-visible),.bookingDemoTimes label:has(input:focus-visible),.bookingDemoService select:focus-visible{outline:3px solid #0758df;outline-offset:3px}
+.bookingDemoTimes label>span{font-variant-numeric:tabular-nums;font-weight:650}
+.bookingDemoSubmit{width:100%;margin-top:21px}
+.bookingDemoSubmit:disabled{opacity:1;background:#e7eef7!important;border-color:#e7eef7!important;color:#61748c!important;cursor:default;transform:none}
+.platformHome .bookingDemoDisclaimer{text-align:center;color:#435d7b;font-size:11px;line-height:1.6;margin:14px 0 0}
+.bookingDemoConfirmation{text-align:center;min-height:432px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.bookingDemoConfirmation:focus{outline:0}
+.bookingDemoSuccessIcon{display:grid;place-items:center;width:54px;height:54px;border-radius:50%;background:#e8f6ee;color:#23734e;margin-bottom:14px}
+.bookingDemoReceipt{display:grid;gap:6px;width:100%;margin:22px 0;padding:18px;border:1px solid #dbe6f2;border-radius:10px;background:#f6faff;text-align:left}
+.bookingDemoReceipt>b{font-size:15px}
+.bookingDemoReceipt>span{font-size:12px;color:#435d7b}
+.bookingDemoReceipt>span:last-child{display:flex;align-items:center;gap:6px}
+.bookingDemoAgenda{width:100%;text-align:left}
+.bookingDemoAgenda>span{font-size:10px;letter-spacing:.07em;color:#61748c;font-weight:700}
+.bookingDemoAgenda>div{display:flex;align-items:center;gap:12px;border:1px solid #dbe6f2;border-left:3px solid #249763;padding:14px 12px;border-radius:8px;margin-top:8px}
+.bookingDemoAgenda b{font-size:14px}
+.bookingDemoAgenda>div>div{display:grid;gap:2px;flex:1;min-width:0}
+.bookingDemoAgenda strong{font-size:12px}
+.bookingDemoAgenda small{font-size:11px;color:#61748c}
+.bookingDemoAgenda>div>span{display:flex;gap:4px;align-items:center;font-size:10px;color:#23734e}
+.bookingDemoRestart{display:flex;gap:7px;align-items:center;justify-content:center;min-height:44px;margin-top:15px;border:0;background:transparent;color:#0758df;font-size:12px;font-weight:650}
+.platformHome .platformHeroCopy .platformAudience{display:block;margin-top:18px;font-size:12px;color:#435d7b;line-height:1.7}
+.platformHome .platformHeroCopy>small{font-size:12px;color:#435d7b}
+.platformHome .platformPlanFootnote{max-width:710px;margin-left:auto;margin-right:auto;line-height:1.7;text-align:center}
+@media(min-width:801px){.platformHome .platformHero{padding-top:34px;padding-bottom:65px}}
+@media(max-width:480px){
+  .platformHome .productStage.bookingStage{padding:13px;border-radius:18px}
+  .bookingDemoIntro{font-size:10px;gap:6px;margin-bottom:12px}
+  .bookingDemoEyebrow{font-size:9px;gap:5px}
+  .bookingDemoBrand{padding:16px}
+  .bookingDemoForm,.bookingDemoConfirmation{padding:20px 16px}
+  .platformHome .bookingDemoCard h2{font-size:22px}
+  .bookingDemoAgenda>div{flex-wrap:wrap;gap:10px}
+  .bookingDemoAgenda>div>span{margin-left:auto}
+  .bookingDemoDisclaimer{font-size:10px}
+}
