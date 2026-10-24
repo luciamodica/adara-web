@@ -1,0 +1,80 @@
+[
+  {
+    "slug": "manicuras",
+    "label": "Manicuras",
+    "category": "Uñas / Manicura",
+    "title": "Agenda y reservas online para manicuras | Adara Web",
+    "description": "Organizá tus turnos de manicura, mostrá tus trabajos y recibí reservas desde tu propia página. Elegí cómo cobrar señas y probá Adara Web sin tarjeta.",
+    "eyebrow": "PARA MANICURAS Y NAIL STUDIOS",
+    "heading": "Tus diseños merecen su espacio. Tus turnos, también.",
+    "intro": "Mostrá tus servicios de uñas en una página con tu marca y compartí un solo enlace para reservar. Tus clientas eligen el servicio, la fecha y un horario disponible; vos seguís trabajando con tu agenda organizada.",
+    "contextTitle": "Una agenda que acompaña cada trabajo.",
+    "context": "Un retiro, un esmaltado y un diseño elaborado no necesitan ocupar el mismo tiempo. En Adara podés definir los minutos de cada servicio o usar el intervalo de tu agenda. La disponibilidad se calcula con lo que elige cada clienta para evitar que se superpongan turnos. También podés cargar reservas que coordinaste por otro medio desde tu panel.",
+    "examples": ["Esmaltado semipermanente", "Kapping y nivelación", "Retiro y nuevo servicio"],
+    "features": [
+      {"title": "Tu trabajo, a la vista", "text": "Cargá imágenes por servicio para que tus clientas conozcan tus diseños y puedan ampliarlas completas antes de elegir."},
+      {"title": "La seña, a tu manera", "text": "Elegí reserva sin anticipo, seña fija, porcentaje o pago completo. Podés ofrecer Mercado Pago o transferencia con revisión del dinero recibido."},
+      {"title": "Una historia por clienta", "text": "Consultá sus visitas y próximas reservas. También podés importar tu lista desde CSV o Excel para empezar con tus contactos organizados."}
+    ],
+    "extraTitle": "También para las visitas que se repiten.",
+    "extra": "Desde Adara Individual tenés herramientas para preparar recordatorios, administrar una lista de espera y acompañar las próximas visitas con packs o fidelidad. El envío automático depende del canal conectado. Si ofrecés un descuento para venir acompañada, las reservas grupales piden los datos y el horario de cada persona dentro de una misma fecha.",
+    "faqs": [
+      {"question": "¿Puedo empezar si atiendo sola?", "answer": "Sí. Inicial incluye una agenda y hasta diez servicios. Individual suma promociones y herramientas avanzadas. Si trabajan varias profesionales, Equipo permite agendas independientes."},
+      {"question": "¿Puedo cobrar una seña por transferencia?", "answer": "Sí. Configurás tu alias o CBU/CVU y el titular. La reserva queda pendiente hasta que revisás el dinero recibido y confirmás el pago desde el panel."},
+      {"question": "¿Mis clientas necesitan registrarse?", "answer": "No necesitan crear una cuenta. Reservan desde tu página y reciben un enlace privado para consultar, cancelar o reprogramar según la política de tu negocio."},
+      {"question": "¿Tengo que tener todas las fotos listas para empezar?", "answer": "Podés comenzar cargando tus servicios y horarios, y después personalizar las fotos y el diseño desde Mi página. El inicio guiado te muestra qué configuración falta revisar."}
+    ]
+  },
+  {
+    "slug": "peluquerias",
+    "label": "Peluquerías",
+    "category": "Peluquería",
+    "title": "Agenda online y turnos para peluquerías | Adara Web",
+    "description": "Gestioná cortes, color y tratamientos con una página propia y reservas online. Organizá una agenda o un equipo y elegí cómo cobrar señas con Adara Web.",
+    "eyebrow": "PARA PELUQUERÍAS Y ESTUDIOS DE CABELLO",
+    "heading": "Más claridad entre un corte y tu próxima transformación.",
+    "intro": "Reuní tus servicios, horarios y reservas en un mismo lugar. Compartí la página de tu peluquería para que cada persona encuentre lo que necesita y elija un turno disponible, sin depender de que estés respondiendo mensajes mientras atendés.",
+    "contextTitle": "Cada servicio, con el tiempo que necesita.",
+    "context": "Un corte y un trabajo de color pueden necesitar duraciones diferentes. Configurá cada servicio con sus minutos o usá el intervalo general de la agenda. Cuando una persona elige varios servicios, Adara calcula el tiempo total necesario. Los bloqueos y las vacaciones te permiten organizar excepciones sin cambiar toda tu semana de atención.",
+    "examples": ["Corte y peinado", "Color y tratamiento", "Cuidado y mantenimiento"],
+    "features": [
+      {"title": "Un lugar para tu propuesta", "text": "Presentá tus servicios, precios e imágenes con el estilo de tu peluquería. Podés elegir qué secciones mostrar y personalizar tu página desde el panel."},
+      {"title": "Agenda por profesional", "text": "Con Equipo, cada integrante tiene disponibilidad propia y puede atender determinados servicios. Quien reserva elige con qué profesional atenderse."},
+      {"title": "Cobros bajo tu control", "text": "Decidí si el turno se confirma sin anticipo, con seña o con pago completo. El plazo para pagar lo definís según tu forma de trabajar."}
+    ],
+    "extraTitle": "El orden sigue después de confirmar.",
+    "extra": "Consultá próximas visitas, historial y estados de pago desde el panel. La persona que reservó puede gestionar cambios mediante su enlace privado, respetando los plazos de cancelación que configuraste. Desde Individual también podés trabajar con turnos recurrentes, recordatorios y lista de espera; la entrega de avisos automáticos requiere configurar el canal correspondiente.",
+    "faqs": [
+      {"question": "¿Sirve para una peluquería con varias personas?", "answer": "Sí. El plan Equipo permite agendas independientes y servicios asignados por integrante. La disponibilidad se valida para la persona elegida al reservar."},
+      {"question": "¿Puedo reservar corte y tratamiento juntos?", "answer": "Sí. Se pueden elegir varios servicios. Adara suma sus duraciones para ofrecer horarios que tengan el espacio necesario."},
+      {"question": "¿Puedo bloquear un día por capacitación o vacaciones?", "answer": "Sí. Podés bloquear horarios y días concretos. También se pueden guardar períodos de cierre o cambios temporales desde la agenda."},
+      {"question": "¿Puedo probar antes de pagar una suscripción?", "answer": "Sí. La prueba se inicia sin cargar una tarjeta. Su duración y los importes vigentes se muestran en la portada y antes de crear la cuenta."}
+    ]
+  },
+  {
+    "slug": "barberias",
+    "label": "Barberías",
+    "category": "Barbería",
+    "title": "Sistema de turnos online para barberías | Adara Web",
+    "description": "Mostrá tus cortes y servicios, recibí reservas online y organizá las agendas de tu barbería. Conocé los planes de Adara Web y probá sin tarjeta.",
+    "eyebrow": "PARA BARBERÍAS Y PROFESIONALES DEL ESTILO",
+    "heading": "Tu estilo en la página. Cada turno en su lugar.",
+    "intro": "Dale a tu barbería una página propia donde se vean tus servicios y se pueda reservar a cualquier hora. Tus clientes eligen corte, barba o una combinación, y el panel reúne los turnos para que puedas organizar la jornada.",
+    "contextTitle": "Una agenda que respeta quién atiende.",
+    "context": "Si trabajás por tu cuenta, podés usar una sola agenda. Si son varios barberos, Equipo permite configurar los servicios y horarios de cada integrante. La disponibilidad se calcula por profesional, por lo que un turno ocupado en una agenda no bloquea el mismo horario de otra. También podés cargar desde el panel las reservas que coordinaste en persona o por WhatsApp.",
+    "examples": ["Corte de cabello", "Perfilado de barba", "Corte y barba"],
+    "features": [
+      {"title": "Un enlace para tu bio", "text": "Compartí tu página en Instagram, WhatsApp o redes. Los servicios y horarios disponibles quedan en un mismo lugar para que el cliente pueda elegir."},
+      {"title": "Cada barbero, su agenda", "text": "En Equipo podés asignar servicios por integrante y administrar disponibilidades independientes desde un panel común."},
+      {"title": "Confirmación a tu medida", "text": "Elegí si pedís seña, pago completo o ningún anticipo. Con pagos pendientes, el lugar se mantiene durante el plazo que configuraste y se libera si vence."}
+    ],
+    "extraTitle": "Preparada para quienes vuelven.",
+    "extra": "Consultá el historial de visitas y acompañá las próximas reservas desde tu panel. Desde Individual podés administrar packs, fidelidad y recordatorios. La conexión con Google Calendar lleva los turnos a tu calendario personal; los avisos por email o WhatsApp necesitan sus canales configurados. Tu página también puede mostrar las reseñas que vos decidas publicar después de revisarlas.",
+    "faqs": [
+      {"question": "¿Mi cliente puede elegir su barbero?", "answer": "Sí, con el plan Equipo. La página ofrece los integrantes activos y muestra los horarios disponibles de la persona seleccionada para esos servicios."},
+      {"question": "¿Puedo empezar con una sola agenda?", "answer": "Sí. Inicial y Individual están pensados para trabajar con una agenda. Podés consultar las funciones de cada plan en la comparación de la portada."},
+      {"question": "¿Qué pasa si un cliente no paga a tiempo?", "answer": "La reserva pendiente tiene un vencimiento. Si no se confirma el pago durante ese plazo, el horario se libera para que pueda reservarlo otra persona."},
+      {"question": "¿Se puede cambiar un turno ya reservado?", "answer": "Cada reserva tiene un enlace privado para consultar, cancelar o reprogramar dentro del plazo permitido por tu negocio. Desde el panel también podés administrar esos cambios."}
+    ]
+  }
+]
