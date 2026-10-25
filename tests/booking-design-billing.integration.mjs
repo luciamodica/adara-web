@@ -27,9 +27,9 @@ try{
  const short=(await request(a.root+'/services','POST',{name:'Servicio corto',price:5000,duration:30,duration_auto:false},a.cookie)).data.id;
  db.prepare("UPDATE schedules SET start_time='09:00',end_time='17:00',active=1 WHERE business_id=?").run(a.b.id);
  await request(a.root+'/payment-settings','PUT',{payment_mode:'total',payment_methods:['bank_transfer'],bank_alias:'fixture.adara',bank_holder:'Titular de prueba'},a.cookie);
- const settings=(await request(a.root+'/payment-settings','GET',undefined,a.cookie)).data;check(()=>assert.equal(settings.mercadopago_enabled,false));check(()=>assert.deepEqual(settings.payment_methods,['bank_transfer']));
- await request(a.root+'/payment-settings','PUT',{payment_mode:'total',payment_methods:['mercadopago']},a.cookie,400);await request(a.root+'/mercadopago/connect','GET',undefined,a.cookie,403);
- const plans=(await request('/public/plans')).data,individual=plans.find(p=>p.slug==='adara');check(()=>assert.equal(individual.mercadopago_enabled,0));check(()=>assert.ok(!individual.features.some(x=>/mercado pago/i.test(x))));check(()=>assert.ok(plans.filter(p=>p.slug!=='adara').every(p=>p.mercadopago_enabled===1&&p.features.includes('Mercado Pago integrado'))));
+ const settings=(await request(a.root+'/payment-settings','GET',undefined,a.cookie)).data;check(()=>assert.equal(settings.mercadopago_enabled,true));check(()=>assert.deepEqual(settings.payment_methods,['bank_transfer']));
+ await request(a.root+'/payment-settings','PUT',{payment_mode:'total',payment_methods:['mercadopago','bank_transfer']},a.cookie);await request(a.root+'/payment-settings','PUT',{payment_mode:'total',payment_methods:['bank_transfer']},a.cookie);
+ const plans=(await request('/public/plans')).data,individual=plans.find(p=>p.slug==='adara');check(()=>assert.equal(individual.mercadopago_enabled,1));check(()=>assert.ok(individual.features.includes('Mercado Pago integrado')));check(()=>assert.ok(plans.filter(p=>p.slug==='adara-inicial').every(p=>p.mercadopago_enabled===0&&!p.features.some(x=>/mercado pago/i.test(x)))));
  const publicStore=(await request('/public/'+a.b.slug)).data;check(()=>assert.deepEqual(JSON.parse(publicStore.business.payment_methods_json),['bank_transfer']));check(()=>assert.equal(publicStore.business.bank_alias,undefined));
  const manual={serviceIds:[sid],date:tomorrow,time:'18:00',clientName:'Cliente manual',notes:'Horario extra'};
  await request(a.root+'/manual-bookings','POST',manual,a.cookie,409);
