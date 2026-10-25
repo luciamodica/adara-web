@@ -1,4 +1,7 @@
 import './production-env.js';
+import {transferConfiguration} from './subscription-transfers.js';
+import fontOptions from '../shared/fonts.json' with {type:'json'};
+import {mercadoPagoAllowed,planHasMercadoPago,paymentFeatures} from './plan-payments.js';
 import {registerGrowth,markSetup} from './growth.js';
 import {registerTestimonials} from './testimonials.js';
 import {registerClientImports} from './client-imports.js';
@@ -17,7 +20,7 @@ import {registerPromotions,publicPromotion,resolvePromotion,applyPromotion} from
 import {migratePlatformCopy} from './platform-copy.js';
 import {galleryFromRequest,serviceGallery,businessGallery} from './image-gallery.js';
 import {registerPlatformLegal,legalConsent,recordLegalAcceptance} from './platform-legal.js';
-import {registerPlatformBilling,billingAccess,billingSummary,billingConfiguration,refreshBillingState} from './platform-billing.js';
+import {registerPlatformBilling,billingAccess,billingSummary,subscriptionExpiryNotice,billingConfiguration,refreshBillingState} from './platform-billing.js';
 import {paymentMethods,bankDetails,decoratePayment,validatePaymentSettings,registerManualPayments} from './manual-payments.js';
 import {registerPlatformFaqs} from './platform-faqs.js';
 import express from 'express';
@@ -77,7 +80,7 @@ const stateToken=(businessId,userId)=>jwt.sign({businessId,userId,purpose:'mp_oa
 const auth=(req,res,next)=>{try{const claims=jwt.verify(req.cookies.session,SECRET),u=db.prepare('SELECT id,role,session_version FROM users WHERE id=?').get(Number(claims.sub));if(!u||Number(claims.sv??0)!==u.session_version)throw new Error('Sesión vencida');req.user={...claims,role:u.role};next()}catch{return res.status(401).json({error:'Iniciá sesión'})}};
 const superOnly=(req,res,next)=>req.user?.role==='superadmin'?next():res.status(403).json({error:'Acceso no autorizado'});
 const own=(uid,id)=>db.prepare('SELECT * FROM businesses WHERE id=? AND owner_id=?').get(Number(id),Number(uid));
-const publicPlan=p=>({...p,features:safeJson(p.features_json,[])});
+const publicPlan=p=>({...p,mercadopago_enabled:planHasMercadoPago(p)?1:0,features:paymentFeatures(p,safeJson(p.features_json,[]))});
 const safeJson=(x,fallback)=>{try{return JSON.parse(x)}catch{return fallback}};
 const cents=x=>Math.max(0,Math.round(Number(x||0)*100));
 const nowIso=()=>new Date().toISOString();
@@ -122,21 +125,23 @@ function activeBookingsForDate(businessId,date,excludeBookingId=0,staffId=null){
   if(staffId)return db.prepare(`SELECT COALESCE(bp.start_time,bk.start_time) start_time,COALESCE(bp.end_time,bk.end_time) end_time FROM bookings bk LEFT JOIN booking_participants bp ON bp.booking_id=bk.id WHERE bk.business_id=? AND bk.date=? AND bk.status IN ('confirmed','pending_payment') AND bk.id!=? AND bk.staff_id=?`).all(businessId,date,Number(excludeBookingId||0),Number(staffId));
   return db.prepare(`SELECT COALESCE(bp.start_time,bk.start_time) start_time,COALESCE(bp.end_time,bk.end_time) end_time FROM bookings bk LEFT JOIN booking_participants bp ON bp.booking_id=bk.id WHERE bk.business_id=? AND bk.date=? AND bk.status IN ('confirmed','pending_payment') AND bk.id!=? AND bk.staff_id IS NULL`).all(businessId,date,Number(excludeBookingId||0));
 }
-function availabilityFor({business,date,services,partySize=1,excludeBookingId=0,staffId=null,manual=false}){
+function availabilityFor({business,date,services,partySize=1,excludeBookingId=0,staffId=null,manual=false,overrideSchedule=false,time=null}){
   if(!date||!services?.length)return [];
   const selected=new Date(`${date}T12:00:00`);if(Number.isNaN(selected.getTime()))return [];
-  const today=dateOnly(new Date());if(date<today||date>addDays(today,Number(business.booking_horizon_days||90)))return [];
+  const today=dateOnly(new Date());if(date<today||(!manual&&date>addDays(today,Number(business.booking_horizon_days||90))))return [];
   const weekday=selected.getDay();let sch;
   if(staffId){const staff=db.prepare('SELECT * FROM staff WHERE id=? AND business_id=? AND active=1').get(Number(staffId),business.id);if(!staff)return [];if(!staffCanDoServices(staff.id,services.map(x=>x.id)))return [];sch=db.prepare('SELECT * FROM staff_schedules WHERE staff_id=? AND weekday=? AND active=1').get(staff.id,weekday)}
   else sch=db.prepare('SELECT * FROM schedules WHERE business_id=? AND weekday=? AND active=1').get(business.id,weekday);
   const exception=db.prepare('SELECT * FROM calendar_exceptions WHERE business_id=? AND date=? AND (staff_id=? OR staff_id IS NULL) ORDER BY staff_id IS NOT NULL DESC LIMIT 1').get(business.id,date,staffId||0);
   if(exception){if(exception.closed)return [];sch={start_time:exception.start_time,end_time:exception.end_time};}
+  if(manual&&overrideSchedule)sch={start_time:'00:00',end_time:'24:00'};
   if(!sch)return [];
   const allDay=db.prepare('SELECT 1 FROM blocks WHERE business_id=? AND date=? AND all_day=1').get(business.id,date);if(allDay)return [];
   const duration=services.reduce((sum,x)=>sum+Number(x.duration_min||0),0)*Math.max(1,Math.min(10,Number(partySize)||1));
   const busy=activeBookingsForDate(business.id,date,excludeBookingId,staffId),blocks=db.prepare('SELECT start_time,end_time FROM blocks WHERE business_id=? AND date=? AND all_day=0').all(business.id,date),occupied=[...busy,...blocks];
   const step=Math.max(5,Number(business.slot_interval_min||30)),start=toMinutes(sch.start_time),end=toMinutes(sch.end_time),out=[];
-  for(let m=start;m+duration<=end;m+=step){const finish=m+duration,overlaps=occupied.some(x=>m<toMinutes(x.end_time||'23:59')&&finish>toMinutes(x.start_time||'00:00'));if(!overlaps){const startIso=new Date(`${date}T${fromMinutes(m)}:00-03:00`);if(startIso.getTime()>Date.now()+Math.max(0,Number(manual?0:business.booking_notice_min||120))*60*1000)out.push(fromMinutes(m))}}
+  const candidates=manual&&time?[toMinutes(time)]:Array.from({length:Math.max(0,Math.floor((end-start-duration)/step)+1)},(_,i)=>start+i*step);
+  for(const m of candidates){if(!Number.isFinite(m)||m<start||m+duration>end)continue;const finish=m+duration,overlaps=occupied.some(x=>m<toMinutes(x.end_time||'23:59')&&finish>toMinutes(x.start_time||'00:00'));if(!overlaps){const startIso=new Date(`${date}T${fromMinutes(m)}:00-03:00`);if(startIso.getTime()>Date.now()+Math.max(0,Number(manual?0:business.booking_notice_min||120))*60*1000)out.push(fromMinutes(m))}}
   return out;
 }
 function calculatePayment(business,totalCents){
@@ -215,7 +220,7 @@ async function emailProfessional(booking,event='new'){
 
 // ---------- Planes públicos ----------
 app.get('/api/public/plans',(_req,res)=>res.json(db.prepare('SELECT * FROM plans WHERE active=1 AND public_enabled=1 ORDER BY display_order,id').all().map(publicPlan)));
-app.get('/api/public/config',(_req,res)=>res.json({trial_days:Number(getSetting('trial_days','15')),...homeContact()}));
+app.get('/api/public/config',(_req,res)=>res.json({subscription_transfer_available:transferConfiguration().configured,trial_days:Number(getSetting('trial_days','15')),...homeContact()}));
 registerHomeAnalytics(app,{getSetting});
 registerHomeMeta(app,{getSetting});
 registerPlatformFaqs(app,{auth,superOnly});
@@ -308,7 +313,7 @@ app.get('/api/businesses/:id/dashboard',auth,(req,res)=>{
     paid_cents:db.prepare(`SELECT COALESCE(sum(amount_paid_cents),0) n FROM bookings WHERE business_id=? AND payment_status='approved'`).get(b.id).n
   };
   const upcoming=db.prepare(`SELECT bk.*,c.name client FROM bookings bk JOIN clients c ON c.id=bk.client_id WHERE bk.business_id=? AND bk.date>=? AND bk.status IN ('confirmed','pending_payment') ORDER BY bk.date,bk.start_time LIMIT 10`).all(b.id,today).map(x=>({...x,participants:participantsFor(x.id),items:db.prepare('SELECT service_name FROM booking_items WHERE booking_id=?').all(x.id).map(i=>i.service_name)}));
-  res.json({business:b,plan:publicPlan(getBusinessPlan(b)),stats,upcoming});
+  res.json({business:b,plan:publicPlan(getBusinessPlan(b)),stats,upcoming,billing_notice:subscriptionExpiryNotice(b)});
 });
 
 app.get('/api/businesses/:id/services',auth,(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);res.json(db.prepare('SELECT * FROM services WHERE business_id=? ORDER BY display_order,id DESC').all(b.id).map(serviceGallery))});
@@ -369,7 +374,7 @@ app.patch('/api/businesses/:id/clients/:cid',auth,(req,res)=>{const b=own(req.us
 
 app.get('/api/businesses/:id/bookings',auth,(req,res)=>{
   const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);cleanupExpiredHolds(b.id);
-  const rows=db.prepare(`SELECT bk.*,c.name client,c.phone,c.email,s.name staff_name FROM bookings bk JOIN clients c ON c.id=bk.client_id LEFT JOIN staff s ON s.id=bk.staff_id WHERE bk.business_id=? ORDER BY bk.date DESC,bk.start_time DESC`).all(b.id).map(x=>({...x,participants:participantsFor(x.id),items:db.prepare('SELECT service_name,price_cents,duration_min,quantity,line_subtotal_cents,line_discount_cents FROM booking_items WHERE booking_id=?').all(x.id)}));
+  const rows=db.prepare(`SELECT bk.*,c.name client,c.phone,c.email,s.name staff_name FROM bookings bk JOIN clients c ON c.id=bk.client_id LEFT JOIN staff s ON s.id=bk.staff_id WHERE bk.business_id=? ORDER BY bk.date DESC,bk.start_time DESC`).all(b.id).map(x=>({...x,participants:participantsFor(x.id),items:db.prepare('SELECT service_id,service_name,price_cents,duration_min,quantity,line_subtotal_cents,line_discount_cents FROM booking_items WHERE booking_id=?').all(x.id)}));
   res.json(rows.map(decoratePayment));
 });
 app.patch('/api/businesses/:id/bookings/:bid',auth,(req,res)=>{
@@ -387,8 +392,8 @@ app.patch('/api/businesses/:id/bookings/:bid',auth,(req,res)=>{
   if(!items.length)return res.status(409).json({error:'El turno no tiene servicios válidos para calcular su duración'});
   let group;try{group=shiftedGroup(current,date,startTime)}catch(e){return res.status(400).json({error:e.message})}
   if(date!==current.date||startTime!==current.start_time||(!['confirmed','pending_payment'].includes(current.status)&&['confirmed','pending_payment'].includes(status))){
-    if(group){try{validateGroupAvailability(group,{business:b,date,services:items,excludeBookingId:current.id,staffId:current.staff_id||null,manual:current.booking_source==='manual'},availabilityFor)}catch(e){return res.status(409).json({error:e.message})}}
-    const slots=availabilityFor({business:b,date,services:items,partySize:group?1:current.party_size,excludeBookingId:current.id,staffId:current.staff_id||null,manual:current.booking_source==='manual'});
+    if(group){try{validateGroupAvailability(group,{business:b,date,services:items,excludeBookingId:current.id,staffId:current.staff_id||null,manual:current.booking_source==='manual',overrideSchedule:!!current.manual_override},availabilityFor)}catch(e){return res.status(409).json({error:e.message})}}
+    const slots=availabilityFor({business:b,date,services:items,partySize:group?1:current.party_size,excludeBookingId:current.id,staffId:current.staff_id||null,manual:current.booking_source==='manual',overrideSchedule:!!current.manual_override});
     if(!slots.includes(startTime))return res.status(409).json({error:'Ese horario no está disponible para la duración completa del turno'});
   }
   const duration=items.reduce((sum,z)=>sum+Number(z.duration_min||0),0)*Math.max(1,Number(current.party_size||1));
@@ -448,7 +453,7 @@ app.put('/api/businesses/:id/page-settings',auth,(req,res)=>{
   const allowed=(v,list,fallback)=>list.includes(v)?v:fallback;
   db.prepare(`UPDATE businesses SET name=?,category=?,phone=?,instagram=?,address=?,description=?,hero_title=?,hero_text=?,hero_image=?,logo_image=?,template_id=?,primary_color=?,accent_color=?,background_color=?,heading_font=?,body_font=?,hero_layout=?,hero_height=?,hero_align=?,header_style=?,service_card_style=?,button_style=?,image_ratio=?,content_width=?,footer_style=?,show_promotions=?,show_posts=?,show_description=?,show_footer_contact=?,show_faqs=?,show_services=?,show_booking=?,hero_images_json=?,show_category=?,category_label=?,section_order_json=?,hero_image_fit=?,show_service_duration=? WHERE id=?`).run(
     x.name||b.name,x.category||'',x.phone||'',x.instagram||'',x.address||'',x.description||'',x.hero_title||'',x.hero_text||'',images[0]||'',x.logo_image||'',tpl.id,x.primary_color||tpl.colors.primary,x.accent_color||tpl.colors.accent,x.background_color||tpl.colors.background,
-    allowed(x.heading_font,['editorial','romantic','serif-soft','fashion','modern'],b.heading_font||tpl.defaults.heading_font),allowed(x.body_font,['clean','elegant'],b.body_font||tpl.defaults.body_font),allowed(x.hero_layout,['overlay','split','centered','cinematic','arch','offset'],b.hero_layout||tpl.defaults.hero_layout),allowed(x.hero_height,['compact','medium','large','xl'],b.hero_height||tpl.defaults.hero_height),allowed(x.hero_align,['left','center','right'],b.hero_align||tpl.defaults.hero_align),allowed(x.header_style,['classic','minimal','centered','dark','floating'],b.header_style||tpl.defaults.header_style),allowed(x.service_card_style,['image-top','editorial','soft','minimal','horizontal','luxury','offset'],b.service_card_style||tpl.defaults.service_card_style),allowed(x.button_style,['pill','soft','square'],b.button_style||tpl.defaults.button_style),allowed(x.image_ratio,['landscape','square','portrait'],b.image_ratio||tpl.defaults.image_ratio),allowed(x.content_width,['wide','narrow'],b.content_width||tpl.defaults.content_width),allowed(x.footer_style,['dark','light','soft','champagne'],b.footer_style||tpl.defaults.footer_style),x.show_promotions===undefined?b.show_promotions:(x.show_promotions?1:0),x.show_posts===undefined?b.show_posts:(x.show_posts?1:0),x.show_description===undefined?b.show_description:(x.show_description?1:0),x.show_footer_contact===undefined?b.show_footer_contact:(x.show_footer_contact?1:0),x.show_faqs===undefined?b.show_faqs:(x.show_faqs?1:0),x.show_services===undefined?b.show_services:(x.show_services?1:0),x.show_booking===undefined?b.show_booking:(x.show_booking?1:0),JSON.stringify(images),x.show_category===undefined?b.show_category:(x.show_category?1:0),categoryLabel.trim(),JSON.stringify(sectionOrder),x.hero_image_fit??b.hero_image_fit??'contain',showDuration,b.id
+    allowed(x.heading_font,fontOptions.headings.map(x=>x.id),b.heading_font||tpl.defaults.heading_font),allowed(x.body_font,fontOptions.bodies.map(x=>x.id),b.body_font||tpl.defaults.body_font),allowed(x.hero_layout,['overlay','split','centered','cinematic','arch','offset'],b.hero_layout||tpl.defaults.hero_layout),allowed(x.hero_height,['compact','medium','large','xl'],b.hero_height||tpl.defaults.hero_height),allowed(x.hero_align,['left','center','right'],b.hero_align||tpl.defaults.hero_align),allowed(x.header_style,['classic','minimal','centered','dark','floating'],b.header_style||tpl.defaults.header_style),allowed(x.service_card_style,['image-top','editorial','soft','minimal','horizontal','luxury','offset'],b.service_card_style||tpl.defaults.service_card_style),allowed(x.button_style,['pill','soft','square'],b.button_style||tpl.defaults.button_style),allowed(x.image_ratio,['landscape','square','portrait'],b.image_ratio||tpl.defaults.image_ratio),allowed(x.content_width,['wide','narrow'],b.content_width||tpl.defaults.content_width),allowed(x.footer_style,['dark','light','soft','champagne'],b.footer_style||tpl.defaults.footer_style),x.show_promotions===undefined?b.show_promotions:(x.show_promotions?1:0),x.show_posts===undefined?b.show_posts:(x.show_posts?1:0),x.show_description===undefined?b.show_description:(x.show_description?1:0),x.show_footer_contact===undefined?b.show_footer_contact:(x.show_footer_contact?1:0),x.show_faqs===undefined?b.show_faqs:(x.show_faqs?1:0),x.show_services===undefined?b.show_services:(x.show_services?1:0),x.show_booking===undefined?b.show_booking:(x.show_booking?1:0),JSON.stringify(images),x.show_category===undefined?b.show_category:(x.show_category?1:0),categoryLabel.trim(),JSON.stringify(sectionOrder),x.hero_image_fit??b.hero_image_fit??'contain',showDuration,b.id
   );res.json({ok:true});
 });
 
@@ -470,13 +475,13 @@ app.put('/api/businesses/:id/settings',auth,(req,res)=>{
 
 app.get('/api/businesses/:id/payment-settings',auth,(req,res)=>{
   const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);
-  res.json({payment_methods:paymentMethods(b),bank_alias:b.bank_alias,bank_account:b.bank_account,bank_holder:b.bank_holder,bank_name:b.bank_name,bank_instructions:b.bank_instructions,payment_mode:b.payment_mode,deposit_type:b.deposit_type,deposit_value:b.deposit_value,payment_hold_minutes:b.payment_hold_minutes,mp_connected:Boolean(b.mp_access_token_enc),mp_user_id:b.mp_user_id,mp_connected_at:b.mp_connected_at,oauth_configured:oauthConfigured(),demo_payments:DEMO_PAYMENTS});
+  res.json({mercadopago_enabled:mercadoPagoAllowed(b),payment_methods:paymentMethods(b),bank_alias:b.bank_alias,bank_account:b.bank_account,bank_holder:b.bank_holder,bank_name:b.bank_name,bank_instructions:b.bank_instructions,payment_mode:b.payment_mode,deposit_type:b.deposit_type,deposit_value:b.deposit_value,payment_hold_minutes:b.payment_hold_minutes,mp_connected:Boolean(b.mp_access_token_enc),mp_user_id:b.mp_user_id,mp_connected_at:b.mp_connected_at,oauth_configured:oauthConfigured(),demo_payments:DEMO_PAYMENTS});
 });
 app.put('/api/businesses/:id/payment-settings',auth,(req,res)=>{
  const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);const x=req.body||{};
  try{if(!['none','deposit','total'].includes(x.payment_mode))throw new Error('Modalidad de cobro inválida');if(!['fixed','percent'].includes(x.deposit_type||'fixed'))throw new Error('Tipo de seña inválido');let value=Number(x.deposit_value||0);if(!Number.isFinite(value)||value<0||(x.deposit_type==='percent'&&value>100))throw new Error('Revisá el importe de seña');value=x.deposit_type==='percent'?Math.round(value):cents(value);const holdMinutes=Number(x.payment_hold_minutes??b.payment_hold_minutes);if(!Number.isInteger(holdMinutes)||holdMinutes<5||holdMinutes>1440)throw new Error('Elegí un plazo de pago entre 5 y 1440 minutos (24 horas)');const m=validatePaymentSettings(b,x);db.prepare('UPDATE businesses SET payment_mode=?,deposit_type=?,deposit_value=?,payment_hold_minutes=?,payment_methods_json=?,bank_alias=?,bank_account=?,bank_holder=?,bank_name=?,bank_instructions=? WHERE id=?').run(x.payment_mode,x.deposit_type||'fixed',value,holdMinutes,JSON.stringify(m.methods),m.alias,m.account,m.holder,m.bank,m.instructions,b.id);markSetup(b.id,'payment');res.json({ok:true})}catch(e){res.status(400).json({error:e.message})}
 });
-app.get('/api/businesses/:id/mercadopago/connect',auth,(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);if(!oauthConfigured())return res.status(503).json({error:'Mercado Pago OAuth todavía no está configurado en .env'});res.json({url:authorizationUrl(stateToken(b.id,Number(req.user.sub)))})});
+app.get('/api/businesses/:id/mercadopago/connect',auth,(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);if(!mercadoPagoAllowed(b))return res.status(403).json({error:'Adara Individual incluye pagos por transferencia.'});if(!oauthConfigured())return res.status(503).json({error:'Mercado Pago OAuth todavía no está configurado en .env'});res.json({url:authorizationUrl(stateToken(b.id,Number(req.user.sub)))})});
 app.delete('/api/businesses/:id/mercadopago',auth,(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);db.prepare('UPDATE businesses SET mp_access_token_enc=NULL,mp_refresh_token_enc=NULL,mp_token_expires_at=NULL,mp_user_id=NULL,mp_connected_at=NULL WHERE id=?').run(b.id);res.json({ok:true})});
 
 app.get('/api/businesses/:id/plan',auth,(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);res.json({business:b,plan:publicPlan(getBusinessPlan(b)),plans:db.prepare('SELECT * FROM plans WHERE active=1 AND (public_enabled=1 OR slug=?) ORDER BY display_order').all(b.plan_slug).map(publicPlan),billing:billingSummary(b.id)})});
@@ -485,7 +490,7 @@ app.get('/api/businesses/:id/plan',auth,(req,res)=>{const b=own(req.user.sub,req
 app.get('/api/integrations/mercadopago/callback',async(req,res)=>{
   try{
     const payload=jwt.verify(String(req.query.state||''),SECRET);if(payload.purpose!=='mp_oauth')throw new Error('state inválido');
-    const b=db.prepare('SELECT * FROM businesses WHERE id=? AND owner_id=?').get(Number(payload.businessId),Number(payload.userId));if(!b)throw new Error('Negocio inválido');
+    const b=db.prepare('SELECT * FROM businesses WHERE id=? AND owner_id=?').get(Number(payload.businessId),Number(payload.userId));if(!b)throw new Error('Negocio inválido');if(!mercadoPagoAllowed(b))throw new Error('Mercado Pago no está incluido en este plan');
     const data=await exchangeCode(String(req.query.code||''));
     const expires=new Date(Date.now()+Number(data.expires_in||15552000)*1000).toISOString();
     db.prepare(`UPDATE businesses SET mp_access_token_enc=?,mp_refresh_token_enc=?,mp_token_expires_at=?,mp_user_id=?,mp_connected_at=CURRENT_TIMESTAMP WHERE id=?`).run(encryptSecret(data.access_token),encryptSecret(data.refresh_token||''),expires,String(data.user_id||''),b.id);
@@ -498,7 +503,7 @@ app.get('/api/public/:slug',(req,res)=>{
   const b=db.prepare(`SELECT b.*,p.name plan_name FROM businesses b JOIN plans p ON p.slug=b.plan_slug WHERE b.slug=? AND b.status='active'`).get(req.params.slug);if(!b)return res.status(404).json({error:'Negocio no encontrado'});
   const today=dateOnly(new Date());
   const promotions=db.prepare(`SELECT * FROM promotions WHERE business_id=? AND active=1 AND (start_date IS NULL OR start_date<=?) AND (end_date IS NULL OR end_date>=?) ORDER BY id DESC`).all(b.id,today,today).map(publicPromotion);
-  refreshBillingState(b.id);const plan=getBusinessPlan(b);const publicBusiness={...b,...(plan.basic_only?{show_promotions:0,show_posts:0,loyalty_enabled:0,waitlist_enabled:0}:{}),show_booking:b.show_booking&&billingAccess(db.prepare('SELECT * FROM businesses WHERE id=?').get(b.id))?1:0};for(const key of Object.keys(publicBusiness)){if(key.endsWith('_enc')||['owner_id','notification_email','admin_notes','custom_monthly_price_cents','custom_annual_price_cents','mp_user_id','bank_alias','bank_account','bank_holder','bank_name','bank_instructions','subscription_paid_until','subscription_managed','subscription_status','trial_ends_at'].includes(key))delete publicBusiness[key];}const staff=Number(plan.max_staff||1)>1?db.prepare('SELECT * FROM staff WHERE business_id=? AND active=1 ORDER BY display_order,id').all(b.id).map(x=>({...x,service_ids:staffServices(x.id),schedule:staffSchedule(x.id)})):[];res.json({packs_available:!plan.basic_only&&Boolean(db.prepare('SELECT 1 FROM packs WHERE business_id=? AND active=1').get(b.id)),exceptions:db.prepare('SELECT date,staff_id,closed,start_time,end_time FROM calendar_exceptions WHERE business_id=?').all(b.id),business:{...businessGallery(publicBusiness),max_staff:Number(plan.max_staff||1),basic_only:Number(plan.basic_only||0),team_enabled:Number(plan.team_enabled||0)},services:db.prepare('SELECT * FROM services WHERE business_id=? AND active=1 ORDER BY display_order,id').all(b.id).map(serviceGallery),promotions:plan.basic_only?[]:promotions,posts:plan.basic_only?[]:db.prepare('SELECT * FROM posts WHERE business_id=? AND active=1 ORDER BY id DESC').all(b.id),faqs:db.prepare('SELECT * FROM faqs WHERE business_id=? AND active=1 ORDER BY display_order,id').all(b.id),schedule:businessSchedule(b.id),staff});
+  refreshBillingState(b.id);const plan=getBusinessPlan(b);const publicBusiness={...b,payment_methods_json:JSON.stringify(paymentMethods(b)),mercadopago_enabled:mercadoPagoAllowed(b),...(plan.basic_only?{show_promotions:0,show_posts:0,loyalty_enabled:0,waitlist_enabled:0}:{}),show_booking:b.show_booking&&billingAccess(db.prepare('SELECT * FROM businesses WHERE id=?').get(b.id))?1:0};for(const key of Object.keys(publicBusiness)){if(key.endsWith('_enc')||['owner_id','notification_email','admin_notes','custom_monthly_price_cents','custom_annual_price_cents','mp_user_id','bank_alias','bank_account','bank_holder','bank_name','bank_instructions','subscription_paid_until','subscription_managed','subscription_status','trial_ends_at'].includes(key))delete publicBusiness[key];}const staff=Number(plan.max_staff||1)>1?db.prepare('SELECT * FROM staff WHERE business_id=? AND active=1 ORDER BY display_order,id').all(b.id).map(x=>({...x,service_ids:staffServices(x.id),schedule:staffSchedule(x.id)})):[];res.json({packs_available:!plan.basic_only&&Boolean(db.prepare('SELECT 1 FROM packs WHERE business_id=? AND active=1').get(b.id)),exceptions:db.prepare('SELECT date,staff_id,closed,start_time,end_time FROM calendar_exceptions WHERE business_id=?').all(b.id),business:{...businessGallery(publicBusiness),max_staff:Number(plan.max_staff||1),basic_only:Number(plan.basic_only||0),team_enabled:Number(plan.team_enabled||0)},services:db.prepare('SELECT * FROM services WHERE business_id=? AND active=1 ORDER BY display_order,id').all(b.id).map(serviceGallery),promotions:plan.basic_only?[]:promotions,posts:plan.basic_only?[]:db.prepare('SELECT * FROM posts WHERE business_id=? AND active=1 ORDER BY id DESC').all(b.id),faqs:db.prepare('SELECT * FROM faqs WHERE business_id=? AND active=1 ORDER BY display_order,id').all(b.id),schedule:businessSchedule(b.id),staff});
 });
 app.get('/api/public/:slug/availability',(req,res)=>{
   const b=db.prepare(`SELECT * FROM businesses WHERE slug=? AND status='active' AND show_booking=1`).get(req.params.slug);if(!b)return res.sendStatus(404);
@@ -527,6 +532,7 @@ app.post('/api/public/:slug/bookings',async(req,res)=>{
   if(b.require_email&&!String(x.email||'').trim())return res.status(400).json({error:'Completá tu email para reservar'});
   const start=toMinutes(x.time),end=group?.end||fromMinutes(start+quote.duration_min),payment=benefits.waiveAdvance?{mode:'none',due:0}:benefits.fullPayment?{mode:'total',due:quote.total_cents}:calculatePayment(b,quote.total_cents);
   const allowedMethods=paymentMethods(b),method=payment.due>0?String(x.paymentMethod||allowedMethods[0]||''):'none';if(payment.due>0&&!allowedMethods.includes(method))return res.status(400).json({error:'Elegí un medio de pago habilitado por el profesional'});
+  if(payment.due>0&&method==='bank_transfer'&&(!(b.bank_alias||b.bank_account)||!b.bank_holder))return res.status(503).json({error:'El profesional todavía debe completar su cuenta para recibir transferencias.'});
   if(payment.due>0&&method==='mercadopago'&&!b.mp_access_token_enc&&!DEMO_PAYMENTS)return res.status(503).json({error:'Esta profesional todavía no conectó Mercado Pago para recibir pagos online'});
   if(x.repeatDays&&(b.payment_mode!=='none'||x.packCode||x.rewardCode||x.couponCode||x.promotionId||benefits.fullPayment))return res.status(400).json({error:'La repetición automática desde la web requiere reservas sin pago online ni beneficios. Coordiná la serie con el profesional.'});
   const email=String(x.email||'').trim().toLowerCase();
@@ -676,7 +682,7 @@ app.get('/api/admin/settings',auth,superOnly,(_req,res)=>res.json({trial_days:Nu
 app.put('/api/admin/settings',auth,superOnly,(req,res)=>{try{savePlatformSettings(req.body||{});res.json({ok:true})}catch(e){res.status(400).json({error:e.message})}});
 
 registerManualPayments(app,{auth,own,bookingDetails,cleanupExpiredHolds,emailBooking,emailProfessional});
-registerManualBookings(app,{auth,own,availabilityFor,bookingDetails,getBusinessPlan,staffCanDoServices});
+registerManualBookings(app,{auth,own,availabilityFor,bookingDetails,getBusinessPlan,staffCanDoServices,computeQuote});
 registerPlatformSupport(app,{auth,superOnly});
 export const featureWorker=registerFeatures(app,{auth,own,availabilityFor,bookingDetails,staffCanDoServices});
 

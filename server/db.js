@@ -286,6 +286,7 @@ addColumn('businesses','section_order_json',`TEXT NOT NULL DEFAULT '["hero","boo
 addColumn('businesses','hero_image_fit',"TEXT NOT NULL DEFAULT 'contain'");
 
 addColumn('promotions','banner_text',"TEXT NOT NULL DEFAULT ''");
+addColumn('promotions','banner_price_mode',"TEXT NOT NULL DEFAULT 'auto'");
 addColumn('promotions','banner_bg',"TEXT NOT NULL DEFAULT '#2d2723'");
 addColumn('promotions','banner_text_color',"TEXT NOT NULL DEFAULT '#ffffff'");
 addColumn('bookings','party_size','INTEGER NOT NULL DEFAULT 1');

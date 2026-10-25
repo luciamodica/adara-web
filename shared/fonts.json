@@ -1,0 +1,21 @@
+{
+ "headings":[
+  {"id":"modern","label":"Moderna · Manrope","family":"'Manrope', sans-serif","weight":700,"style":"normal"},
+  {"id":"editorial","label":"Editorial · Playfair Display","family":"'Playfair Display', Georgia, serif","weight":600,"style":"normal"},
+  {"id":"romantic","label":"Romántica · Cormorant","family":"'Cormorant Garamond', Georgia, serif","weight":600,"style":"italic"},
+  {"id":"serif-soft","label":"Clásica suave · Georgia","family":"Georgia, 'Times New Roman', serif","weight":400,"style":"normal"},
+  {"id":"fashion","label":"Moda · Bodoni","family":"'Bodoni Moda', 'Times New Roman', serif","weight":500,"style":"normal"},
+  {"id":"geometric","label":"Geométrica · Montserrat","family":"'Adara Geometric', sans-serif","weight":600,"style":"normal"},
+  {"id":"rounded","label":"Redondeada · Nunito Sans","family":"'Adara Rounded', sans-serif","weight":700,"style":"normal"},
+  {"id":"condensed","label":"Condensada · Oswald","family":"'Adara Condensed', sans-serif","weight":500,"style":"normal"},
+  {"id":"handwritten","label":"Manuscrita · Adara Script","family":"'Adara Script', cursive","weight":600,"style":"normal"}
+ ],
+ "bodies":[
+  {"id":"clean","label":"Simple · DM Sans","family":"'DM Sans', sans-serif"},
+  {"id":"elegant","label":"Limpia · Manrope","family":"'Manrope', sans-serif"},
+  {"id":"geometric","label":"Geométrica · Montserrat","family":"'Adara Geometric', sans-serif"},
+  {"id":"rounded","label":"Redondeada · Nunito Sans","family":"'Adara Rounded', sans-serif"},
+  {"id":"serif","label":"Con serifas · Georgia","family":"Georgia, 'Times New Roman', serif"},
+  {"id":"mono","label":"Monoespaciada · Courier","family":"'Courier New', monospace"}
+ ]
+}

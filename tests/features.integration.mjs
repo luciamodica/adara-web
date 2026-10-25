@@ -1,3 +1,6 @@
+import bcrypt from 'bcryptjs';
+import {randomBytes} from 'node:crypto';
+import {createPaymentFixturePlan} from './fixtures/payment-plan.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -5,20 +8,24 @@ import path from 'node:path';
 import jsQR from 'jsqr';
 import {PNG} from 'pngjs';
 import {contrast} from '../server/qr-brand.js';
+const ownerPassword=randomBytes(24).toString('base64url')+'Aa1!',adminPassword=randomBytes(24).toString('base64url')+'Aa1!';
+// Every contact is a synthetic fixture: .test domains and non-routable zero-prefix phone numbers.
+const fixturePhone=n=>'0000000000'+String(n).padStart(3,'0');
 const initial=process.cwd(),temp=fs.mkdtempSync(path.join(os.tmpdir(),'adara-test-'));
 process.chdir(temp);process.env.DISABLE_FEATURE_WORKER='true';process.env.DEMO_PAYMENTS='true';
 const {app,featureWorker}=await import('../server/index.js');const {db}=await import('../server/db.js');
+createPaymentFixturePlan(db);
 const server=app.listen(0);await new Promise(r=>server.once('listening',r));const base=`http://127.0.0.1:${server.address().port}/api`;let checks=0;
 const check=(fn)=>{fn();checks++};
 async function request(route,method='GET',body,session='',expected=200){const r=await fetch(base+route,{method,headers:{'Content-Type':'application/json',...(session?{Cookie:session}:{})},body:body===undefined?undefined:JSON.stringify(body)});const data=await r.json().catch(()=>({}));assert.equal(r.status,expected,JSON.stringify({route,status:r.status,data}));checks++;return {data,cookie:r.headers.get('set-cookie')?.split(';')[0]}}
-async function owner(n,plan='adara'){const {data}=await request('/auth/register','POST',{name:'Dueña '+n,email:`owner${n}@example.test`,password:'Password123!',businessName:'Estudio '+n,plan});const token=new URL('http://localhost'+data.devVerifyUrl).searchParams.get('token');const v=await request('/auth/verify?token='+token);const me=await request('/me','GET',undefined,v.cookie);return {cookie:v.cookie,b:me.data.businesses[0]}}
+async function owner(n,plan='fixture-individual-mp'){const {data}=await request('/auth/register','POST',{name:'Dueña '+n,email:`owner${n}@example.test`,password:ownerPassword,businessName:'Estudio '+n,plan});const token=new URL('http://localhost'+data.devVerifyUrl).searchParams.get('token');const v=await request('/auth/verify?token='+token);const me=await request('/me','GET',undefined,v.cookie);return {cookie:v.cookie,b:me.data.businesses[0]}}
 try{
  const {cookie,b}=await owner(1),other=await owner(2);const root=`/businesses/${b.id}/tools`;
  const sid=(await request(`/businesses/${b.id}/services`,'POST',{name:'Manicura',price:20000,duration:60},cookie)).data.id;
  await request(root+'/settings','PUT',{terms_required:true,booking_terms:'Cancelar con anticipación.',no_show_threshold:2,loyalty_enabled:true,loyalty_points:10,loyalty_redeem_points:10,loyalty_discount:2000},cookie);
  await request(root,'GET',undefined,other.cookie,403);
  let date=new Date(Date.now()+4*86400000).toISOString().slice(0,10);await request(root+'/exceptions','POST',{date,closed:false,start_time:'10:00',end_time:'12:00'},cookie);
- const payload={serviceIds:[sid],date,time:'10:00',clientName:'Lara',email:'lara@example.test',phone:'+54 9 11 5555 0000'};
+ const payload={serviceIds:[sid],date,time:'10:00',clientName:'Fixture Client A',email:'client-a@example.test',phone:fixturePhone(1)};
  await request(`/public/${b.slug}/bookings`,'POST',payload,'',400);
  const bk=(await request(`/public/${b.slug}/bookings`,'POST',{...payload,acceptTerms:true})).data.booking;
  check(()=>assert.ok(bk.terms_snapshot));
@@ -29,9 +36,9 @@ try{
  check(()=>assert.ok(db.prepare('SELECT attendance_confirmed_at x FROM bookings WHERE id=?').get(bk.id).x));
  const publicData=(await request(`/public/${b.slug}`)).data;
  check(()=>assert.ok(!('google_refresh_enc' in publicData.business)&&!('mp_access_token_enc' in publicData.business)));
- await request(`/public/${b.slug}/waitlist`,'POST',{date,serviceIds:[sid],name:'Ana',phone:'5491155551111',consent:true},'',400);
- const second=(await request(`/public/${b.slug}/bookings`,'POST',{...payload,time:'11:00',clientName:'Eva',email:'eva@example.test',phone:'5491155552222',acceptTerms:true})).data.booking;
- await request(`/public/${b.slug}/waitlist`,'POST',{date,serviceIds:[sid],name:'Ana',email:'ana@example.test',phone:'5491155551111',consent:true});
+ await request(`/public/${b.slug}/waitlist`,'POST',{date,serviceIds:[sid],name:'Fixture Client B',phone:fixturePhone(2),consent:true},'',400);
+ const second=(await request(`/public/${b.slug}/bookings`,'POST',{...payload,time:'11:00',clientName:'Fixture Client C',email:'client-c@example.test',phone:fixturePhone(3),acceptTerms:true})).data.booking;
+ await request(`/public/${b.slug}/waitlist`,'POST',{date,serviceIds:[sid],name:'Fixture Client B',email:'client-b@example.test',phone:fixturePhone(2),consent:true});
  await request(`/public/manage-booking/${second.manage_token}/cancel`,'POST',{});
  await featureWorker.processJobs();
  check(()=>assert.equal(db.prepare("SELECT count(*) n FROM notification_jobs WHERE kind='waitlist'").get().n,2));
@@ -81,11 +88,11 @@ try{
  // Individual cannot create staff; team bookings are independent at the same time.
  await request(`/businesses/${b.id}/staff`,'POST',{name:'Integrante'},cookie,403);
  const team=await owner(3,'adara-equipo');const ts=(await request(`/businesses/${team.b.id}/services`,'POST',{name:'Pestañas',price:25000,duration:60},team.cookie)).data.id;
- const firstStaff=(await request(`/businesses/${team.b.id}/staff`,'POST',{name:'Ana',service_ids:[ts]},team.cookie)).data.id;
- const secondStaff=(await request(`/businesses/${team.b.id}/staff`,'POST',{name:'Eva',service_ids:[ts]},team.cookie)).data.id;
+ const firstStaff=(await request(`/businesses/${team.b.id}/staff`,'POST',{name:'Fixture Client B',service_ids:[ts]},team.cookie)).data.id;
+ const secondStaff=(await request(`/businesses/${team.b.id}/staff`,'POST',{name:'Fixture Client C',service_ids:[ts]},team.cookie)).data.id;
  const tr=`/businesses/${team.b.id}/tools`;
  await request(tr+'/exceptions','POST',{date,closed:false,start_time:'10:00',end_time:'12:00'},team.cookie);
- const tPayload={...payload,serviceIds:[ts],email:'team@example.test',phone:'5491166661111'};
+ const tPayload={...payload,serviceIds:[ts],email:'team@example.test',phone:fixturePhone(4)};
  await request(`/public/${team.b.slug}/bookings`,'POST',{...tPayload,staffId:firstStaff});
  await request(`/public/${team.b.slug}/bookings`,'POST',{...tPayload,staffId:secondStaff});
  await request(`/public/${team.b.slug}/bookings`,'POST',{...tPayload,staffId:firstStaff},'',409);
@@ -95,13 +102,13 @@ try{
  const independent=(await request(`/public/${team.b.slug}/availability?date=${date}&serviceIds=${ts}&staffId=${secondStaff}`)).data;
  check(()=>assert.ok(independent.slots.includes('11:00')));
  const qr=(await request(root+'/qr','GET',undefined,cookie)).data;check(()=>assert.ok(qr.dataUrl.startsWith('data:image/png;base64,')));
- const csv=await fetch(base+root+'/export/clients',{headers:{Cookie:cookie}});const csvText=await csv.text();check(()=>assert.ok(csvText.includes('Lara')));
+ const csv=await fetch(base+root+'/export/clients',{headers:{Cookie:cookie}});const csvText=await csv.text();check(()=>assert.ok(csvText.includes('Fixture Client A')));
  // Reminder dedupe and rescheduling invalidates pending old reminders.
  const dueDate=new Date(Date.now()+24*3600000).toISOString().slice(0,10);const dueTime=new Intl.DateTimeFormat('en-GB',{timeZone:'America/Argentina/Buenos_Aires',hour:'2-digit',minute:'2-digit'}).format(new Date(Date.now()+24*3600000));db.prepare('UPDATE bookings SET date=?,start_time=? WHERE id=?').run(dueDate,dueTime,series.booking.id);
  await featureWorker.processJobs();await featureWorker.processJobs();check(()=>assert.equal(db.prepare("SELECT count(*) n FROM notification_jobs WHERE kind='reminder' AND booking_id=?").get(series.booking.id).n,1));
  const job=db.prepare("SELECT id FROM notification_jobs WHERE kind='reminder' AND booking_id=?").get(series.booking.id);db.prepare("UPDATE notification_jobs SET status='pending' WHERE id=?").run(job.id);db.prepare("UPDATE bookings SET start_time='08:00' WHERE id=?").run(series.booking.id);await featureWorker.processJobs();check(()=>assert.equal(db.prepare('SELECT status FROM notification_jobs WHERE id=?').get(job.id).status,'cancelled'));
  // Google transport is mocked; event bodies and cancellation calls remain real code.
- const {encryptSecret}=await import('../server/crypto.js');db.prepare('UPDATE businesses SET google_access_enc=?,google_refresh_enc=?,google_expires_at=? WHERE id=?').run(encryptSecret('test-access'),encryptSecret('test-refresh'),new Date(Date.now()+3600000).toISOString(),b.id);const actualFetch=globalThis.fetch,calls=[];globalThis.fetch=async(url,options)=>{if(String(url).startsWith('https://www.googleapis.com/')){calls.push({url,options});return new Response('{}',{status:options.method==='PUT'?404:200})}return actualFetch(url,options)};
+ const {encryptSecret}=await import('../server/crypto.js');db.prepare('UPDATE businesses SET google_access_enc=?,google_refresh_enc=?,google_expires_at=? WHERE id=?').run(encryptSecret(randomBytes(32).toString('hex')),encryptSecret(randomBytes(32).toString('hex')),new Date(Date.now()+3600000).toISOString(),b.id);const actualFetch=globalThis.fetch,calls=[];globalThis.fetch=async(url,options)=>{if(String(url).startsWith('https://www.googleapis.com/')){calls.push({url,options});return new Response('{}',{status:options.method==='PUT'?404:200})}return actualFetch(url,options)};
  await featureWorker.processJobs();check(()=>assert.ok(calls.some(x=>x.options.method==='POST')));const synced=db.prepare('SELECT google_event_id FROM bookings WHERE id=?').get(series.recurring[0].id);check(()=>assert.ok(synced.google_event_id));
  db.prepare("UPDATE bookings SET status='cancelled' WHERE id=?").run(series.recurring[0].id);await featureWorker.processJobs();check(()=>assert.ok(calls.some(x=>x.options.method==='DELETE'&&x.url.endsWith(synced.google_event_id))));globalThis.fetch=actualFetch;db.prepare('UPDATE businesses SET google_access_enc=NULL,google_refresh_enc=NULL WHERE id=?').run(b.id);
  // Trial migration updates the old default without shortening trials already granted.
@@ -111,18 +118,18 @@ try{
  await import('../server/features-db.js?test-migration');
  check(()=>assert.equal(db.prepare("SELECT value FROM platform_settings WHERE key='trial_days'").get().value,'15'));
  check(()=>assert.equal(db.prepare('SELECT trial_ends_at FROM businesses WHERE id=?').get(b.id).trial_ends_at,previousEnd));
- await import('../server/seed.js');const admin=(await request('/auth/login','POST',{email:'admin@adaraweb.local',password:'admin1234'})).cookie;
+ db.prepare("INSERT INTO users(name,email,password_hash,role,email_verified) VALUES('Fixture Super','admin@fixture.example.test',?,'superadmin',1)").run(bcrypt.hashSync(adminPassword,8));const admin=(await request('/auth/login','POST',{email:'admin@fixture.example.test',password:adminPassword})).cookie;
  await request('/admin/settings','PUT',{trial_days:7},cookie,403);await request('/admin/settings','PUT',{trial_days:30},admin,400);
  await request('/admin/settings','PUT',{trial_days:7},admin);const seven=(await request('/public/config')).data;check(()=>assert.equal(seven.trial_days,7));
  db.prepare("DELETE FROM platform_settings WHERE key='short_trial_migrated'").run();await import('../server/features-db.js?test-second-migration');check(()=>assert.equal(db.prepare("SELECT value FROM platform_settings WHERE key='trial_days'").get().value,'7'));
  await request('/admin/settings','PUT',{trial_days:15},admin);
- // Personal branding, pale palettes and a real QR decoder.
- db.prepare("UPDATE businesses SET name=?,template_id='rose',primary_color='#e8c9c8',accent_color='#bb7c90',background_color='#fff9f7',logo_image=?,instagram=?,tiktok=?,phone=?,address=? WHERE id=?").run('Estudio de Lucía','/uploads/logo.png','@lucia.beauty','@lucia.tiktok','5491155559999','Av. Siempre Viva 742',b.id);
+ // Synthetic branding, pale palettes and a real QR decoder.
+ db.prepare("UPDATE businesses SET name=?,template_id='rose',primary_color='#e8c9c8',accent_color='#bb7c90',background_color='#fff9f7',logo_image=?,instagram=?,tiktok=?,phone=?,address=? WHERE id=?").run('Negocio ficticio para pruebas','/uploads/logo.png','https://social.example.test/fixture-business','https://video.example.test/fixture-business',fixturePhone(5),'Domicilio ficticio sin dirección real',b.id);
  const branded=(await request(root+'/qr','GET',undefined,cookie)).data;
  check(()=>assert.equal(branded.brand.email,'')); // Never use the private account email as a public QR contact.
- db.prepare('UPDATE businesses SET public_email=? WHERE id=?').run('hola@estudio.example.test',b.id);
+ db.prepare('UPDATE businesses SET public_email=? WHERE id=?').run('contact@fixture.example.test',b.id);
  const contactQr=(await request(root+'/qr','GET',undefined,cookie)).data;
- check(()=>assert.equal(contactQr.brand.email,'hola@estudio.example.test'));
+ check(()=>assert.equal(contactQr.brand.email,'contact@fixture.example.test'));
  check(()=>assert.equal(branded.brand.tagline,'Tu próximo momento empieza acá'));
  const beforeQrSettings=(await request(root,'GET',undefined,cookie)).data.settings;
  await request(root+'/qr','PUT',{tagline:'  Reservá tu momento   de bienestar  '},cookie);
@@ -142,8 +149,8 @@ try{
  const emptyQr=(await request(root+'/qr','GET',undefined,cookie)).data;
  check(()=>assert.equal(emptyQr.brand.tagline,''));
  await request(root+'/qr','PUT',{tagline:'Tu próximo momento empieza acá'},cookie);
- check(()=>assert.equal(branded.brand.primary,'#e8c9c8'));check(()=>assert.equal(branded.brand.instagram,'@lucia.beauty'));
- check(()=>assert.equal(branded.brand.logo,'/uploads/logo.png'));check(()=>assert.equal(branded.brand.address,'Av. Siempre Viva 742'));
+ check(()=>assert.equal(branded.brand.primary,'#e8c9c8'));check(()=>assert.equal(branded.brand.instagram,'https://social.example.test/fixture-business'));
+ check(()=>assert.equal(branded.brand.logo,'/uploads/logo.png'));check(()=>assert.equal(branded.brand.address,'Domicilio ficticio sin dirección real'));
  check(()=>assert.ok(contrast(branded.brand.qrInk,'#ffffff')>=7));
  const png=PNG.sync.read(Buffer.from(branded.dataUrl.split(',')[1],'base64'));check(()=>assert.equal(jsQR(new Uint8ClampedArray(png.data),png.width,png.height).data,branded.url));
  await request(root+'/qr','GET',undefined,other.cookie,403);
@@ -153,7 +160,7 @@ try{
  for(const invalid of [4,1441,15.5,'invalid'])await request(payRoot,'PUT',{...paySettings,payment_hold_minutes:invalid},cookie,400);
  await request(payRoot,'PUT',{...paySettings,payment_mode:'deposit',deposit_type:'fixed',deposit_value:3000,payment_hold_minutes:60},cookie);
  const payDate=new Date(Date.now()+6*86400000).toISOString().slice(0,10);await request(root+'/exceptions','POST',{date:payDate,closed:false,start_time:'14:00',end_time:'18:00'},cookie);
- const payPayload={...payload,date:payDate,time:'14:00',clientName:'Zoe',email:'zoe@example.test',phone:'5491177778888',acceptTerms:true};
+ const payPayload={...payload,date:payDate,time:'14:00',clientName:'Fixture Client D',email:'client-d@example.test',phone:fixturePhone(6),acceptTerms:true};
  const hold=(await request(`/public/${b.slug}/bookings`,'POST',payPayload)).data.booking;
  check(()=>assert.equal(hold.status,'pending_payment'));check(()=>assert.equal(hold.amount_due_cents,300000));check(()=>assert.ok(Math.abs(Date.parse(hold.hold_expires_at)-Date.now()-3600000)<5000));
  const agenda=(await request(`/businesses/${b.id}/bookings`,'GET',undefined,cookie)).data;
@@ -184,11 +191,11 @@ try{
   return realFetch(url,options);
  };
  try{
-  db.prepare('UPDATE businesses SET mp_access_token_enc=? WHERE id=?').run(encryptSecret('mock-mp-token'),b.id);
+  db.prepare('UPDATE businesses SET mp_access_token_enc=? WHERE id=?').run(encryptSecret(randomBytes(32).toString('hex')),b.id);
   const realHold=(await request(`/public/${b.slug}/bookings`,'POST',payPayload)).data.booking;
   check(()=>assert.equal(preferences[0].expires,true));check(()=>assert.equal(preferences[0].expiration_date_to,realHold.hold_expires_at));
   db.prepare('UPDATE bookings SET hold_expires_at=? WHERE id=?').run(new Date(Date.now()-1000).toISOString(),realHold.id);
-  const replacement=(await request(`/public/${b.slug}/bookings`,'POST',{...payPayload,phone:'5491188889999',email:'ana2@example.test',clientName:'Ana nueva'})).data.booking;
+  const replacement=(await request(`/public/${b.slug}/bookings`,'POST',{...payPayload,phone:fixturePhone(7),email:'client-e@example.test',clientName:'Fixture Client E'})).data.booking;
   payments.set('late',{status:'approved',external_reference:String(realHold.id),transaction_amount:20000,currency_id:'ARS'});
   await request(`/webhooks/mercadopago?business=${b.id}`,'POST',{data:{id:'late'}});await new Promise(r=>setTimeout(r,10));
   const late=db.prepare('SELECT * FROM bookings WHERE id=?').get(realHold.id);check(()=>assert.equal(late.status,'cancelled'));check(()=>assert.equal(late.payment_review_required,1));check(()=>assert.equal(late.amount_paid_cents,2000000));
@@ -206,14 +213,14 @@ try{
  const rangeOwner=await owner(40,'adara-equipo'),rangeRoot=`/businesses/${rangeOwner.b.id}/tools`,rc=rangeOwner.cookie;
  db.prepare('UPDATE schedules SET active=1,start_time=\'09:00\',end_time=\'18:00\' WHERE business_id=?').run(rangeOwner.b.id);
  const rs=(await request(`/businesses/${rangeOwner.b.id}/services`,'POST',{name:'Masaje',duration:60,price:20000},rc)).data.id;
- const ra=(await request(`/businesses/${rangeOwner.b.id}/staff`,'POST',{name:'Lara',service_ids:[rs]},rc)).data.id;
+ const ra=(await request(`/businesses/${rangeOwner.b.id}/staff`,'POST',{name:'Fixture Client A',service_ids:[rs]},rc)).data.id;
  const rb=(await request(`/businesses/${rangeOwner.b.id}/staff`,'POST',{name:'Mara',service_ids:[rs]},rc)).data.id;
  const dayAt=n=>new Date(Date.now()+n*86400000).toISOString().slice(0,10),a=dayAt(40),z=dayAt(42);
  const slots=async(d,staff=ra)=>(await request(`/public/${rangeOwner.b.slug}/availability?date=${d}&serviceIds=${rs}&staffId=${staff}`)).data.slots;
  check(()=>assert.ok(db.prepare('SELECT count(*) n FROM schedules WHERE business_id=? AND active=1').get(rangeOwner.b.id).n===7));
  check(()=>assert.ok((db.prepare('SELECT count(*) n FROM staff_schedules WHERE staff_id=? AND active=1').get(ra)).n===7));
  const baseline=await slots(a);check(()=>assert.ok(baseline.includes('09:00')));
- const rbk=(await request(`/public/${rangeOwner.b.slug}/bookings`,'POST',{date:a,time:'09:00',staffId:ra,serviceIds:[rs],clientName:'Clienta período',email:'period@example.test',phone:'5491144556677'})).data.booking;
+ const rbk=(await request(`/public/${rangeOwner.b.slug}/bookings`,'POST',{date:a,time:'09:00',staffId:ra,serviceIds:[rs],clientName:'Clienta período',email:'period@example.test',phone:fixturePhone(8)})).data.booking;
  const periodInput={date_from:a,date_to:z,closed:true,reason:'Vacaciones'};
  await request(rangeRoot+'/calendar-periods','POST',periodInput,other.cookie,403);
  const range=(await request(rangeRoot+'/calendar-periods','POST',periodInput,rc)).data;
@@ -279,19 +286,19 @@ try{
  const transferOwner=await owner(41),tc=transferOwner.cookie,tb=transferOwner.b,tRoot=`/businesses/${tb.id}`;
  db.prepare("UPDATE schedules SET active=1,start_time='09:00',end_time='18:00' WHERE business_id=?").run(tb.id);
  const tService=(await request(tRoot+'/services','POST',{name:'Manicura de prueba',duration:60,price:20000},tc)).data.id;
- const bankConfig={payment_mode:'deposit',deposit_type:'fixed',deposit_value:10000,payment_hold_minutes:30,payment_methods:['bank_transfer'],bank_alias:'lucia.nails',bank_holder:'Lucía Prueba',bank_name:'Banco de prueba',bank_instructions:'Enviar comprobante desde el enlace de reserva.'};
+ const bankConfig={payment_mode:'deposit',deposit_type:'fixed',deposit_value:10000,payment_hold_minutes:30,payment_methods:['bank_transfer'],bank_alias:'fixture.bank',bank_holder:'Titular ficticio para pruebas',bank_name:'Banco de prueba',bank_instructions:'Enviar comprobante desde el enlace de reserva.'};
  await request(tRoot+'/payment-settings','PUT',bankConfig,other.cookie,403);
  for(const bad of [{...bankConfig,bank_alias:'alias'},{...bankConfig,bank_alias:'',bank_account:'123'},{...bankConfig,bank_holder:''},{...bankConfig,payment_methods:[]},{...bankConfig,payment_methods:['card_unknown']},{...bankConfig,deposit_value:'NaN'}])await request(tRoot+'/payment-settings','PUT',bad,tc,400);
  await request(tRoot+'/payment-settings','PUT',bankConfig,tc);
  const tSettings=(await request(tRoot+'/payment-settings','GET',undefined,tc)).data;check(()=>assert.deepEqual(tSettings.payment_methods,['bank_transfer']));
- const tDate=dayAt(60),tp={date:tDate,time:'10:00',serviceIds:[tService],clientName:'Ana fiel',email:'ana-fiel@example.test',phone:'5491144558899',paymentMethod:'bank_transfer'};
+ const tDate=dayAt(60),tp={date:tDate,time:'10:00',serviceIds:[tService],clientName:'Fixture Client F',email:'client-f@example.test',phone:fixturePhone(9),paymentMethod:'bank_transfer'};
  const transfer=(await request('/public/'+tb.slug+'/bookings','POST',tp)).data;
- check(()=>assert.equal(transfer.payment.method,'bank_transfer'));check(()=>assert.equal(transfer.booking.status,'pending_payment'));check(()=>assert.equal(transfer.booking.amount_due_cents,1000000));check(()=>assert.equal(transfer.booking.transfer_details.alias,'lucia.nails'));check(()=>assert.equal(transfer.payment.demo,false));
+ check(()=>assert.equal(transfer.payment.method,'bank_transfer'));check(()=>assert.equal(transfer.booking.status,'pending_payment'));check(()=>assert.equal(transfer.booking.amount_due_cents,1000000));check(()=>assert.equal(transfer.booking.transfer_details.alias,'fixture.bank'));check(()=>assert.equal(transfer.payment.demo,false));
  await request('/public/'+tb.slug+'/bookings','POST',tp,'',409);
  await request('/public/'+tb.slug+'/bookings','POST',{...tp,time:'11:00',paymentMethod:'mercadopago'},'',400);
  await request('/public/'+tb.slug+'/bookings/'+transfer.booking.id+'/demo-approve','POST',{token:transfer.booking.manage_token},'',409);
- await request(tRoot+'/payment-settings','PUT',{...bankConfig,bank_alias:'lucia.nueva'},tc);
- const snapshot=(await request('/public/manage-booking/'+transfer.booking.manage_token)).data;check(()=>assert.equal(snapshot.transfer_details.alias,'lucia.nails'));
+ await request(tRoot+'/payment-settings','PUT',{...bankConfig,bank_alias:'fixture.bank.new'},tc);
+ const snapshot=(await request('/public/manage-booking/'+transfer.booking.manage_token)).data;check(()=>assert.equal(snapshot.transfer_details.alias,'fixture.bank'));
  const publicBank=(await request('/public/'+tb.slug)).data;check(()=>assert.ok(!('bank_account' in publicBank.business)&&!('bank_holder' in publicBank.business)));
  async function uploadReceipt(token,bytes,name,expected=200){const body=new FormData();body.append('receipt',new Blob([bytes],{type:'image/png'}),name);const r=await fetch(base+'/public/manage-booking/'+token+'/transfer-receipt',{method:'POST',body});const result=await r.json();assert.equal(r.status,expected,JSON.stringify(result));checks++;return result}
  await uploadReceipt('invalid-token',Buffer.from('not a receipt'),'receipt.png',409);
@@ -327,7 +334,7 @@ try{
  const privateClient=(await request('/public/'+tb.slug+'/client-access?token='+code)).data;check(()=>assert.equal(privateClient.phone,tp.phone));check(()=>assert.ok(!('payment_access_token' in privateClient)));
  const normalQuote=(await request('/public/'+tb.slug+'/quote','POST',tp)).data;check(()=>assert.equal(normalQuote.require_full_payment,true));check(()=>assert.equal(normalQuote.amount_due_cents,2000000));check(()=>assert.equal(normalQuote.waive_advance,false));
  const trustedQuote=(await request('/public/'+tb.slug+'/quote','POST',{...tp,clientAccess:code})).data;check(()=>assert.equal(trustedQuote.amount_due_cents,0));check(()=>assert.equal(trustedQuote.total_cents,2000000));check(()=>assert.equal(trustedQuote.require_full_payment,false));
- await request('/public/'+tb.slug+'/bookings','POST',{...tp,time:'13:00',clientAccess:code,phone:'5491188990000'},'',400);
+ await request('/public/'+tb.slug+'/bookings','POST',{...tp,time:'13:00',clientAccess:code,phone:fixturePhone(10)},'',400);
  await request('/public/'+tb.slug+'/bookings','POST',{...tp,time:'13:00',clientAccess:code,email:'someone@example.test'},'',400);
  const trustedBooking=(await request('/public/'+tb.slug+'/bookings','POST',{...tp,time:'13:00',clientAccess:code})).data.booking;
  check(()=>assert.equal(trustedBooking.client_id,cid));check(()=>assert.equal(trustedBooking.status,'confirmed'));check(()=>assert.equal(trustedBooking.payment_waived,1));check(()=>assert.equal(trustedBooking.total_cents,2000000));check(()=>assert.equal(trustedBooking.amount_due_cents,0));
@@ -339,7 +346,7 @@ try{
  check(()=>assert.equal(db.prepare('SELECT payment_access_token FROM clients WHERE id=?').get(cid).payment_access_token,null));
  // Normal Mercado Pago selection still functions alongside transfer and ignores spoofed method names.
  await request(tRoot+'/payment-settings','PUT',{...bankConfig,payment_methods:['mercadopago','bank_transfer']},tc);
- const cardDemo=(await request('/public/'+tb.slug+'/bookings','POST',{...tp,time:'14:00',paymentMethod:'mercadopago',clientName:'Clienta nueva',email:'new-card@example.test',phone:'5491188989898'})).data;
+ const cardDemo=(await request('/public/'+tb.slug+'/bookings','POST',{...tp,time:'14:00',paymentMethod:'mercadopago',clientName:'Clienta nueva',email:'new-card@example.test',phone:fixturePhone(11)})).data;
  check(()=>assert.equal(cardDemo.payment.demo,true));check(()=>assert.equal(cardDemo.booking.payment_method,'mercadopago'));
  await request('/public/'+tb.slug+'/bookings/'+cardDemo.booking.id+'/demo-approve','POST',{token:cardDemo.booking.manage_token});
  console.log(`OK: ${checks} comprobaciones. Reservas, términos, packs, puntos, ausencias, series, avisos, aislamiento, exportación, Google Calendar, QR de marca, plazos de pago, pagos tardíos, períodos editables, migración de agenda, bloqueos, FAQ de la Home, transferencias y condiciones privadas por clienta.`);
