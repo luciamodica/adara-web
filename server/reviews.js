@@ -19,7 +19,7 @@ export function registerReviews(app,{auth,own}){
    db.prepare('INSERT INTO client_reviews(business_id,name,rating,body) VALUES(?,?,?,?)').run(b.id,name,rating,body);return true;
   })();
   if(!result)return res.status(429).json({error:'Ya recibimos varias reseñas. Intentá nuevamente más tarde.'});
-  res.status(201).json({ok:true,message:'Gracias. Tu reseña quedó pendiente de revisión por el profesional.'});
+  res.status(201).json({ok:true,message:'¡Gracias por tu reseña! Valoramos que compartas tu experiencia.'});
  });
  app.get('/api/businesses/:id/reviews',auth,(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);res.json(db.prepare('SELECT * FROM client_reviews WHERE business_id=? ORDER BY id DESC').all(b.id))});
  app.patch('/api/businesses/:id/reviews/:rid',auth,(req,res)=>{

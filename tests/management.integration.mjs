@@ -1,3 +1,4 @@
+import {randomBytes} from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -5,8 +6,12 @@ import os from 'node:os';
 import path from 'node:path';
 import {PNG} from 'pngjs';
 import jsQR from 'jsqr';
+const ownerPassword=randomBytes(24).toString('base64url')+'Aa1!',adminPassword=randomBytes(24).toString('base64url')+'Aa1!';
+// Contacts and account identifiers below are synthetic; all external transports are mocked.
+const fixtureSocialId='fixture-not-an-account-'+randomBytes(12).toString('hex');
+const fixtureInstagram='https://www.instagram.com/'+fixtureSocialId,fixtureTiktok='https://www.tiktok.com/@'+fixtureSocialId;
 const cwd=process.cwd(),temp=fs.mkdtempSync(path.join(os.tmpdir(),'adara-management-'));
-process.chdir(temp);Object.assign(process.env,{NODE_ENV:'test',SUPERADMIN_EMAIL:'super-management@example.test',SUPERADMIN_PASSWORD:'Fixture-admin-password-42!',DATA_DIR:temp+'/data',UPLOADS_DIR:temp+'/data/uploads',FRONTEND_URL:'https://adara.example.test',DISABLE_FEATURE_WORKER:'true',DEMO_PAYMENTS:'false',RESEND_API_KEY:'fixture-only'});
+process.chdir(temp);Object.assign(process.env,{NODE_ENV:'test',SUPERADMIN_EMAIL:'super-management@example.test',SUPERADMIN_PASSWORD:adminPassword,DATA_DIR:temp+'/data',UPLOADS_DIR:temp+'/data/uploads',FRONTEND_URL:'https://adara.example.test',DISABLE_FEATURE_WORKER:'true',DEMO_PAYMENTS:'false',RESEND_API_KEY:randomBytes(24).toString('hex')});
 const nativeFetch=global.fetch;let failEmail=false,emails=[],googleCalls=[];
 global.fetch=async(url,options)=>{if(String(url).startsWith('http://127.0.0.1:'))return nativeFetch(url,options);if(String(url).startsWith('https://www.googleapis.com/calendar/')){googleCalls.push({url:String(url),method:options.method,body:options.body?JSON.parse(options.body):null});return new Response('{}',{status:200})}if(String(url)==='https://api.resend.com/emails'){emails.push(JSON.parse(options.body));return new Response(failEmail?'{}':'{"id":"fixture-only"}',{status:failEmail?503:200})}throw Error('No external calls allowed: '+url)};
 const {app}=await import('../server/index.js'),{db}=await import('../server/db.js'),{contrast}=await import('../server/qr-brand.js');
@@ -14,7 +19,7 @@ const server=app.listen(0);await new Promise(r=>server.once('listening',r));cons
 const check=fn=>{fn();checks++};
 const checkAsync=async fn=>{await fn();checks++};
 async function req(route,method='GET',body,cookie='',status=200,headers={}){const r=await fetch(base+route,{method,headers:{'Content-Type':'application/json',...(cookie?{Cookie:cookie}:{}),...headers},body:body===undefined?undefined:JSON.stringify(body)}),data=await r.json().catch(()=>({}));check(()=>assert.equal(r.status,status,JSON.stringify({route,data})));return {data,cookie:r.headers.get('set-cookie')?.split(';')[0]};}
-async function owner(n,plan='adara'){await req('/auth/register','POST',{name:'Alex',businessName:'Estudio '+n,email:`owner${n}@example.test`,password:'Fixture-owner-42!',plan});const token=db.prepare('SELECT verify_token FROM users WHERE email=?').get(`owner${n}@example.test`).verify_token,v=await req('/auth/verify?token='+token);return {cookie:v.cookie,b:(await req('/me','GET',undefined,v.cookie)).data.businesses[0]};}
+async function owner(n,plan='adara'){await req('/auth/register','POST',{name:'Fixture Owner',businessName:'Estudio '+n,email:`owner${n}@example.test`,password:ownerPassword,plan});const token=db.prepare('SELECT verify_token FROM users WHERE email=?').get(`owner${n}@example.test`).verify_token,v=await req('/auth/verify?token='+token);return {cookie:v.cookie,b:(await req('/me','GET',undefined,v.cookie)).data.businesses[0]};}
 try{
  const one=await owner(1),two=await owner(2),root='/businesses/'+one.b.id,pub='/public/'+one.b.slug;
  const sid=(await req(root+'/services','POST',{name:'Corte',price:15000,duration:60},one.cookie)).data.id;
@@ -22,8 +27,8 @@ try{
  const foreign=(await req('/businesses/'+two.b.id+'/services','POST',{name:'Ajeno',price:1,duration:30},two.cookie)).data.id;
  const date=new Date(Date.now()+4*86400000).toISOString().slice(0,10),nextDate=new Date(Date.now()+5*86400000).toISOString().slice(0,10);
  for(const d of [date,nextDate])await req(root+'/tools/exceptions','POST',{date:d,closed:false,start_time:'09:00',end_time:'18:00'},one.cookie);
- await req(root+'/payment-settings','PUT',{payment_mode:'total'},one.cookie);
- const input={serviceIds:[sid,extra],date,time:'09:00',clientName:'Taylor',notes:'Reservado en el salón'};
+ await req(root+'/payment-settings','PUT',{payment_mode:'total',payment_methods:['bank_transfer'],bank_alias:'fixture.bank',bank_holder:'Fixture'},one.cookie);
+ const input={serviceIds:[sid,extra],date,time:'09:00',clientName:'Fixture Client A',notes:'Reservado en el salón'};
  await req(root+'/manual-bookings','POST',input,'',401);await req(root+'/manual-bookings','POST',input,two.cookie,403);
  const availability=(await req(root+'/manual-bookings/availability','POST',input,one.cookie)).data;check(()=>assert.equal(availability.duration,90));check(()=>assert.equal(availability.total_cents,2000000));
  const beforeClients=db.prepare('SELECT count(*) n FROM clients').get().n,beforeBookings=db.prepare('SELECT count(*) n FROM bookings').get().n;
@@ -35,14 +40,14 @@ try{
  let slots=(await req(pub+'/availability?date='+date+'&serviceIds='+sid)).data.slots;check(()=>assert.ok(!slots.includes('09:00')&&!slots.includes('09:30')&&!slots.includes('10:00')));check(()=>assert.ok(slots.includes('10:30')));
  await req(root+'/manual-bookings','POST',{...input,time:'09:30',clientName:'Overlap'},one.cookie,409);
  check(()=>assert.equal(db.prepare('SELECT count(*) n FROM clients').get().n,beforeClients+1));
- await req(pub+'/bookings','POST',{serviceIds:[sid],date,time:'09:00',clientName:'Public overlap',phone:'5492235550000'},'',409);
+ await req(pub+'/bookings','POST',{serviceIds:[sid],date,time:'09:00',clientName:'Public overlap',phone:'0000000000001'},'',409);
  await req(root+'/bookings/'+bk.id,'PATCH',{date:nextDate,start_time:'11:00'},one.cookie);slots=(await req(pub+'/availability?date='+date+'&serviceIds='+sid)).data.slots;check(()=>assert.ok(slots.includes('09:00')));
  slots=(await req(pub+'/availability?date='+nextDate+'&serviceIds='+sid)).data.slots;check(()=>assert.ok(!slots.includes('11:00')));
  await req(root+'/bookings/'+bk.id,'PATCH',{status:'cancelled'},one.cookie);slots=(await req(pub+'/availability?date='+nextDate+'&serviceIds='+sid)).data.slots;check(()=>assert.ok(slots.includes('11:00')));
  // New clients can omit contact information; each anonymous contact stays distinct.
- const other=(await req(root+'/manual-bookings','POST',{...input,time:'11:00',clientName:'Sam'},one.cookie,201)).data.booking;
+ const other=(await req(root+'/manual-bookings','POST',{...input,time:'11:00',clientName:'Fixture Client B'},one.cookie,201)).data.booking;
  check(()=>assert.notEqual(other.client_id,bk.client_id));
- const known=(await req(root+'/manual-bookings','POST',{...input,time:'13:00',clientId:bk.client_id,clientName:'Do not overwrite'},one.cookie,201)).data.booking;check(()=>assert.equal(known.client_id,bk.client_id));check(()=>assert.equal(known.client_name,'Taylor'));
+ const known=(await req(root+'/manual-bookings','POST',{...input,time:'13:00',clientId:bk.client_id,clientName:'Do not overwrite'},one.cookie,201)).data.booking;check(()=>assert.equal(known.client_id,bk.client_id));check(()=>assert.equal(known.client_name,'Fixture Client A'));
  const foreignClient=Number(db.prepare('INSERT INTO clients(business_id,name) VALUES(?,?)').run(two.b.id,'Other tenant').lastInsertRowid);await req(root+'/manual-bookings','POST',{...input,time:'15:00',clientId:foreignClient},one.cookie,400);
  const notified=(await req(root+'/manual-bookings','POST',{...input,date:nextDate,time:'09:00',email:'notify@example.test',sendEmail:true},one.cookie,201)).data;check(()=>assert.equal(notified.email_status,'sent'));check(()=>assert.equal(emails.at(-1).to[0],'notify@example.test'));
  await req(root+'/manual-bookings','POST',{...input,date:nextDate,time:'13:00',email:'notify@example.test'},one.cookie,400);
@@ -54,13 +59,13 @@ try{
  const concurrent=await Promise.all([nativeFetch(base+root+'/manual-bookings',{method:'POST',headers:{'Content-Type':'application/json',Cookie:one.cookie},body:JSON.stringify({...input,time:'16:00',clientName:'Concurrent A'})}),nativeFetch(base+root+'/manual-bookings',{method:'POST',headers:{'Content-Type':'application/json',Cookie:one.cookie},body:JSON.stringify({...input,time:'16:00',clientName:'Concurrent B'})})]);check(()=>assert.deepEqual(concurrent.map(r=>r.status).sort(),[201,409]));
  // Google receives manual bookings through the same create/update/delete workflow.
  const {encryptSecret}=await import('../server/crypto.js'),{syncCalendar}=await import('../server/google-calendar.js');
- db.prepare('UPDATE businesses SET google_access_enc=?,google_refresh_enc=?,google_expires_at=? WHERE id=?').run(encryptSecret('fixture-access'),encryptSecret('fixture-refresh'),new Date(Date.now()+3600000).toISOString(),one.b.id);
- await syncCalendar();const event=db.prepare('SELECT google_event_id FROM bookings WHERE id=?').get(other.id).google_event_id;check(()=>assert.ok(event));check(()=>assert.ok(googleCalls.some(c=>c.url.endsWith('/'+event)&&c.body?.summary==='Sam · Corte + Peinado')));
+ db.prepare('UPDATE businesses SET google_access_enc=?,google_refresh_enc=?,google_expires_at=? WHERE id=?').run(encryptSecret(randomBytes(32).toString('hex')),encryptSecret(randomBytes(32).toString('hex')),new Date(Date.now()+3600000).toISOString(),one.b.id);
+ await syncCalendar();const event=db.prepare('SELECT google_event_id FROM bookings WHERE id=?').get(other.id).google_event_id;check(()=>assert.ok(event));check(()=>assert.ok(googleCalls.some(c=>c.url.endsWith('/'+event)&&c.body?.summary==='Fixture Client B · Corte + Peinado')));
  await req(root+'/bookings/'+other.id,'PATCH',{start_time:'09:00'},one.cookie);await syncCalendar();check(()=>assert.ok(googleCalls.some(c=>c.url.endsWith('/'+event)&&c.body?.start.dateTime===date+'T09:00:00-03:00')));
  await req(root+'/bookings/'+other.id,'PATCH',{status:'cancelled'},one.cookie);await syncCalendar();check(()=>assert.ok(googleCalls.some(c=>c.url.endsWith('/'+event)&&c.method==='DELETE')));check(()=>assert.equal(db.prepare('SELECT google_event_id FROM bookings WHERE id=?').get(other.id).google_event_id,null));
  // Team agendas are independent; services and dates are checked per professional.
  const team=await owner(3,'adara-equipo'),teamRoot='/businesses/'+team.b.id,teamService=(await req(teamRoot+'/services','POST',{name:'Servicio de equipo',price:12000,duration:60},team.cookie)).data.id;
- const staffA=(await req(teamRoot+'/staff','POST',{name:'Alex',service_ids:[teamService]},team.cookie)).data.id,staffB=(await req(teamRoot+'/staff','POST',{name:'Sam',service_ids:[teamService]},team.cookie)).data.id;
+ const staffA=(await req(teamRoot+'/staff','POST',{name:'Fixture Owner',service_ids:[teamService]},team.cookie)).data.id,staffB=(await req(teamRoot+'/staff','POST',{name:'Sam',service_ids:[teamService]},team.cookie)).data.id;
  await req(teamRoot+'/tools/exceptions','POST',{date,closed:false,start_time:'09:00',end_time:'18:00'},team.cookie);
  const teamInput={serviceIds:[teamService],date,time:'10:00',clientName:'Cliente de equipo'};
  await req(teamRoot+'/manual-bookings','POST',teamInput,team.cookie,400);await req(teamRoot+'/manual-bookings','POST',{...teamInput,staffId:99999},team.cookie,400);
@@ -92,19 +97,19 @@ try{
  const saved=(await req(root+'/tools/qr','GET',undefined,one.cookie)).data;check(()=>assert.equal(saved.brand.tagline,'Mi tarjeta'));check(()=>assert.equal(saved.brand.design.font,'editorial'));check(()=>assert.equal(saved.brand.design.background_image,settings.background_image));
  const otherQR=(await req('/businesses/'+two.b.id+'/tools/qr','GET',undefined,two.cookie)).data;check(()=>assert.deepEqual(otherQR.brand.design,{}));
  // Admin-managed social links are official HTTPS URLs and updates are atomic.
- db.prepare('INSERT INTO users(name,email,password_hash,role,email_verified) VALUES(?,?,?,?,1)').run('Fixture Super','super-management@example.test',bcrypt.hashSync('Fixture-admin-password-42!',8),'superadmin');
- const admin=(await req('/auth/login','POST',{email:'super-management@example.test',password:'Fixture-admin-password-42!'})).cookie;
- await req('/admin/settings','PUT',{home_socials:{instagram:'https://www.instagram.com/adaraweb',tiktok:'https://www.tiktok.com/@adaraweb'}},one.cookie,403);
- await req('/admin/settings','PUT',{home_socials:{instagram:'https://www.instagram.com/adaraweb',tiktok:'https://www.tiktok.com/@adaraweb'}},admin);
- await checkAsync(async()=>assert.equal((await req('/public/config')).data.home_socials.instagram,'https://www.instagram.com/adaraweb'));
- for(const url of ['javascript:alert(1)','http://instagram.com/adara','https://instagram.com.evil.test/','https://evil.test','https://user:pass@instagram.com/'])await req('/admin/settings','PUT',{trial_days:7,home_socials:{instagram:url}},admin,400);
+ db.prepare('INSERT INTO users(name,email,password_hash,role,email_verified) VALUES(?,?,?,?,1)').run('Fixture Super','super-management@example.test',bcrypt.hashSync(adminPassword,8),'superadmin');
+ const admin=(await req('/auth/login','POST',{email:'super-management@example.test',password:adminPassword})).cookie;
+ await req('/admin/settings','PUT',{home_socials:{instagram:fixtureInstagram,tiktok:fixtureTiktok}},one.cookie,403);
+ await req('/admin/settings','PUT',{home_socials:{instagram:fixtureInstagram,tiktok:fixtureTiktok}},admin);
+ await checkAsync(async()=>assert.equal((await req('/public/config')).data.home_socials.instagram,fixtureInstagram));
+ for(const url of ['javascript:alert(1)','http://instagram.com/fixture-not-an-account','https://instagram.com.evil.test/','https://evil.test','https://user:pass@instagram.com/'])await req('/admin/settings','PUT',{trial_days:7,home_socials:{instagram:url}},admin,400);
  await checkAsync(async()=>assert.equal((await req('/public/config')).data.trial_days,15));
- await req('/admin/settings','PUT',{home_socials:{instagram:''}},admin);await checkAsync(async()=>assert.equal((await req('/public/config')).data.home_socials.instagram,''));await checkAsync(async()=>assert.equal((await req('/public/config')).data.home_socials.tiktok,'https://www.tiktok.com/@adaraweb'));
+ await req('/admin/settings','PUT',{home_socials:{instagram:''}},admin);await checkAsync(async()=>assert.equal((await req('/public/config')).data.home_socials.instagram,''));await checkAsync(async()=>assert.equal((await req('/public/config')).data.home_socials.tiktok,fixtureTiktok));
  // Contact submissions persist even if email delivery fails; owners never see the inbox.
  const support={name:'Alex <script>',email:'support@example.test',message:'Hola, quisiera saber cómo funciona Adara.',acceptPrivacy:true};
  await req('/public/support','POST',support,'',403,{Origin:'https://evil.test'});await req('/public/support','POST',{...support,acceptPrivacy:false},'',400);await req('/public/support','POST',{...support,email:'bad'},'',400);await req('/public/support','POST',{...support,message:'x'.repeat(3001)},'',400);
  const supportBefore=db.prepare('SELECT count(*) n FROM platform_support_messages').get().n;await req('/public/support','POST',{...support,website:'bot'},'',200);check(()=>assert.equal(db.prepare('SELECT count(*) n FROM platform_support_messages').get().n,supportBefore));
- await req('/public/support','POST',support,'',201,{Origin:'https://adara.example.test'});check(()=>assert.equal(emails.at(-1).to[0],'adaraweb23@gmail.com'));check(()=>assert.equal(emails.at(-1).reply_to,support.email));check(()=>assert.ok(emails.at(-1).html.includes('&lt;script&gt;')));check(()=>assert.ok(!emails.at(-1).html.includes('<script>')));
+ await req('/public/support','POST',support,'',201,{Origin:'https://adara.example.test'});check(()=>assert.ok(emails.at(-1).to.length===1&&emails.at(-1).to[0]!==support.email));check(()=>assert.equal(emails.at(-1).reply_to,support.email));check(()=>assert.ok(emails.at(-1).html.includes('&lt;script&gt;')));check(()=>assert.ok(!emails.at(-1).html.includes('<script>')));
  await req('/admin/support','GET',undefined,'',401);await req('/admin/support','GET',undefined,one.cookie,403);
  let inbox=(await req('/admin/support','GET',undefined,admin)).data;check(()=>assert.equal(inbox.messages[0].name,support.name));check(()=>assert.equal(inbox.messages[0].email_status,'sent'));
  await req('/admin/support/'+inbox.messages[0].id,'PATCH',{status:'resolved'},one.cookie,403);await req('/admin/support/'+inbox.messages[0].id,'PATCH',{status:'resolved'},admin);await checkAsync(async()=>assert.equal((await req('/admin/support','GET',undefined,admin)).data.messages[0].status,'resolved'));

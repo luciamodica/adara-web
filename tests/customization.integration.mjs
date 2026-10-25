@@ -1,16 +1,20 @@
+import {randomBytes} from 'node:crypto';
+import {createPaymentFixturePlan} from './fixtures/payment-plan.mjs';
 import bcrypt from 'bcryptjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+const ownerPassword=randomBytes(24).toString('base64url')+'Aa1!',adminPassword=randomBytes(24).toString('base64url')+'Aa1!';
 const original=process.cwd(),temp=fs.mkdtempSync(path.join(os.tmpdir(),'adara-customization-'));
 process.chdir(temp);Object.assign(process.env,{NODE_ENV:'test',DISABLE_FEATURE_WORKER:'true',DATA_DIR:temp+'/data',UPLOADS_DIR:temp+'/data/uploads',DEMO_PAYMENTS:'true',RESEND_API_KEY:''});
 const {app}=await import('../server/index.js'),{db}=await import('../server/db.js');
+createPaymentFixturePlan(db);
 const server=app.listen(0);await new Promise(r=>server.once('listening',r));const base=`http://127.0.0.1:${server.address().port}/api`;let checks=0;
 const check=fn=>{fn();checks++};
 const checkAsync=async fn=>{await fn();checks++};
 async function req(route,method='GET',body,cookie='',status=200){const r=await fetch(base+route,{method,headers:{'Content-Type':'application/json',...(cookie?{Cookie:cookie}:{})},body:body===undefined?undefined:JSON.stringify(body)}),data=await r.json().catch(()=>({}));check(()=>assert.equal(r.status,status,JSON.stringify({route,data})));return {data,cookie:r.headers.get('set-cookie')?.split(';')[0]};}
-async function owner(n){const {data}=await req('/auth/register','POST',{name:'Alex',businessName:'Estudio '+n,email:`custom${n}@example.test`,password:'Fixture-owner-password-42!',plan:'adara'});const verified=await req('/auth/verify?token='+new URL('http://localhost'+data.devVerifyUrl).searchParams.get('token'));return {cookie:verified.cookie,b:(await req('/me','GET',undefined,verified.cookie)).data.businesses[0]};}
+async function owner(n){const {data}=await req('/auth/register','POST',{name:'Alex',businessName:'Estudio '+n,email:`custom${n}@example.test`,password:ownerPassword,plan:'fixture-individual-mp'});const verified=await req('/auth/verify?token='+new URL('http://localhost'+data.devVerifyUrl).searchParams.get('token'));return {cookie:verified.cookie,b:(await req('/me','GET',undefined,verified.cookie)).data.businesses[0]};}
 try{
  const one=await owner(1),two=await owner(2),root='/businesses/'+one.b.id,pub='/public/'+one.b.slug;
  const service=(await req(root+'/services','POST',{name:'Servicio principal',description:'Descripción completa',price:26000,duration:60,group_discount_enabled:true,group_min_people:2,group_discount_percent:50},one.cookie)).data;
@@ -77,8 +81,8 @@ try{
  const smallQuote=(await req(pub+'/quote','POST',{serviceIds:tiny,promotionId:small.id})).data;
  check(()=>assert.equal(smallQuote.total_cents,3));check(()=>assert.equal(smallQuote.items.reduce((s,i)=>s+i.line_promotion_discount_cents,0),2));for(const item of smallQuote.items)check(()=>assert.ok(item.line_promotion_discount_cents>=0&&item.line_promotion_discount_cents<=item.line_subtotal_cents));
  const legacy=(await req(root+'/promotions','POST',{title:'Aviso anterior',discount_percent:10},one.cookie)).data;await checkAsync(async()=>assert.equal((await req(pub)).data.promotions.find(p=>p.id===legacy.id).reservable,false));
- db.prepare('INSERT INTO users(name,email,password_hash,role,email_verified) VALUES(?,?,?,?,1)').run('Fixture Super','admin@adaraweb.local',bcrypt.hashSync('admin1234',8),'superadmin');
- const admin=(await req('/auth/login','POST',{email:'admin@adaraweb.local',password:'admin1234'})).cookie;
+ db.prepare('INSERT INTO users(name,email,password_hash,role,email_verified) VALUES(?,?,?,?,1)').run('Fixture Super','admin@adaraweb.local',bcrypt.hashSync(adminPassword,8),'superadmin');
+ const admin=(await req('/auth/login','POST',{email:'admin@adaraweb.local',password:adminPassword})).cookie;
  await req('/admin/settings','PUT',{home_whatsapp_enabled:true,home_whatsapp_phone:'+54 9 223 555 1234',home_whatsapp_message:'Hola & quiero consultar'},one.cookie,403);
  await req('/admin/settings','PUT',{home_whatsapp_enabled:true,home_whatsapp_phone:'+54 9 223 555 1234',home_whatsapp_message:'Hola & quiero consultar'},admin);
  let config=(await req('/public/config')).data;check(()=>assert.equal(config.home_whatsapp_phone,'5492235551234'));check(()=>assert.equal(config.home_whatsapp_enabled,true));check(()=>assert.equal(config.home_whatsapp_message,'Hola & quiero consultar'));check(()=>assert.ok(!JSON.stringify(config).includes('secret')));

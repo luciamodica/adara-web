@@ -1,15 +1,19 @@
+import {randomBytes} from 'node:crypto';
+import {createPaymentFixturePlan} from './fixtures/payment-plan.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+const ownerPassword=randomBytes(24).toString('base64url')+'Aa1!',adminPassword=randomBytes(24).toString('base64url')+'Aa1!';
 const cwd=process.cwd(),temp=fs.mkdtempSync(path.join(os.tmpdir(),'adara-experience-'));
 process.chdir(temp);Object.assign(process.env,{NODE_ENV:'test',DATA_DIR:temp+'/data',UPLOADS_DIR:temp+'/uploads',DISABLE_FEATURE_WORKER:'true',DEMO_PAYMENTS:'true',RESEND_API_KEY:''});
 const originalFetch=global.fetch;global.fetch=(url,options)=>{if(String(url).startsWith('http://127.0.0.1:'))return originalFetch(url,options);throw Error('Unexpected external call')};
 const {app,featureWorker}=await import('../server/index.js'),{db}=await import('../server/db.js');
+createPaymentFixturePlan(db);
 const server=app.listen(0);await new Promise(resolve=>server.once('listening',resolve));const base=`http://127.0.0.1:${server.address().port}/api`;let checks=0;
 const check=fn=>{fn();checks++};
 async function req(route,method='GET',body,cookie='',expected=200){const response=await fetch(base+route,{method,headers:{'Content-Type':'application/json',...(cookie?{Cookie:cookie}:{})},body:body===undefined?undefined:JSON.stringify(body)}),data=await response.json().catch(()=>({}));check(()=>assert.equal(response.status,expected,JSON.stringify({route,data})));return {data,cookie:response.headers.get('set-cookie')?.split(';')[0]};}
-async function owner(n,plan='adara'){await req('/auth/register','POST',{name:'Fixture '+n,businessName:'Fixture '+n,email:`fixture${n}@example.test`,password:'Fixture-only-password42!',plan});const token=db.prepare('SELECT verify_token FROM users WHERE email=?').get(`fixture${n}@example.test`).verify_token,verified=await req('/auth/verify?token='+token),b=(await req('/me','GET',undefined,verified.cookie)).data.businesses[0];return {b,cookie:verified.cookie,root:'/businesses/'+b.id,pub:'/public/'+b.slug};}
+async function owner(n,plan='fixture-individual-mp'){await req('/auth/register','POST',{name:'Fixture '+n,businessName:'Fixture '+n,email:`fixture${n}@example.test`,password:ownerPassword,plan});const token=db.prepare('SELECT verify_token FROM users WHERE email=?').get(`fixture${n}@example.test`).verify_token,verified=await req('/auth/verify?token='+token),b=(await req('/me','GET',undefined,verified.cookie)).data.businesses[0];return {b,cookie:verified.cookie,root:'/businesses/'+b.id,pub:'/public/'+b.slug};}
 const date=new Date(Date.now()+7*86400000).toISOString().slice(0,10),nextDate=new Date(Date.now()+8*86400000).toISOString().slice(0,10);
 try{
  const initial=(await req('/public/plans')).data.find(p=>p.slug==='adara-inicial');check(()=>assert.equal(initial.monthly_price_cents,990000));check(()=>assert.equal(initial.annual_price_cents,9900000));check(()=>assert.equal(initial.basic_only,1));

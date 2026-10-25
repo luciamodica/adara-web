@@ -4,17 +4,19 @@ import crypto from 'crypto';
 import multer from 'multer';
 import {db} from './db.js';
 import {receiptsDir} from './storage.js';
-export const paymentMethods=b=>{try{return JSON.parse(b.payment_methods_json).filter(x=>['mercadopago','bank_transfer'].includes(x))}catch{return ['mercadopago']}};
+import {mercadoPagoAllowed} from './plan-payments.js';
+export const paymentMethods=b=>{let methods;try{methods=JSON.parse(b.payment_methods_json).filter(x=>['mercadopago','bank_transfer'].includes(x))}catch{methods=['mercadopago']}return mercadoPagoAllowed(b)?methods:['bank_transfer']};
 export const bankDetails=b=>({alias:b.bank_alias||'',account:b.bank_account||'',holder:b.bank_holder||'',bank:b.bank_name||'',instructions:b.bank_instructions||''});
 export function decoratePayment(booking){if(!booking)return booking;let transfer=null;try{transfer=booking.payment_method==='bank_transfer'?JSON.parse(booking.payment_details_json||'null'):null}catch{}const receipt=db.prepare('SELECT original_name,uploaded_at FROM booking_transfer_receipts WHERE booking_id=?').get(booking.id);return {...booking,transfer_details:transfer,receipt_name:receipt?.original_name||null,receipt_uploaded_at:receipt?.uploaded_at||null}}
 export function validatePaymentSettings(b,x){
  const methods=x.payment_methods===undefined?paymentMethods(b):x.payment_methods;
  if(!Array.isArray(methods)||methods.length>2||methods.some(m=>!['mercadopago','bank_transfer'].includes(m)))throw new Error('Elegí medios de pago válidos');
+ if(!mercadoPagoAllowed(b)&&methods.includes('mercadopago'))throw new Error('Adara Individual incluye cobros por transferencia. Mercado Pago integrado está disponible en los otros planes.');
  const normalized=[...new Set(methods)],alias=String(x.bank_alias??b.bank_alias??'').trim(),account=String(x.bank_account??b.bank_account??'').trim(),holder=String(x.bank_holder??b.bank_holder??'').trim(),bank=String(x.bank_name??b.bank_name??'').trim(),instructions=String(x.bank_instructions??b.bank_instructions??'').trim();
  if(alias&&!/^[a-zA-Z0-9.-]{6,20}$/.test(alias))throw new Error('El alias debe tener entre 6 y 20 letras, números, puntos o guiones');
  if(account&&!/^\d{22}$/.test(account))throw new Error('El CBU/CVU debe tener 22 dígitos');
  if(holder.length>150||bank.length>100||instructions.length>1000)throw new Error('Revisá la longitud de los datos de transferencia');
- if(normalized.includes('bank_transfer')&&(!(alias||account)||!holder))throw new Error('Para transferencia, completá alias o CBU/CVU y titular');
+ if(x.payment_mode!=='none'&&normalized.includes('bank_transfer')&&(!(alias||account)||!holder))throw new Error('Para transferencia, completá alias o CBU/CVU y titular');
  if(x.payment_mode!=='none'&&!normalized.length)throw new Error('Activá al menos un medio de pago para cobrar seña o total');
  return {methods:normalized,alias,account,holder,bank,instructions};
 }

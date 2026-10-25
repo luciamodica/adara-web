@@ -7,6 +7,7 @@ add('businesses','show_category','INTEGER NOT NULL DEFAULT 0');
 add('businesses','category_label',"TEXT NOT NULL DEFAULT ''");
 add('services','images_json',"TEXT NOT NULL DEFAULT '[]'");
 add('bookings','payment_review_required','INTEGER NOT NULL DEFAULT 0');
+add('bookings','manual_override','INTEGER NOT NULL DEFAULT 0');
 for(const [key,def] of Object.entries({payment_methods_json:`TEXT NOT NULL DEFAULT '["mercadopago"]'`,bank_alias:"TEXT NOT NULL DEFAULT ''",bank_account:"TEXT NOT NULL DEFAULT ''",bank_holder:"TEXT NOT NULL DEFAULT ''",bank_name:"TEXT NOT NULL DEFAULT ''",bank_instructions:"TEXT NOT NULL DEFAULT ''"}))add('businesses',key,def);
 for(const [key,def] of Object.entries({payment_method:"TEXT NOT NULL DEFAULT 'mercadopago'",payment_details_json:'TEXT',manual_payment_confirmed_at:'TEXT',payment_waived:'INTEGER NOT NULL DEFAULT 0'}))add('bookings',key,def);
 add('clients','waive_advance','INTEGER NOT NULL DEFAULT 0');
