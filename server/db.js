@@ -282,7 +282,7 @@ addColumn('bookings','promotion_title',"TEXT NOT NULL DEFAULT ''");
 addColumn('bookings','promotion_discount_cents','INTEGER NOT NULL DEFAULT 0');
 addColumn('bookings','promotion_before_cents','INTEGER');
 addColumn('booking_items','line_promotion_discount_cents','INTEGER NOT NULL DEFAULT 0');
-addColumn('businesses','section_order_json',`TEXT NOT NULL DEFAULT '["hero","booking","promotions","services","posts","faqs"]'`);
+addColumn('businesses','section_order_json',`TEXT NOT NULL DEFAULT '["hero","booking","promotions","services","posts","faqs","reviews"]'`);
 addColumn('businesses','hero_image_fit',"TEXT NOT NULL DEFAULT 'contain'");
 
 addColumn('promotions','banner_text',"TEXT NOT NULL DEFAULT ''");

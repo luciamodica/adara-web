@@ -1,3 +1,4 @@
+import {randomBytes} from 'node:crypto';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -6,6 +7,8 @@ import {crc32,deflateRawSync} from 'node:zlib';
 import bcrypt from 'bcryptjs';
 import express from 'express';
 
+const ownerPassword=randomBytes(24).toString('base64url')+'Aa1!',adminPassword=randomBytes(24).toString('base64url')+'Aa1!';
+// Synthetic contacts and generated credentials; external requests are mocked.
 const cwd=process.cwd(),temp=fs.mkdtempSync(path.join(os.tmpdir(),'adara-growth-'));
 process.chdir(temp);
 Object.assign(process.env,{NODE_ENV:'test',DATA_DIR:temp+'/data',UPLOADS_DIR:temp+'/uploads',DISABLE_FEATURE_WORKER:'true',DEMO_PAYMENTS:'true',RESEND_API_KEY:''});
@@ -16,7 +19,7 @@ await import('../server/features-db.js');
 await import('../server/platform-billing.js');
 const legacyUser=Number(db.prepare("INSERT INTO users(name,email,password_hash,email_verified,created_at) VALUES('Legacy','legacy@example.test','unused',1,'2020-01-01 10:00:00')").run().lastInsertRowid);
 const legacy=Number(db.prepare("INSERT INTO businesses(owner_id,name,slug,created_at) VALUES(?,'Legacy','legacy','2020-01-01 10:00:00')").run(legacyUser).lastInsertRowid);
-const legacyClient=Number(db.prepare("INSERT INTO clients(business_id,name,phone) VALUES(?,'Historical client','5492238000000')").run(legacy).lastInsertRowid);
+const legacyClient=Number(db.prepare("INSERT INTO clients(business_id,name,phone) VALUES(?,'Historical client','0000000000005')").run(legacy).lastInsertRowid);
 db.prepare("INSERT INTO bookings(business_id,client_id,date,start_time,end_time,status,created_at) VALUES(?,?,'2020-01-02','09:00','09:30','completed','2020-01-01 12:00:00')").run(legacy,legacyClient);
 const {app}=await import('../server/index.js');
 const {parseCsv,validateWorkbookZip,previewClients}=await import('../server/client-imports.js');
@@ -30,7 +33,7 @@ async function req(route,method='GET',body,cookie='',expected=200){
  const data=await response.json().catch(()=>({}));check(()=>assert.equal(response.status,expected,JSON.stringify({route,data})));return {data,cookie:response.headers.get('set-cookie')?.split(';')[0]};
 }
 async function owner(n,plan='adara-inicial'){
- await req('/auth/register','POST',{name:'Owner '+n,businessName:'Business '+n,email:`growth${n}@example.test`,password:'Fixture-owner-password-42!',plan});
+ await req('/auth/register','POST',{name:'Owner '+n,businessName:'Business '+n,email:`growth${n}@example.test`,password:ownerPassword,plan});
  const user=db.prepare('SELECT id,verify_token FROM users WHERE email=?').get(`growth${n}@example.test`);
  const cookie=(await req('/auth/verify?token='+user.verify_token)).cookie;
  const b=(await req('/me','GET',undefined,cookie)).data.businesses[0];return {b,cookie,root:'/businesses/'+b.id};
@@ -65,8 +68,8 @@ try{
  check(()=>assert.equal(db.prepare("SELECT occurred_at FROM growth_milestones WHERE business_id=? AND stage='email_verified'").get(legacy).occurred_at,null));
  check(()=>assert.equal(db.prepare("SELECT occurred_at FROM growth_milestones WHERE business_id=? AND stage='first_booking'").get(legacy).occurred_at,'2020-01-01 12:00:00'));
  const one=await owner(1),two=await owner(2),team=await owner(3,'adara-equipo');
- const adminId=db.prepare("INSERT INTO users(name,email,password_hash,role,email_verified) VALUES('Fixture Admin','growth-admin@example.test',?,'superadmin',1)").run(bcrypt.hashSync('Fixture-admin-password-42!',8)).lastInsertRowid;
- const admin=(await req('/auth/login','POST',{email:'growth-admin@example.test',password:'Fixture-admin-password-42!'})).cookie;
+ const adminId=db.prepare("INSERT INTO users(name,email,password_hash,role,email_verified) VALUES('Fixture Admin','growth-admin@example.test',?,'superadmin',1)").run(bcrypt.hashSync(adminPassword,8)).lastInsertRowid;
+ const admin=(await req('/auth/login','POST',{email:'growth-admin@example.test',password:adminPassword})).cookie;
  await req(one.root+'/setup','GET',undefined,'',401);await req(one.root+'/setup','GET',undefined,two.cookie,403);
  let setup=(await req(one.root+'/setup','GET',undefined,one.cookie)).data;
  check(()=>assert.equal(setup.completed,0));check(()=>assert.equal(setup.total,4));check(()=>assert.equal(setup.ready,false));
@@ -81,7 +84,7 @@ try{
  setup=(await req(one.root+'/setup','GET',undefined,one.cookie)).data;check(()=>assert.equal(setup.completed,4));
  check(()=>assert.equal(db.prepare("SELECT count(*) n FROM growth_milestones WHERE business_id=? AND stage='page_shared'").get(one.b.id).n,1));
  db.prepare('UPDATE services SET active=0 WHERE id=?').run(service);setup=(await req(one.root+'/setup','GET',undefined,one.cookie)).data;check(()=>assert.equal(setup.ready,false));await req(one.root+'/setup/share','POST',{},one.cookie,409);db.prepare('UPDATE services SET active=1 WHERE id=?').run(service);
- await req(one.root+'/payment-settings','PUT',{payment_mode:'total',payment_methods:['mercadopago']},one.cookie);setup=(await req(one.root+'/setup','GET',undefined,one.cookie)).data;check(()=>assert.equal(setup.ready,false));
+ await req(one.root+'/payment-settings','PUT',{payment_mode:'total',payment_methods:['mercadopago']},one.cookie,400);setup=(await req(one.root+'/setup','GET',undefined,one.cookie)).data;check(()=>assert.equal(setup.ready,true));
  await req(one.root+'/payment-settings','PUT',{payment_mode:'total',payment_methods:['bank_transfer'],bank_alias:'fixture.alias',bank_holder:'Fixture Holder'},one.cookie);setup=(await req(one.root+'/setup','GET',undefined,one.cookie)).data;check(()=>assert.equal(setup.ready,true));
  await req(one.root+'/payment-settings','PUT',{payment_mode:'none'},one.cookie);
  setup=(await req(team.root+'/setup','GET',undefined,team.cookie)).data;check(()=>assert.equal(setup.total,5));check(()=>assert.equal(setup.steps.find(step=>step.id==='team').done,false));
@@ -92,8 +95,8 @@ try{
  setup=(await req(team.root+'/setup','GET',undefined,team.cookie)).data;check(()=>assert.equal(setup.ready,true));
 
  // Imports preview data, skip both classes of duplicate and preserve existing customer data.
- const original=Number(db.prepare("INSERT INTO clients(business_id,name,email,phone,phone_normalized,notes) VALUES(?,'Existing','existing@example.test','+54 9 223 900 0000','5492239000000','Keep me')").run(one.b.id).lastInsertRowid);
- const csv='\uFEFFNombre;Apellido;WhatsApp;Email;Notas\r\nAna;García;+54 9 223 900 0001;ANA@example.test;"Prefiere la tarde; diseño simple"\r\nBea;;5492239000002;;"Dos líneas\ncon comillas ""dobles"""\r\nOtra;;5492239000000;EXISTING@example.test;No reemplazar\r\nAna repetida;;5492239000001;;Duplicada\r\nInválida;;12;no-es-email;Revisar\r\n';
+ const original=Number(db.prepare("INSERT INTO clients(business_id,name,email,phone,phone_normalized,notes) VALUES(?,'Existing','existing@example.test','+00 000 0000 0008','0000000000008','Keep me')").run(one.b.id).lastInsertRowid);
+ const csv='\uFEFFNombre;Apellido;WhatsApp;Email;Notas\r\nAna;García;+00 000 0000 0003;ANA@example.test;"Prefiere la tarde; diseño simple"\r\nBea;;0000000000007;;"Dos líneas\ncon comillas ""dobles"""\r\nOtra;;0000000000008;EXISTING@example.test;No reemplazar\r\nAna repetida;;0000000000003;;Duplicada\r\nInválida;;12;no-es-email;Revisar\r\n';
  const before=db.prepare('SELECT count(*) n FROM clients WHERE business_id=?').get(one.b.id).n;
  await preview({...one,cookie:''},csv,'clients.csv',undefined,401);await preview({...one,cookie:two.cookie},csv,'clients.csv',undefined,403);
  const first=await preview(one,csv);
@@ -106,19 +109,19 @@ try{
  check(()=>assert.equal(imported.created,2));check(()=>assert.equal(imported.skipped,0));
  const again=(await req(one.root+'/clients/import/'+first.id+'/commit','POST',{rows:[2,3]},one.cookie)).data;check(()=>assert.equal(again.already_imported,true));
  check(()=>assert.equal(db.prepare('SELECT count(*) n FROM clients WHERE business_id=?').get(one.b.id).n,before+2));check(()=>assert.equal(db.prepare('SELECT notes FROM clients WHERE id=?').get(original).notes,'Keep me'));check(()=>assert.equal(db.prepare('SELECT rows_json FROM client_imports WHERE id=?').get(first.id).rows_json,'[]'));
- const other=await preview(two,'Persona,Contacto,Comentarios\nLuz,5492239000005,Texto');check(()=>assert.equal(other.needs_mapping,true));check(()=>assert.equal(other.id,null));
- const mapped=await preview(two,'Persona,Contacto,Comentarios\nLuz,5492239000005,Texto','clients.csv',{name:0,phone:1,notes:2});check(()=>assert.equal(mapped.summary.ready,1));
+ const other=await preview(two,'Persona,Contacto,Comentarios\nLuz,0000000000004,Texto');check(()=>assert.equal(other.needs_mapping,true));check(()=>assert.equal(other.id,null));
+ const mapped=await preview(two,'Persona,Contacto,Comentarios\nLuz,0000000000004,Texto','clients.csv',{name:0,phone:1,notes:2});check(()=>assert.equal(mapped.summary.ready,1));
  await req(two.root+'/clients/import/'+mapped.id+'/commit','POST',{rows:[2]},two.cookie);
- await preview(two,'Nombre,WhatsApp\nLuz,5492239000005','clients.csv',{name:0,phone:0},400);
- const raced=await preview(one,'Nombre,WhatsApp\nRaced,5492239000010');db.prepare("INSERT INTO clients(business_id,name,phone,phone_normalized) VALUES(?,'Concurrent','5492239000010','5492239000010')").run(one.b.id);
+ await preview(two,'Nombre,WhatsApp\nLuz,0000000000004','clients.csv',{name:0,phone:0},400);
+ const raced=await preview(one,'Nombre,WhatsApp\nRaced,0000000000001');db.prepare("INSERT INTO clients(business_id,name,phone,phone_normalized) VALUES(?,'Concurrent','0000000000001','0000000000001')").run(one.b.id);
  const racedResult=(await req(one.root+'/clients/import/'+raced.id+'/commit','POST',{rows:[2]},one.cookie)).data;check(()=>assert.equal(racedResult.created,0));check(()=>assert.equal(racedResult.skipped,1));
  const expired=await preview(one,'Nombre,Email\nVencida,expired@example.test');db.prepare("UPDATE client_imports SET expires_at='2020-01-01' WHERE id=?").run(expired.id);await req(one.root+'/clients/import/'+expired.id+'/commit','POST',{rows:[2]},one.cookie,410);
  await preview(one,'Nombre,Email\nAna,ana@example.test','clients.xls',undefined,400);await preview(one,'Nombre,Email\n"Sin cerrar,ana@example.test','clients.csv',undefined,400);await preview(one,Buffer.alloc(2*1024*1024+1),'clients.csv',undefined,400);
  await preview(one,'Nombre,Email\n'+Array.from({length:2001},(_,i)=>`Persona ${i},person${i}@example.test`).join('\n'),'clients.csv',undefined,400);
  check(()=>assert.deepEqual(parseCsv('sep=;\r\nNombre;Email\r\n"Ana; Luz";ana@example.test\r\n'),[['Nombre','Email'],['Ana; Luz','ana@example.test']]));
- const workbook=xlsx('<row r="1">'+textCell('A1','Nombre')+textCell('B1','WhatsApp')+'</row><row r="2">'+textCell('A2','Desde Excel')+'<c r="B2"><v>5492239000055</v></c></row>');
+ const workbook=xlsx('<row r="1">'+textCell('A1','Nombre')+textCell('B1','WhatsApp')+'</row><row r="2">'+textCell('A2','Desde Excel')+'<c r="B2"><v>0000000000002</v></c></row>');
  check(()=>assert.doesNotThrow(()=>validateWorkbookZip(workbook)));
- const excel=await preview(one,workbook,'clients.xlsx');check(()=>assert.equal(excel.rows[0].phone,'5492239000055'));check(()=>assert.equal(excel.rows[0].name,'Desde Excel'));
+ const excel=await preview(one,workbook,'clients.xlsx');check(()=>assert.equal(excel.rows[0].phone,'0000000000002'));check(()=>assert.equal(excel.rows[0].name,'Desde Excel'));
  const withDate=[['Nombre','Email','Última visita'],['Fecha no importada','unused@example.test',new Date()]];
  check(()=>assert.equal(previewClients(one.b.id,withDate,{name:0,email:1,phone:-1,surname:-1,notes:-1})[0].status,'ready'));
  check(()=>assert.equal(previewClients(one.b.id,withDate,{name:0,email:-1,phone:2,surname:-1,notes:-1})[0].status,'invalid'));
@@ -152,7 +155,7 @@ try{
  db.prepare("INSERT INTO bookings(business_id,client_id,date,start_time,end_time,booking_source) VALUES(?,?,'2030-01-01','09:00','09:30','manual')").run(one.b.id,original);
  check(()=>assert.equal(db.prepare("SELECT count(*) n FROM growth_milestones WHERE business_id=? AND stage='first_booking'").get(one.b.id).n,0));
  const date=new Date(Date.now()+7*86400000).toISOString().slice(0,10);db.prepare('UPDATE businesses SET booking_notice_min=0 WHERE id=?').run(one.b.id);
- await req('/public/'+one.b.slug+'/bookings','POST',{serviceIds:[service],date,time:'09:00',clientName:'Online fixture',phone:'5492239000099'});
+ await req('/public/'+one.b.slug+'/bookings','POST',{serviceIds:[service],date,time:'09:00',clientName:'Online fixture',phone:'0000000000006'});
  check(()=>assert.equal(db.prepare("SELECT count(*) n FROM growth_milestones WHERE business_id=? AND stage='first_booking'").get(one.b.id).n,1));
  const now=new Date().toISOString();
  db.prepare("INSERT INTO platform_subscriptions(id,business_id,plan_slug,plan_name,billing_cycle,amount_cents,provider,status,start_date,created_at,updated_at) VALUES('growth-sub',?,'adara-inicial','Inicial','monthly',990000,'demo','authorized',?,?,?)").run(one.b.id,now,now,now);

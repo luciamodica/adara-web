@@ -21,8 +21,8 @@ try{
  const extra=(await req(root+'/services','POST',{name:'Adicional',price:4000,duration:15},one.cookie)).data;
  const foreign=(await req('/businesses/'+two.b.id+'/services','POST',{name:'Ajeno',price:1000,duration:30},two.cookie)).data;
  let page=(await req(root+'/page-settings','GET',undefined,one.cookie)).data.business;
- const order=['faqs','promotions','hero','services','posts','booking'];
- check(()=>assert.deepEqual(page.section_order,['hero','booking','promotions','services','posts','faqs']));
+ const order=['faqs','reviews','promotions','hero','services','posts','booking'];
+ check(()=>assert.deepEqual(page.section_order,['hero','booking','promotions','services','posts','faqs','reviews']));
  await req(root+'/page-settings','PUT',{...page,section_order:order,hero_image_fit:'contain'},one.cookie);
  await checkAsync(async()=>assert.deepEqual((awaitValue=>awaitValue)((await req(pub)).data.business.section_order),order));
  await checkAsync(async()=>assert.equal((await req(pub)).data.business.hero_image_fit,'contain'));

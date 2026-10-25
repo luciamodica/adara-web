@@ -11,7 +11,7 @@ export function decoratePayment(booking){if(!booking)return booking;let transfer
 export function validatePaymentSettings(b,x){
  const methods=x.payment_methods===undefined?paymentMethods(b):x.payment_methods;
  if(!Array.isArray(methods)||methods.length>2||methods.some(m=>!['mercadopago','bank_transfer'].includes(m)))throw new Error('Elegí medios de pago válidos');
- if(!mercadoPagoAllowed(b)&&methods.includes('mercadopago'))throw new Error('Adara Individual incluye cobros por transferencia. Mercado Pago integrado está disponible en los otros planes.');
+ if(!mercadoPagoAllowed(b)&&methods.includes('mercadopago'))throw new Error('Adara Inicial incluye cobros por transferencia. Mercado Pago integrado está disponible desde Adara Individual.');
  const normalized=[...new Set(methods)],alias=String(x.bank_alias??b.bank_alias??'').trim(),account=String(x.bank_account??b.bank_account??'').trim(),holder=String(x.bank_holder??b.bank_holder??'').trim(),bank=String(x.bank_name??b.bank_name??'').trim(),instructions=String(x.bank_instructions??b.bank_instructions??'').trim();
  if(alias&&!/^[a-zA-Z0-9.-]{6,20}$/.test(alias))throw new Error('El alias debe tener entre 6 y 20 letras, números, puntos o guiones');
  if(account&&!/^\d{22}$/.test(account))throw new Error('El CBU/CVU debe tener 22 dígitos');

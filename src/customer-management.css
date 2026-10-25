@@ -1,0 +1,24 @@
+.clientHeading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}
+.clientHeading h1{margin-bottom:0}
+.clientHeading button,.clientActions button,.managedClient>button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px}
+.clientEditor fieldset{border:0;padding:0;margin:0;min-width:0;display:grid;gap:14px}
+.clientEditor fieldset>label,.clientEditor .two>label{display:grid;gap:6px}
+.clientActions{display:flex;gap:8px;flex-wrap:wrap}
+.clientFilters{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-top:18px}
+.clientToolbar{display:flex;align-items:start;gap:8px;flex-wrap:wrap}.clientToolbar .clientImport{margin:0}.clientToolbar:has(.clientImportPanel){display:block}.clientToolbar:has(.clientImportPanel)>a{margin-top:10px}.clientFilters input{font:inherit;font-size:14px;min-height:44px;padding:10px;border:1px solid #dce6f2;border-radius:8px;background:white;min-width:0;width:100%}
+.clientFilters>div{display:flex;gap:7px}
+.clientFilters button{min-height:44px}
+.clientFilters label{display:grid;gap:6px;flex:1;max-width:420px;font-size:13px}
+.clientGrid.managedClientGrid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+.clientGrid .managedClient{display:flex;flex-direction:column;align-items:stretch;gap:14px;min-width:0}
+.clientIdentity{display:flex;gap:12px;align-items:start;min-width:0}
+.clientIdentity>div:last-child{min-width:0;flex:1}
+.clientIdentity :is(h3,p,small,span){overflow-wrap:anywhere}
+.clientIdentity h3{margin:0 0 6px}
+.clientIdentity .avatar{flex:0 0 42px;width:42px;height:42px}
+.clientIdentity small{display:block;margin-top:6px}
+.clientIdentity .clientNotes{white-space:pre-wrap;font-size:12px;color:#64748b;margin:10px 0 0}
+.clientDelete{color:#9b3333}
+.clientDeleteConfirm{padding:14px;background:#fff6f4;border:1px solid #f0d2ca;border-radius:10px;font-size:13px;line-height:1.5}
+.clientDeleteConfirm p{margin:8px 0 12px}
+@media(max-width:700px){.clientHeading{align-items:stretch;flex-direction:column}.clientHeading h1{margin:0}.clientHeading button{align-self:start}.clientGrid.managedClientGrid{grid-template-columns:minmax(0,1fr)}.clientFilters{align-items:stretch;flex-direction:column}.clientFilters label{max-width:none}.clientActions button{flex:1;min-width:100px}.clientIdentity .avatar{flex-basis:34px;width:34px;height:34px}.clientDeleteConfirm .clientActions{flex-direction:column}}

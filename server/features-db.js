@@ -12,6 +12,7 @@ for(const [key,def] of Object.entries({payment_methods_json:`TEXT NOT NULL DEFAU
 for(const [key,def] of Object.entries({payment_method:"TEXT NOT NULL DEFAULT 'mercadopago'",payment_details_json:'TEXT',manual_payment_confirmed_at:'TEXT',payment_waived:'INTEGER NOT NULL DEFAULT 0'}))add('bookings',key,def);
 add('clients','waive_advance','INTEGER NOT NULL DEFAULT 0');
 add('clients','payment_access_token','TEXT');
+add('clients','archived_at','TEXT');
 db.exec('CREATE TABLE IF NOT EXISTS booking_transfer_receipts(booking_id INTEGER PRIMARY KEY REFERENCES bookings(id) ON DELETE CASCADE,stored_name TEXT NOT NULL,original_name TEXT NOT NULL,mime TEXT NOT NULL,uploaded_at TEXT NOT NULL)');
 
 // One-time migration of the former default. Existing trial end dates are preserved.

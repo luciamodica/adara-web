@@ -4,7 +4,9 @@ import fontOptions from '../shared/fonts.json' with {type:'json'};
 import {mercadoPagoAllowed,planHasMercadoPago,paymentFeatures} from './plan-payments.js';
 import {registerGrowth,markSetup} from './growth.js';
 import {registerTestimonials} from './testimonials.js';
+import {registerPublicSites} from './public-sites.js';
 import {registerClientImports} from './client-imports.js';
+import {registerClients} from './clients.js';
 import {registerMarketingPages} from './marketing-pages.js';
 import {registerReviews} from './reviews.js';
 import {participantsFor,groupSelection,validateGroupAvailability,storeParticipants,shiftedGroup,moveParticipants} from './group-bookings.js';
@@ -89,7 +91,9 @@ registerReviews(app,{auth,own});
 export const billingWorker=registerPlatformBilling(app,{auth,own,superOnly,getBusinessPlan,publicPlan});
 registerGrowth(app,{auth,own,superOnly,billingAccess});
 registerTestimonials(app,{auth,superOnly});
+registerPublicSites(app);
 registerClientImports(app,{auth,own});
+registerClients(app,{auth,own});
 const dateOnly=d=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Argentina/Buenos_Aires',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(d));
 const toMinutes=t=>{const[a,b]=String(t||'00:00').split(':').map(Number);return a*60+b};
 const fromMinutes=m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
@@ -307,7 +311,7 @@ app.get('/api/businesses/:id/dashboard',auth,(req,res)=>{
   const today=dateOnly(new Date());
   const stats={
     services:db.prepare('SELECT count(*) n FROM services WHERE business_id=? AND active=1').get(b.id).n,
-    clients:db.prepare('SELECT count(*) n FROM clients WHERE business_id=?').get(b.id).n,
+    clients:db.prepare('SELECT count(*) n FROM clients WHERE business_id=? AND archived_at IS NULL').get(b.id).n,
     today:db.prepare(`SELECT COALESCE(sum(CASE WHEN EXISTS(SELECT 1 FROM booking_participants bp WHERE bp.booking_id=bookings.id) THEN party_size ELSE 1 END),0) n FROM bookings WHERE business_id=? AND date=? AND status!='cancelled'`).get(b.id,today).n,
     upcoming:db.prepare(`SELECT COALESCE(sum(CASE WHEN EXISTS(SELECT 1 FROM booking_participants bp WHERE bp.booking_id=bookings.id) THEN party_size ELSE 1 END),0) n FROM bookings WHERE business_id=? AND date>=? AND status IN ('confirmed','pending_payment')`).get(b.id,today).n,
     paid_cents:db.prepare(`SELECT COALESCE(sum(amount_paid_cents),0) n FROM bookings WHERE business_id=? AND payment_status='approved'`).get(b.id).n
@@ -364,13 +368,6 @@ app.post('/api/businesses/:id/upload',auth,(req,res,next)=>upload.single('image'
   if(!req.file)return res.status(400).json({error:'Elegí una imagen'});
   res.json({url:`/uploads/${req.file.filename}`});
 });
-
-app.get('/api/businesses/:id/clients',auth,(req,res)=>{
-  const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);
-  const rows=db.prepare(`SELECT c.*,COUNT(bk.id) booking_count,MAX(bk.date) last_booking,COALESCE(SUM(CASE WHEN bk.payment_status='approved' THEN CASE WHEN EXISTS(SELECT 1 FROM booking_participants bp WHERE bp.booking_id=bk.id) THEN CAST(bk.amount_paid_cents/bk.party_size AS INTEGER) ELSE bk.amount_paid_cents END ELSE 0 END),0) paid_cents FROM clients c LEFT JOIN bookings bk ON (bk.client_id=c.id OR EXISTS(SELECT 1 FROM booking_participants bp WHERE bp.booking_id=bk.id AND bp.client_id=c.id)) WHERE c.business_id=? GROUP BY c.id ORDER BY c.id DESC`).all(b.id);
-  res.json(rows);
-});
-app.patch('/api/businesses/:id/clients/:cid',auth,(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);db.prepare('UPDATE clients SET notes=? WHERE id=? AND business_id=?').run(req.body?.notes||'',req.params.cid,b.id);res.json({ok:true})});
 
 app.get('/api/businesses/:id/bookings',auth,(req,res)=>{
   const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);cleanupExpiredHolds(b.id);
@@ -481,7 +478,7 @@ app.put('/api/businesses/:id/payment-settings',auth,(req,res)=>{
  const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);const x=req.body||{};
  try{if(!['none','deposit','total'].includes(x.payment_mode))throw new Error('Modalidad de cobro inválida');if(!['fixed','percent'].includes(x.deposit_type||'fixed'))throw new Error('Tipo de seña inválido');let value=Number(x.deposit_value||0);if(!Number.isFinite(value)||value<0||(x.deposit_type==='percent'&&value>100))throw new Error('Revisá el importe de seña');value=x.deposit_type==='percent'?Math.round(value):cents(value);const holdMinutes=Number(x.payment_hold_minutes??b.payment_hold_minutes);if(!Number.isInteger(holdMinutes)||holdMinutes<5||holdMinutes>1440)throw new Error('Elegí un plazo de pago entre 5 y 1440 minutos (24 horas)');const m=validatePaymentSettings(b,x);db.prepare('UPDATE businesses SET payment_mode=?,deposit_type=?,deposit_value=?,payment_hold_minutes=?,payment_methods_json=?,bank_alias=?,bank_account=?,bank_holder=?,bank_name=?,bank_instructions=? WHERE id=?').run(x.payment_mode,x.deposit_type||'fixed',value,holdMinutes,JSON.stringify(m.methods),m.alias,m.account,m.holder,m.bank,m.instructions,b.id);markSetup(b.id,'payment');res.json({ok:true})}catch(e){res.status(400).json({error:e.message})}
 });
-app.get('/api/businesses/:id/mercadopago/connect',auth,(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);if(!mercadoPagoAllowed(b))return res.status(403).json({error:'Adara Individual incluye pagos por transferencia.'});if(!oauthConfigured())return res.status(503).json({error:'Mercado Pago OAuth todavía no está configurado en .env'});res.json({url:authorizationUrl(stateToken(b.id,Number(req.user.sub)))})});
+app.get('/api/businesses/:id/mercadopago/connect',auth,(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);if(!mercadoPagoAllowed(b))return res.status(403).json({error:'Adara Inicial incluye pagos por transferencia.'});if(!oauthConfigured())return res.status(503).json({error:'Mercado Pago OAuth todavía no está configurado en .env'});res.json({url:authorizationUrl(stateToken(b.id,Number(req.user.sub)))})});
 app.delete('/api/businesses/:id/mercadopago',auth,(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);db.prepare('UPDATE businesses SET mp_access_token_enc=NULL,mp_refresh_token_enc=NULL,mp_token_expires_at=NULL,mp_user_id=NULL,mp_connected_at=NULL WHERE id=?').run(b.id);res.json({ok:true})});
 
 app.get('/api/businesses/:id/plan',auth,(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);res.json({business:b,plan:publicPlan(getBusinessPlan(b)),plans:db.prepare('SELECT * FROM plans WHERE active=1 AND (public_enabled=1 OR slug=?) ORDER BY display_order').all(b.plan_slug).map(publicPlan),billing:billingSummary(b.id)})});
