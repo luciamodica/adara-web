@@ -1,3 +1,4 @@
+import ThemeToggle from './ThemeToggle';
 import HomeAnalytics from './HomeAnalytics';
 import React from 'react';
 import {createRoot} from 'react-dom/client';
@@ -13,4 +14,4 @@ import './mobile-compact.css';
 import './experience-refinements.css';
 import {BRAND} from './brand';
 Object.entries(BRAND.colors).forEach(([key,value])=>document.documentElement.style.setProperty(`--adara-${key}`,value));
-createRoot(document.getElementById('root')!).render(<><HomeAnalytics/><Router/></>);
+createRoot(document.getElementById('root')!).render(<><HomeAnalytics/><Router/><ThemeToggle/></>);

@@ -1,0 +1,35 @@
+.colorModeToggle{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));left:16px;z-index:45;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:10px 14px;border:1px solid #ccd9ec;border-radius:24px;background:#fff;color:#173457;box-shadow:0 4px 20px #10243a18;font:650 12px 'Manrope',system-ui,sans-serif}
+.colorModeToggle:focus-visible{outline:3px solid #4b94ff;outline-offset:3px}
+html[data-color-mode=dark]{--mode-bg:#0b1424;--mode-surface:#142137;--mode-raised:#1c2c45;--mode-ink:#eaf1fc;--mode-muted:#b0bfd5;--mode-line:#344863;background:#0b1424;color:#eaf1fc}
+html[data-color-mode=dark] body{background:var(--mode-bg);color:var(--mode-ink)}
+html[data-color-mode=dark] .colorModeToggle{background:var(--mode-surface);color:var(--mode-ink);border-color:var(--mode-line)}
+/* Explicit surfaces preserve photographs, logos and each business's brand colors. */
+html[data-color-mode=dark] :is(.platformHome,.authBg,.manageBg,.legalPage,.publicError,.admin,.superLayout,.dash){--adara-background:var(--mode-bg);--adara-ink:var(--mode-ink);--adara-muted:var(--mode-muted);--adara-line:var(--mode-line);--ph-ink:var(--mode-ink);--ph-muted:var(--mode-muted);--ph-line:var(--mode-line);background:var(--mode-bg)!important;color:var(--mode-ink)}
+html[data-color-mode=dark] :is(.platformHome .platformHeader,.platformHome .platformHeader nav.open,.platformHome .platformHomeFooter,.platformHome .visualFeatures,.platformHome .platformSupport,.authCard,.manageCard,.panel,.stats article,.cardsList article,.signupPlans>button,.panelMobileHeader,.legalCard,.sectionOrderEditor li){background:var(--mode-surface)!important;color:var(--mode-ink);border-color:var(--mode-line)!important}
+html[data-color-mode=dark] .platformHome :is(h1,h2,h3,.platformSectionTitle h2,.visualFeatureList h3,.visualSiteCaption h3,.platformPlanGrid article,.platformFaq summary,.platformFooterGrid b){color:var(--mode-ink)!important}
+html[data-color-mode=dark] .platformHome :is(p,.clearHeroCopy>small,.visualSiteCaption p,.platformPlanGrid small,.platformFooterGrid a,.platformFooterBottom,.platformHeader nav>a,.visualHeroLink){color:var(--mode-muted)!important}
+html[data-color-mode=dark] .platformHome .visualHero{background:linear-gradient(110deg,#101c30,#172c4b)!important}
+html[data-color-mode=dark] .platformHome .visualHero h1>span{color:#79b5ff!important}
+html[data-color-mode=dark] .platformHome :is(.platformPlans,.platformBilling,.compactIntegrations,.platformFaq,.platformFaq details,.platformFooterBottom){background:var(--mode-bg)!important;border-color:var(--mode-line)!important}
+html[data-color-mode=dark] .platformHome :is(.platformPlanGrid>article,.realSiteBrowser,.realSiteCard,.platformBilling button.active,.integrationCard){background:var(--mode-surface)!important;border-color:var(--mode-line)!important;color:var(--mode-ink)}
+html[data-color-mode=dark] .platformHome :is(.platformButton.outline,.clearHeaderLogin,.platformSecondary,.realSiteControls button,.visualMoreSites){background:var(--mode-raised)!important;color:#b5d6ff!important;border-color:var(--mode-line)!important}
+html[data-color-mode=dark] .platformHome :is(.platformEyebrow,.realSiteControls,.platformMenu){color:#9ac8ff!important}
+html[data-color-mode=dark] :is(.authCard,.manageCard,.legalPage,.dash) :is(h1,h2,h3,label,legend,summary){color:var(--mode-ink)}
+html[data-color-mode=dark] :is(.authCard,.manageCard,.legalPage,.dash) :is(p,small,.lead,.muted){color:var(--mode-muted)!important}
+html[data-color-mode=dark] :is(.authCard,.manageCard,.legalPage,.dash) :is(input,select,textarea,.outline,.signupPlans>button,.toolRow,.bookingAdmin,.agendaFilters,.searchBar,.integrationGrid article,td,th){background:var(--mode-surface)!important;color:var(--mode-ink);border-color:var(--mode-line)!important}
+html[data-color-mode=dark] :is(input,textarea)::placeholder{color:#a6b5cc;opacity:1}
+html[data-color-mode=dark] :is(.authCard,.manageCard,.dash) :is(.error,.errorText){background:#3a202e;color:#ffb9c5!important;border-color:#7d4358}
+html[data-color-mode=dark] :is(.authCard,.manageCard,.dash) :is(.successBox,.success){background:#14382f;color:#a0e8c8!important;border-color:#346b5b}
+html[data-color-mode=dark] .platformBrand:not(.light){background:#f6faff;border-radius:10px;padding:4px 8px}
+/* Public client pages: visitor preference changes reading surfaces, never saved design settings. */
+html[data-color-mode=dark] .store{--surface:#0b1424!important;background:#0b1424!important;color:#eaf1fc}
+html[data-color-mode=dark] .store :is(.storeHeader,.storeSection,.bookingArea,.serviceGrid article,.promoCards article,.postGrid article,.bookingCard,.bookingPanel,.reviewCard,.reviewsSection,.storeFooter){background:var(--mode-surface)!important;color:var(--mode-ink)!important;border-color:var(--mode-line)!important}
+html[data-color-mode=dark] .store :is(.serviceCopy,.storeSection,.bookingArea) :is(h2,h3,label,p,small,summary){color:var(--mode-ink)}
+html[data-color-mode=dark] .store :is(input,select,textarea,.slots button,.serviceOption){background:var(--mode-raised);color:var(--mode-ink);border-color:var(--mode-line)}
+html[data-color-mode=dark] .store :is(.storeHeroCopy){background:linear-gradient(90deg,#0b1424ed,#0b142480);color:var(--mode-ink)}
+html[data-color-mode=dark] .store .storeHeroCopy :is(h1,p,span){color:var(--mode-ink)!important}
+@media(max-width:600px){.colorModeToggle{left:10px;bottom:calc(10px + env(safe-area-inset-bottom));font-size:11px;padding:9px 12px}}
+@media print{.colorModeToggle{display:none}}
+
+html[data-color-mode=dark] .platformHome .platformMenu{background:var(--mode-raised);border-color:var(--mode-line)}
+html[data-color-mode=dark] .platformHome .platformHeader nav.open a{color:var(--mode-ink)!important}
