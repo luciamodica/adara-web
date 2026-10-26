@@ -79,3 +79,6 @@ html[data-color-mode=dark] .store :is(.serviceCopy>span,.bookingPromotions butto
 html[data-color-mode=dark] .store :is(.readMore,.contentShowAll,.reviewGrid article>span[aria-label]){color:var(--mode-link)!important}
 html[data-color-mode=dark] .dash :is(.dateBox span,.bookingRow span){color:var(--mode-muted)!important}
 html[data-color-mode=dark] .dash .selectedTemplatePreview small:not(:where(.templateMini *)){color:var(--mode-muted)!important}
+/* Darken promotional banners with the business hue, keeping their title and price readable. */
+html[data-color-mode=dark] .store .promoTopBanner{background:color-mix(in srgb,var(--primary) 30%,#142137)!important;color:var(--mode-ink)!important}
+html[data-color-mode=dark] .store .promoTopBanner :is(b,span){color:var(--mode-ink)!important}
