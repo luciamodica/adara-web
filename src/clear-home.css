@@ -54,3 +54,29 @@
 @media(max-width:1000px){.clearHome .platformHeader nav{display:none}.clearHome .platformHeader nav.open{display:flex}.clearHome .platformMenu{display:flex;margin-left:0}.clearHome .platformHeader{gap:12px}.clearHome .clearHeaderLogin{font-size:12px;padding:0 12px}}
 @media(max-width:800px){.clearHome .visualHero{grid-template-columns:1fr;gap:30px;padding:35px 24px}.clearHome .heroClientSites .visualSite{flex-basis:calc(50% - 7px)}.clearHome .heroClientSites .realSiteImage{height:210px}}
 @media(max-width:600px){.clearHome .visualHero{padding:32px 21px 26px;margin:0;border-radius:0;gap:27px}.clearHome .clearHeroCopy>p{max-width:290px}.clearHome .heroClientSites .visualSite{flex-basis:72%}.clearHome .heroClientSites .realSiteImage{height:200px}.clearHome .heroClientSites .realSitesHeading h2{font-size:18px}.clearHome .heroClientSites .realSitesHeading{margin-bottom:8px}.clearHome .heroClientSites .realSiteBrand h3{font-size:22px}}
+
+/* Desktop uses complete client previews and one consistent content width. */
+.clearHome .platformHeader{padding:18px 28px;gap:26px;background:transparent}
+.visualHome.clearHome .platformHeader .platformWordmark .platformBrand img{width:230px;height:auto;max-height:76px}
+.clearHome .visualHero{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:36px;padding:42px 34px;min-height:470px}
+.visualHome.clearHome .visualHero h1{font-size:clamp(43px,4.6vw,64px);letter-spacing:-2.5px}
+.clearHome .heroClientSites .realSitesRail{scrollbar-width:none;padding:5px 2px 12px;gap:16px}
+.clearHome .heroClientSites .realSitesRail::-webkit-scrollbar{display:none}
+.clearHome .heroClientSites .visualSite{flex:0 0 calc(50% - 8px)}
+.clearHome .heroClientSites .realSiteImage{height:260px;padding:18px 16px}
+.clearHome .heroClientSites .realSiteBrand{padding:0}
+.clearHome .heroClientSites .realSiteBrand h3{font-size:25px}
+.clearHome .heroClientSites .visualSiteCaption{padding-top:12px}
+.clearHome .heroClientSites .realSiteBrowser{padding:10px}
+.clearHome .heroClientSites .realSiteBrowser small{font-size:10px}
+.clearHome .heroClientSites .visualSiteNavigation{margin-top:4px}
+.clearHome .heroClientSites[data-site-count="2"] .realSiteControls{display:none}
+.clearHome .visualFeatures{max-width:1152px;padding:38px 0;gap:50px}
+.visualHome.clearHome .platformSupport{max-width:1152px;padding:28px 26px;border-radius:16px;margin:16px auto}
+.visualHome.clearHome .platformHomeFooter{padding:30px 28px 22px;background:transparent}
+.visualHome.clearHome .platformBilling button.active{background:#0758ef;color:#fff}
+@media(min-width:1001px){.clearHome .platformHeader nav{margin-left:auto;gap:24px}.clearHome .clearHeaderLogin{margin-left:0}}
+@media(max-width:1190px) and (min-width:801px){.clearHome .visualFeatures{margin-left:34px;margin-right:34px}.clearHome .platformSupport{margin-left:28px;margin-right:28px}.clearHome .visualHero{gap:25px}.clearHome .heroClientSites .realSiteBrand h3{font-size:21px}}
+@media(max-width:800px){.visualHome.clearHome .platformHeader .platformWordmark .platformBrand img{width:165px;max-height:55px}.clearHome .platformHeader{padding:14px 18px;gap:10px}.clearHome .platformWordmark{flex:0 1 auto;min-width:0}.clearHome .clearHeaderLogin{padding:0 11px}.clearHome .visualHero{grid-template-columns:1fr;gap:28px;padding:34px 24px}.clearHome .heroClientSites .visualSite{flex-basis:calc(50% - 8px)}.clearHome .heroClientSites .realSiteImage{height:220px}.clearHome .visualFeatures{margin-left:24px;margin-right:24px;gap:28px}.visualHome.clearHome .platformSupport{margin:12px 21px;padding:24px}.visualHome.clearHome .visualHero h1{font-size:48px}}
+@media(max-width:600px){.clearHome .heroClientSites .visualSite{flex-basis:78%}.clearHome .heroClientSites[data-site-count="2"] .realSiteControls{display:flex}.clearHome .heroClientSites .realSiteImage{height:205px}.clearHome .visualHero{padding:29px 21px 24px}.visualHome.clearHome .visualHero h1{font-size:42px;letter-spacing:-1.8px}.visualHome.clearHome .platformSupport{padding:24px 18px}.clearHome .visualFeatures{margin-left:21px;margin-right:21px}}
+@media(max-width:380px){.visualHome.clearHome .platformHeader .platformWordmark .platformBrand img{width:145px}.clearHome .platformHeader{padding-left:14px;padding-right:14px;gap:8px}.clearHome .clearHeaderLogin{padding:0 9px;gap:4px}.visualHome.clearHome .visualHero h1{font-size:38px}}
