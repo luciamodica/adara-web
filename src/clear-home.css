@@ -1,0 +1,56 @@
+.platformHome.visualHome.clearHome{background:#fff;color:#071c43;font-family:'Manrope',system-ui,sans-serif}
+.clearHome .platformHeader{background:white;max-width:1220px;padding-top:20px;padding-bottom:20px}
+.clearHome .platformHeader nav{display:flex}.clearHome .platformMenu{display:none}
+.clearHome .visualHero{position:relative;isolation:isolate;overflow:hidden;max-width:1220px;text-align:left;padding:65px 40px 78px;min-height:520px;background:#f4faff;border-radius:22px;margin:0 auto 0}
+.clearHome .visualHero:after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#fff 0%,#fff 34%,#ffffffd9 45%,#ffffff00 68%);z-index:-1;pointer-events:none}
+.clearHeroCopy{max-width:590px;position:relative}
+.visualHome.clearHome .visualHero h1{font-family:'Manrope',system-ui,sans-serif;font-size:clamp(46px,5.3vw,72px);font-weight:800;line-height:1.06;letter-spacing:-3px;color:#071c43;margin:15px 0 22px}
+.visualHome.clearHome .visualHero h1>span{font-family:inherit;font-style:normal;font-weight:800;letter-spacing:inherit;color:#0758ef}
+.clearHome .clearHeroCopy>p{font-size:17px;line-height:1.7;color:#566780;max-width:370px;margin:0}
+.visualHome.clearHome .visualHero .platformHeroActions{justify-content:start;margin:26px 0 17px;gap:21px}
+.clearHome .clearHeroCopy>small{display:flex;align-items:center;gap:6px;color:#78879b;font-size:11px}
+.visualHome.clearHome .platformButton{border-radius:11px;background:#0758ef;border-color:#0758ef;font-weight:700;min-height:48px;box-shadow:0 5px 15px #0758ef12}
+.clearHome .visualHero .platformButton{font-size:14px;padding:15px 25px;gap:30px}
+.clearHome .visualHeroLink{font-size:11px}
+.visualHome.clearHome .visualSites{max-width:1220px;padding-top:35px;padding-bottom:45px}
+.clearHome .realSitesHeading{margin-bottom:20px}.visualHome.clearHome .realSitesHeading h2{font-size:24px;letter-spacing:-.8px;font-weight:750;color:#071c43}
+.clearHome .realSiteBrowser{background:white}.clearHome .visualSite .realSiteCard{border-color:#dbe8f8;box-shadow:0 13px 28px #124b8210;border-radius:13px}
+.clearHome .visualSite:nth-child(3n+2){padding-top:0;transform:translateY(-13px)}.clearHome .visualSite:nth-child(3n){padding-top:0}
+.clearHome .visualSite .realSiteImage{height:300px}.visualHome.clearHome .realSiteBrand h3{font-size:29px}
+.visualHome.clearHome .visualSiteCaption h3{font-size:13px;color:#102b56}.clearHome .visualSiteCaption p{font-size:10px;color:#798ba3}
+.clearHome .visualFeatures{border-color:#e4edf8;background:#fff}.visualHome.clearHome .visualFeatures h2{font-weight:700;color:#071c43}.visualHome.clearHome .visualFeatureList h3{color:#102b56}
+.visualHome.clearHome .platformPlans{max-width:none;padding:48px max(26px,calc((100% - 1168px)/2)) 35px;background:#eff7ff;border-top:1px solid #e3effc;border-bottom:1px solid #e3effc}
+.visualHome.clearHome .platformSectionTitle h2{font-weight:750;color:#071c43}.visualHome.clearHome .platformPlanGrid>article{border-color:#d9e8fa;border-radius:16px}.visualHome.clearHome .platformPlanGrid>article.highlighted{background:white;border:2px solid #0758ef}.visualHome.clearHome .platformPlanBadge{background:#0758ef}
+.visualHome.clearHome .platformPlanGrid .platformButton.outline{background:white;color:#0758ef;border-color:#c5d9f7;box-shadow:none}
+.visualHome.clearHome .platformBilling{background:#e3efff;border-color:#d4e5fb}.visualHome.clearHome .platformBilling button.active{color:#0758ef}
+.visualHome.clearHome .compactIntegrations{padding-top:40px;padding-bottom:40px}.visualHome.clearHome .platformFaq details{border-color:#e4edf8}.visualHome.clearHome .platformSupport{border-color:#e4edf8}.visualHome.clearHome .platformFooterBottom{border-color:#e4edf8}
+@media(max-width:900px){.clearHome .visualHero{margin:0 20px;padding:48px 26px 55px;min-height:440px}.visualHome.clearHome .visualHero h1{font-size:52px}.clearHome .clearHeroCopy>p{font-size:15px;max-width:300px}.clearHome .visualHero:after{background:linear-gradient(90deg,#fff 0%,#fff 26%,#ffffffdf 43%,#ffffff00 75%)}.clearHome .visualHeroLink{display:none}}
+@media(max-width:800px){.clearHome .platformHeader nav{display:none}.clearHome .platformHeader nav.open{display:flex}.clearHome .platformMenu{display:flex}.clearHome .platformHeader{padding:14px 21px}.clearHome .visualHero .platformHeroActions{gap:14px}}
+@media(max-width:600px){.clearHome .visualHero{margin:0;border-radius:0;padding:43px 21px 48px;min-height:405px}.clearHome .visualHero:after{background:linear-gradient(90deg,#fff 0%,#fffffff5 24%,#ffffffcf 46%,#ffffff18 100%)}.clearHeroCopy{max-width:100%}.visualHome.clearHome .visualHero h1{font-size:43px;line-height:1.06;letter-spacing:-2px;max-width:300px;margin:16px 0 18px}.clearHome .clearHeroCopy>p{font-size:12px;line-height:1.85;max-width:220px;color:#526883}.visualHome.clearHome .visualHero .platformHeroActions{margin:23px 0 14px}.clearHome .visualHero .platformButton{font-size:12px;padding:12px 19px;min-height:45px;gap:23px}.clearHome .clearHeroCopy>small{font-size:9px;color:#73849a}.visualHome.clearHome .visualSites{padding-top:24px;padding-bottom:31px}.visualHome.clearHome .realSitesHeading h2{font-size:21px;max-width:260px}.clearHome .visualSite:nth-child(n){transform:none;padding:0}.clearHome .visualSite .realSiteImage{height:265px}.visualHome.clearHome .realSiteBrand h3{font-size:28px}.visualHome.clearHome .platformPlans{padding:37px 21px 28px}.visualHome.clearHome .platformSectionTitle h2{font-size:26px}.clearHome .visualFeatures{padding-top:30px;padding-bottom:30px}.visualHome.clearHome .visualFeatures h2{font-size:25px}.clearHome .platformHeroActions .visualHeroLink{display:none}}
+@media(max-width:360px){.visualHome.clearHome .visualHero h1{font-size:37px;letter-spacing:-1.6px}.clearHome .visualHero{padding-top:32px;min-height:370px}.clearHome .clearHeroCopy>p{max-width:190px;font-size:11px}}
+
+/* Acceso al panel siempre visible. */
+.clearHome .platformHeader{gap:18px}
+.clearHome .clearHeaderLogin{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border:1px solid #cbdcf6;border-radius:10px;color:#0758ef;font-size:13px;font-weight:750;text-decoration:none;margin-left:auto;white-space:nowrap}
+.clearHome .clearHeaderLogin:hover{background:#eff6ff;border-color:#0758ef}
+.clearHome .clearHeaderLogin:focus-visible{outline:3px solid #0758ef;outline-offset:3px}
+.clearHome .visualHero:after{display:none}
+.clearHome .visualHero{display:grid;grid-template-columns:1fr 1.05fr;gap:42px;align-items:center;background:linear-gradient(110deg,#fff 30%,#edf5ff 100%);padding:48px 34px;min-height:510px}
+.clearHeroCopy{max-width:100%}
+.clearHome .heroClientSites.visualSites{padding:0;min-width:0;width:100%}
+.clearHome .heroClientSites .realSitesHeading{margin-bottom:18px}
+.clearHome .heroClientSites .realSitesHeading h2{font-size:20px;letter-spacing:-.5px;margin:8px 0 0}
+.heroClientSites .realSitesHeading>p{display:none}
+.clearHome .heroClientSites .realSitesRail{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:thin;padding:10px 3px 15px;position:relative}
+.clearHome .heroClientSites .visualSite{flex:0 0 calc(65% - 7px);min-width:0;padding:0;transform:none;scroll-snap-align:start}
+.clearHome .heroClientSites .realSiteImage{height:240px}
+.clearHome .heroClientSites .realSiteBrand h3{font-size:24px}
+.clearHome .heroClientSites .realSiteBrand{padding:18px}
+.clearHome .heroClientSites .visualSiteCaption h3{font-size:11px}
+.heroClientSites .visualSiteNavigation{display:flex;justify-content:space-between;gap:10px;margin-top:10px}
+.heroClientSites .realSiteControls{display:flex}
+.heroClientSites .visualMoreSites{font-size:11px}
+@media(min-width:1001px){.clearHome .platformHeader nav{order:1}.clearHome .clearHeaderLogin{order:2}}
+@media(max-width:1000px){.clearHome .platformHeader nav{display:none}.clearHome .platformHeader nav.open{display:flex}.clearHome .platformMenu{display:flex;margin-left:0}.clearHome .platformHeader{gap:12px}.clearHome .clearHeaderLogin{font-size:12px;padding:0 12px}}
+@media(max-width:800px){.clearHome .visualHero{grid-template-columns:1fr;gap:30px;padding:35px 24px}.clearHome .heroClientSites .visualSite{flex-basis:calc(50% - 7px)}.clearHome .heroClientSites .realSiteImage{height:210px}}
+@media(max-width:600px){.clearHome .visualHero{padding:32px 21px 26px;margin:0;border-radius:0;gap:27px}.clearHome .clearHeroCopy>p{max-width:290px}.clearHome .heroClientSites .visualSite{flex-basis:72%}.clearHome .heroClientSites .realSiteImage{height:200px}.clearHome .heroClientSites .realSitesHeading h2{font-size:18px}.clearHome .heroClientSites .realSitesHeading{margin-bottom:8px}.clearHome .heroClientSites .realSiteBrand h3{font-size:22px}}
