@@ -1,35 +1,81 @@
 .colorModeToggle{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));left:16px;z-index:45;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:10px 14px;border:1px solid #ccd9ec;border-radius:24px;background:#fff;color:#173457;box-shadow:0 4px 20px #10243a18;font:650 12px 'Manrope',system-ui,sans-serif}
 .colorModeToggle:focus-visible{outline:3px solid #4b94ff;outline-offset:3px}
-html[data-color-mode=dark]{--mode-bg:#0b1424;--mode-surface:#142137;--mode-raised:#1c2c45;--mode-ink:#eaf1fc;--mode-muted:#b0bfd5;--mode-line:#344863;background:#0b1424;color:#eaf1fc}
+html[data-color-mode=dark]{--mode-bg:#0b1424;--mode-surface:#142137;--mode-raised:#1c2c45;--mode-ink:#edf3ff;--mode-muted:#bdcbe0;--mode-line:#405572;--mode-link:#a7cdff;background:var(--mode-bg);color:var(--mode-ink)}
 html[data-color-mode=dark] body{background:var(--mode-bg);color:var(--mode-ink)}
 html[data-color-mode=dark] .colorModeToggle{background:var(--mode-surface);color:var(--mode-ink);border-color:var(--mode-line)}
-/* Explicit surfaces preserve photographs, logos and each business's brand colors. */
-html[data-color-mode=dark] :is(.platformHome,.authBg,.manageBg,.legalPage,.publicError,.admin,.superLayout,.dash){--adara-background:var(--mode-bg);--adara-ink:var(--mode-ink);--adara-muted:var(--mode-muted);--adara-line:var(--mode-line);--ph-ink:var(--mode-ink);--ph-muted:var(--mode-muted);--ph-line:var(--mode-line);background:var(--mode-bg)!important;color:var(--mode-ink)}
-html[data-color-mode=dark] :is(.platformHome .platformHeader,.platformHome .platformHeader nav.open,.platformHome .platformHomeFooter,.platformHome .visualFeatures,.platformHome .platformSupport,.authCard,.manageCard,.panel,.stats article,.cardsList article,.signupPlans>button,.panelMobileHeader,.legalCard,.sectionOrderEditor li){background:var(--mode-surface)!important;color:var(--mode-ink);border-color:var(--mode-line)!important}
-html[data-color-mode=dark] .platformHome :is(h1,h2,h3,.platformSectionTitle h2,.visualFeatureList h3,.visualSiteCaption h3,.platformPlanGrid article,.platformFaq summary,.platformFooterGrid b){color:var(--mode-ink)!important}
-html[data-color-mode=dark] .platformHome :is(p,.clearHeroCopy>small,.visualSiteCaption p,.platformPlanGrid small,.platformFooterGrid a,.platformFooterBottom,.platformHeader nav>a,.visualHeroLink){color:var(--mode-muted)!important}
-html[data-color-mode=dark] .platformHome .visualHero{background:linear-gradient(110deg,#101c30,#172c4b)!important}
-html[data-color-mode=dark] .platformHome .visualHero h1>span{color:#79b5ff!important}
-html[data-color-mode=dark] .platformHome :is(.platformPlans,.platformBilling,.compactIntegrations,.platformFaq,.platformFaq details,.platformFooterBottom){background:var(--mode-bg)!important;border-color:var(--mode-line)!important}
-html[data-color-mode=dark] .platformHome :is(.platformPlanGrid>article,.realSiteBrowser,.realSiteCard,.platformBilling button.active,.integrationCard){background:var(--mode-surface)!important;border-color:var(--mode-line)!important;color:var(--mode-ink)}
-html[data-color-mode=dark] .platformHome :is(.platformButton.outline,.clearHeaderLogin,.platformSecondary,.realSiteControls button,.visualMoreSites){background:var(--mode-raised)!important;color:#b5d6ff!important;border-color:var(--mode-line)!important}
-html[data-color-mode=dark] .platformHome :is(.platformEyebrow,.realSiteControls,.platformMenu){color:#9ac8ff!important}
-html[data-color-mode=dark] :is(.authCard,.manageCard,.legalPage,.dash) :is(h1,h2,h3,label,legend,summary){color:var(--mode-ink)}
-html[data-color-mode=dark] :is(.authCard,.manageCard,.legalPage,.dash) :is(p,small,.lead,.muted){color:var(--mode-muted)!important}
-html[data-color-mode=dark] :is(.authCard,.manageCard,.legalPage,.dash) :is(input,select,textarea,.outline,.signupPlans>button,.toolRow,.bookingAdmin,.agendaFilters,.searchBar,.integrationGrid article,td,th){background:var(--mode-surface)!important;color:var(--mode-ink);border-color:var(--mode-line)!important}
-html[data-color-mode=dark] :is(input,textarea)::placeholder{color:#a6b5cc;opacity:1}
-html[data-color-mode=dark] :is(.authCard,.manageCard,.dash) :is(.error,.errorText){background:#3a202e;color:#ffb9c5!important;border-color:#7d4358}
-html[data-color-mode=dark] :is(.authCard,.manageCard,.dash) :is(.successBox,.success){background:#14382f;color:#a0e8c8!important;border-color:#346b5b}
-html[data-color-mode=dark] .platformBrand:not(.light){background:#f6faff;border-radius:10px;padding:4px 8px}
-/* Public client pages: visitor preference changes reading surfaces, never saved design settings. */
-html[data-color-mode=dark] .store{--surface:#0b1424!important;background:#0b1424!important;color:#eaf1fc}
-html[data-color-mode=dark] .store :is(.storeHeader,.storeSection,.bookingArea,.serviceGrid article,.promoCards article,.postGrid article,.bookingCard,.bookingPanel,.reviewCard,.reviewsSection,.storeFooter){background:var(--mode-surface)!important;color:var(--mode-ink)!important;border-color:var(--mode-line)!important}
-html[data-color-mode=dark] .store :is(.serviceCopy,.storeSection,.bookingArea) :is(h2,h3,label,p,small,summary){color:var(--mode-ink)}
-html[data-color-mode=dark] .store :is(input,select,textarea,.slots button,.serviceOption){background:var(--mode-raised);color:var(--mode-ink);border-color:var(--mode-line)}
-html[data-color-mode=dark] .store :is(.storeHeroCopy){background:linear-gradient(90deg,#0b1424ed,#0b142480);color:var(--mode-ink)}
-html[data-color-mode=dark] .store .storeHeroCopy :is(h1,p,span){color:var(--mode-ink)!important}
+/* Palette variables are local: miniature template previews keep their own design. */
+html[data-color-mode=dark] :is(.platformHome,.authBg,.manageBg,.adaraLegalPage,.legalPage,.publicError,.admin,.superLayout,.dash,.bookingEditModal,.manualWhatsappDialog,.homeAnalyticsConsent,.trackingConsent){--adara-background:var(--mode-bg);--adara-ink:var(--mode-ink);--adara-muted:var(--mode-muted);--adara-line:var(--mode-line);--ph-ink:var(--mode-ink);--ph-muted:var(--mode-muted);--ph-line:var(--mode-line);color:var(--mode-ink)}
+html[data-color-mode=dark] :is(.platformHome,.authBg,.manageBg,.adaraLegalPage,.legalPage,.publicError,.admin,.superLayout,.dash,.superDash){background:var(--mode-bg)!important}
+/* Home: continuous canvas, paired foregrounds and surfaces. */
+html[data-color-mode=dark] .platformHome :is(.platformHeader,.platformHomeFooter,.visualFeatures,.compactIntegrations,.platformFaq,.platformFaq details,.platformFooterBottom){background:transparent!important;border-color:var(--mode-line)!important}
+html[data-color-mode=dark] .platformHome .visualHero{background:linear-gradient(115deg,#122038,#182c48)!important}
+html[data-color-mode=dark] .platformHome .platformPlans{background:#101d31!important;border-color:var(--mode-line)!important}
+html[data-color-mode=dark] .platformHome :is(.platformHeader nav.open,.platformPlanGrid>article,.platformSupport,.supportForm,.realSiteBrowser,.realSiteCard,.realSitesEmpty,.planComparisonBody,.comparisonScroll th,.comparisonScroll td,.homeIntegrationDetails[open],.testimonialGrid figure){background:var(--mode-surface)!important;border-color:var(--mode-line)!important;color:var(--mode-ink)!important}
+html[data-color-mode=dark] .platformHome :is(h1,h2,h3,.platformPrice,.visualPlanDetails summary,.platformFaq summary,.comparisonScroll strong,.comparisonScroll b,.platformFooterGrid b){color:var(--mode-ink)!important}
+html[data-color-mode=dark] .platformHome :is(p,small,.platformPrice small,.clearHeroCopy>small,.platformPlanFeatures,.visualMoreFaqs,.homeIntegrationDetails summary,.platformFooterGrid a,.platformFooterBottom,.platformHeader nav>a,.visualHeroLink,.planComparison>summary,.comparisonScroll,.comparisonNo,.realSiteControls>span){color:var(--mode-muted)!important}
+html[data-color-mode=dark] .platformHome :is(.platformEyebrow,.platformTextLink,.platformMenu,.comparisonYes,.realSiteControls,.visualMoreSites,.visualSiteCaption>svg,.visualFeatureList article>svg,.platformPlanFeatures svg){color:var(--mode-link)!important}
+html[data-color-mode=dark] .platformHome .visualHero h1>span{color:#8fc0ff!important}
+html[data-color-mode=dark] .platformHome :is(.platformButton.outline,.clearHeaderLogin,.platformSecondary,.realSiteControls button,.platformMenu){background:var(--mode-raised)!important;color:var(--mode-link)!important;border-color:var(--mode-line)!important}
+html[data-color-mode=dark] .platformHome .platformBilling{background:var(--mode-bg)!important;border-color:var(--mode-line)!important}
+html[data-color-mode=dark] .platformHome .platformBilling button{color:var(--mode-muted)!important}
+html[data-color-mode=dark] .platformHome .platformBilling button.active{background:#2563d9!important;color:#fff!important}
+html[data-color-mode=dark] .platformHome :is(.platformPlanGrid>article.highlighted,.realSiteCard:focus-visible){border-color:#7ab5ff!important}
+html[data-color-mode=dark] .platformHome :is(.visualPlanDetails,.planComparison){border-color:var(--mode-line)!important}
+/* Image captions remain white; their visit button retains its light surface. */
+html[data-color-mode=dark] .platformHome .realSiteBrand h3{color:#fff!important}
+html[data-color-mode=dark] .platformHome .realSiteVisit{color:#172940!important;background:#fff}
+/* The original logo contains dark lettering. Keep a light, legible backing in both headers and sidebars. */
+html[data-color-mode=dark] .platformBrand{background:#f6faff!important;border-radius:10px;padding:6px 10px}
+html[data-color-mode=dark] :is(.authCard,.manageCard,.adaraLegalArticle,.adaraLegalNav a,.legalPage>div,.panel,.stats article,.cardsList article,.clientGrid article,.contentGrid article,.couponList article,.faqAdminList article,.businessTable article,.planSummary article,.integrationGrid article,.panelMobileHeader,.mobileDisclosure,.row,.emptyState,.sectionOrderEditor li,.bookingEditModal,.manualWhatsappDialog,.homeAnalyticsConsent,.homePrivacyPreferences,.trackingConsent){background:var(--mode-surface)!important;color:var(--mode-ink)!important;border-color:var(--mode-line)!important}
+html[data-color-mode=dark] :is(.dash,.authCard,.manageCard,.bookingEditModal,.manualWhatsappDialog,.adaraLegalPage) :is(h1,h2,h3,h4,b,strong,label,legend,summary,td,th):not(:where(.livePreview *,.templateMini *,.selectedTemplatePreview *,.templateShowcase *)){color:var(--mode-ink)!important}
+html[data-color-mode=dark] :is(.dash,.authCard,.manageCard,.bookingEditModal,.manualWhatsappDialog,.adaraLegalPage) :is(p,small,.lead,.muted,.clientIdentity span,.row span,.statLabel):not(:where(.livePreview *,.templateMini *,.selectedTemplatePreview *,.templateShowcase *)){color:var(--mode-muted)!important}
+html[data-color-mode=dark] :is(.dash,.authCard,.manageCard,.bookingEditModal,.manualWhatsappDialog,.adaraLegalPage) :is(.kicker,.sectionLabel,.link,.dangerLink,.clientDelete,.groupReservation summary){color:var(--mode-link)!important}
+html[data-color-mode=dark] :is(.dash,.authCard,.manageCard,.bookingEditModal,.manualWhatsappDialog,.platformHome,.adaraLegalPage,.trackingConsent,.homeAnalyticsConsent) :is(input,select,textarea,.outline,.iconBtn,.row button,.signupPlans>button,.signupPlanOption,.toolsNav button:not(.active),.agendaFilters button:not(.active),.holdPresets button:not(.active),.periodMode button,.toggle,.paymentModes button,.panelMenuTrigger){background:var(--mode-raised)!important;color:var(--mode-ink)!important;border-color:var(--mode-line)!important}
+html[data-color-mode=dark] :is(.dash,.authCard,.manageCard,.bookingEditModal,.manualWhatsappDialog) :is(.bannerEditor,.groupDiscountBox,.imageUpload,.galleryUpload,.galleryThumb,.serviceChecks,.teamServices,.customPriceBox,.promotionPricePreview,.manualClientSummary,.manualOverride,.subscriptionBankDetails,.subscriptionFacts>div,.subscriptionPrice,.subscriptionLocal,.subscriptionCancellation,.paymentMethodChoices>label,.clientPaymentRule,.manualBookingActions form,.periodEmpty,.bookingAdmin,.toolRow,.importSummary span,.growthInsight,.setupChecklist,.signupReassurance,.signupTrial,.participantSummary,.manageSummary>div,.managePolicy,.manageClosed,.attendanceAction,.singlePlanChoice,.serviceFallback,.clientGrid .avatar,.periodIcon,.metricPills span,.manualWhatsappSummary,.manualWhatsappMode){background:var(--mode-raised)!important;color:var(--mode-ink)!important;border-color:var(--mode-line)!important}
+html[data-color-mode=dark] :is(.dash,.manageCard,.authCard) :is(.row,.row>*,.bannerEditor,.panel,.clientPaymentRule,.clientActions,.serviceChecks,.manualBookingActions,.bookingAdmin,.previewToolbar,.manageSummary,.periodList,.comparisonScroll) {border-color:var(--mode-line)!important}
+html[data-color-mode=dark] :is(.dash,.authCard,.manageCard) :is(td,th,.importTableScroll th){background:var(--mode-surface)!important;border-color:var(--mode-line)!important}
+html[data-color-mode=dark] .authCard button.link.full{background:transparent!important;color:var(--mode-link)!important}
+html[data-color-mode=dark] .passwordEye{color:var(--mode-muted)}
+html[data-color-mode=dark] .passwordEye:hover{background:var(--mode-raised)}
+html[data-color-mode=dark] :is(input,textarea)::placeholder{color:#b2c2da;opacity:1}
+/* Public pages: preserve the professional's imagery, spacing and brand hues. */
+html[data-color-mode=dark] .store{--surface:var(--mode-bg)!important;--booking-dark:var(--mode-ink);--booking-muted:var(--mode-muted);--booking-accent:#a7cdff;--booking-accent-soft:#223b5b;background:var(--mode-bg)!important;color:var(--mode-ink)}
+html[data-color-mode=dark] .store :is(.storeSection,.bookingArea,.promoArea,.soft,.faqPublic,.storeFooter){background:transparent!important;color:var(--mode-ink)!important;border-color:var(--mode-line)!important}
+html[data-color-mode=dark] .store :is(.storeNav,.storeLinks.open,.storeMenuToggle,.bookingWizard,.bookingSuccess,.serviceGrid article,.newsGrid article,.promoCards article,.compactContent article,.reviewGrid article,.reviewForm,.bookingPaymentMethods){background:var(--mode-surface)!important;color:var(--mode-ink)!important;border-color:var(--mode-line)!important}
+html[data-color-mode=dark] .store :is(.choiceGrid button,.bookingPromotions>div:first-of-type>button,.selectedPromotion,.bookingSummary,.bookingTerms,.couponBox,.summaryGrid>div,.groupDiscountBox,.participantSummary,.transferPayment,.transferPayment dl,.bookingPaymentMethods label,.staffPublicGrid button,.partyPicker button,.calendarNav button,.calendarDays button,.slots button,.waitingForm,.confirmationNote,.reviewRating,.serviceFallback,.publicGroupBadge){background:var(--mode-raised)!important;color:var(--mode-ink)!important;border-color:var(--mode-line)!important}
+html[data-color-mode=dark] .store :is(h2,h3,b,strong,label,legend,summary,.serviceCopy h3,.bookingFooter b){color:var(--mode-ink)!important}
+html[data-color-mode=dark] .store :is(p,small,.bookingStep>div>span,.bookingSummary span,.bookingFooter span,.sectionIntro,.weekdays,.bookingPrivacy,.selectedPromotion>span){color:var(--mode-muted)!important}
+html[data-color-mode=dark] .store :is(.sectionLabel,.reviewStars,.choiceGrid button em,.serviceCopy a,.groupReservation summary,.bookingStep>span){color:var(--mode-link)!important}
+html[data-color-mode=dark] .store :is(input,select,textarea,.outline){background:var(--mode-raised)!important;color:var(--mode-ink)!important;border-color:var(--mode-line)!important}
+html[data-color-mode=dark] .store :is(.choiceGrid button.selected,.bookingPromotions>div:first-of-type>button.selected,.staffPublicGrid button.selected,.bookingPaymentMethods label.selected){background:#223b5b!important;border-color:#a7cdff!important;box-shadow:inset 0 0 0 1px #a7cdff}
+html[data-color-mode=dark] .store .choiceGrid button .choiceCheck{color:transparent!important;border-color:#91a8c8;background:transparent}
+html[data-color-mode=dark] .store .choiceGrid button.selected .choiceCheck{background:#b6d7ff!important;color:#0b1424!important;border-color:#b6d7ff}
+html[data-color-mode=dark] .store :is(.calendarDays button.selected,.slots button.selected,.partyPicker button.selected){background:#b6d7ff!important;color:#0b1424!important;border-color:#b6d7ff!important}
+html[data-color-mode=dark] .store :is(.storeCta,.storeHero a,.storeButton){background:color-mix(in srgb,var(--primary) 30%,#dceaff)!important;color:#0b1424!important}
+html[data-color-mode=dark] .store :is(.bookingStep,.bookingFooter,.bookingSummary,.selectedPromotion,.faqPublic details,.reviewGrid article){border-color:var(--mode-line)!important}
+html[data-color-mode=dark] .store .storeHero:not(.hasImage){background:linear-gradient(120deg,#142137,#0b1424)!important}
+html[data-color-mode=dark] .store .storeHeroCopy{color:var(--mode-ink);background:transparent}
+html[data-color-mode=dark] .store :is(.storeHeroCopy h1,.storeHeroCopy p,.storeHeroCopy>span){color:var(--mode-ink)!important}
+html[data-color-mode=dark] .store.hero-centered.hasImage .storeHeroCopy{background:#0b1424e6}
+html[data-color-mode=dark] .store .storeNav .storeLinks>a:not(.storeCta){color:var(--mode-ink)!important}
+html[data-color-mode=dark] .store :is(.calendarDays button:disabled,.slots button:disabled){opacity:.45}
+/* Status colors always have a corresponding dark background. */
+html[data-color-mode=dark] :is(.error,.errorText,.clientDeleteConfirm,.cancelBox){background:#3e2130!important;color:#ffc6d1!important;border-color:#956175!important}
+html[data-color-mode=dark] :is(.successBox,.success,.discountNotice,.discountSummary,.status.confirmed,.status.active,.status.completed){background:#153c33!important;color:#b3f2d5!important;border-color:#4c8975!important}
+html[data-color-mode=dark] :is(.devNote,.subscriptionExpiryNotice,.subscriptionExpiredBanner,.paymentNotice,.transferReviewNote,.status.pending_payment,.status.trialing){background:#3a301d!important;color:#ffe2a7!important;border-color:#937d4d!important}
+html[data-color-mode=dark] :is(.status.cancelled,.status.suspended,.status.no_show){background:#3e2130!important;color:#ffc6d1!important}
+html[data-color-mode=dark] :is(.status,.periodTag){background:var(--mode-raised);color:var(--mode-ink)}
+html[data-color-mode=dark] :is(.trackingConsent,.homeAnalyticsConsent,.homePrivacyPreferences){color:var(--mode-ink)!important}
+html[data-color-mode=dark] :is(.trackingConsent,.homeAnalyticsConsent,.homePrivacyPreferences) :is(p,small,label){color:var(--mode-muted)!important}
+html[data-color-mode=dark] :is(.trackingConsent,.homeAnalyticsConsent,.homePrivacyPreferences) :is(a,.link){color:var(--mode-link)!important}
 @media(max-width:600px){.colorModeToggle{left:10px;bottom:calc(10px + env(safe-area-inset-bottom));font-size:11px;padding:9px 12px}}
 @media print{.colorModeToggle{display:none}}
-
-html[data-color-mode=dark] .platformHome .platformMenu{background:var(--mode-raised);border-color:var(--mode-line)}
-html[data-color-mode=dark] .platformHome .platformHeader nav.open a{color:var(--mode-ink)!important}
+html[data-color-mode=dark] .platformHome :is(.comparisonScroll strong span,.homeIntegrationDetails li,.homeIntegrationDetails li b){color:var(--mode-muted)!important}
+html[data-color-mode=dark] .platformHome :is(.planComparison>summary span,.homeIntegrationDetails a){color:var(--mode-link)!important}
+/* Secondary labels are part of the palette too, not just headings. */
+html[data-color-mode=dark] .dash :is(.row span,.row em,.bookingAdmin span,.bookingAdmin em,.dateBox em,.periodMode button span,.imageUpload span,.mpConnect span,.paymentModes button span){color:var(--mode-muted)!important}
+html[data-color-mode=dark] .dash :is(.selectedTemplatePreview,.compactTemplateCatalog>button,.fontPickerSample,.groupBadge){background:var(--mode-raised)!important;color:var(--mode-ink)!important;border-color:var(--mode-line)!important}
+html[data-color-mode=dark] .store :is(.serviceCopy>span,.bookingPromotions button span){color:var(--mode-muted)!important}
+html[data-color-mode=dark] .store :is(.readMore,.contentShowAll,.reviewGrid article>span[aria-label]){color:var(--mode-link)!important}
+html[data-color-mode=dark] .dash :is(.dateBox span,.bookingRow span){color:var(--mode-muted)!important}
+html[data-color-mode=dark] .dash .selectedTemplatePreview small:not(:where(.templateMini *)){color:var(--mode-muted)!important}
