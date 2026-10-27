@@ -17,17 +17,28 @@ export function galleryImages(value:any,fallback=''):string[] {
 }
 
 export default function ImageCarousel({images,alt,className='',hero=false}:{images:string[];alt:string;className?:string;hero?:boolean}) {
- const[index,setIndex]=useState(0),[zoom,setZoom]=useState(false),start=useRef<number|null>(null),moved=useRef(false);
+ const[index,setIndex]=useState(0),[zoom,setZoom]=useState(false),start=useRef<number|null>(null),moved=useRef(false),region=useRef<HTMLDivElement>(null),pointerKind=useRef('');
  useEffect(()=>setIndex(0),[images.join('\n')]);
  useEffect(()=>{if(hero&&images.length>1){const next=new Image();next.src=images[(index+1)%images.length]}},[hero,index,images.join('\n')]);
+ // Pause while interacting, viewing the full image, offscreen or in another app.
+ useEffect(()=>{
+  if(images.length<2||zoom)return;
+  const timer=window.setInterval(()=>{
+   const root=region.current;if(!root||document.hidden||start.current!==null||matchMedia('(prefers-reduced-motion: reduce)').matches||root.contains(document.activeElement)||(pointerKind.current==='mouse'&&root.matches(':hover')))return;
+   const box=root.getBoundingClientRect();if(box.bottom<=0||box.top>=window.innerHeight)return;
+   setIndex(i=>(i+1)%images.length);
+  },5000);
+  return()=>window.clearInterval(timer);
+ },[images.join('\n'),index,zoom]);
  const move=(n:number)=>setIndex(i=>(i+n+images.length)%images.length);
- return <div className={`imageCarousel ${className}${hero?' heroCarousel':''}`} role={images.length>1?'region':undefined} aria-roledescription={images.length>1?'carrusel':undefined} aria-label={images.length>1?`Imágenes de ${alt}`:undefined}
-  onPointerDown={e=>{start.current=e.clientX;moved.current=false}}
+ return <div ref={region} className={`imageCarousel ${className}${hero?' heroCarousel':''}`} role={images.length>1?'region':undefined} aria-roledescription={images.length>1?'carrusel':undefined} aria-label={images.length>1?`Imágenes de ${alt}`:undefined}
+  onPointerEnter={e=>{pointerKind.current=e.pointerType}}
+  onPointerDown={e=>{pointerKind.current=e.pointerType;start.current=e.clientX;moved.current=false}}
   onPointerUp={e=>{if(start.current!==null&&Math.abs(e.clientX-start.current)>40){moved.current=true;if(images.length>1)move(e.clientX<start.current?1:-1)}start.current=null}}
   onPointerCancel={()=>{start.current=null}}
   onPointerLeave={()=>{start.current=null}}>
   {images.length>0&&<button type="button" className="carouselZoom" aria-label={`Ampliar imagen: ${alt}`} onClick={()=>{if(!moved.current)setZoom(true)}}><img key={images[Math.min(index,images.length-1)]} className="carouselImage" src={images[Math.min(index,images.length-1)]} alt={`${alt}${images.length>1?` · imagen ${index+1}`:''}`} loading={hero?'eager':'lazy'} draggable={false}/></button>}
   {zoom&&images.length>0&&<ImageLightbox src={images[Math.min(index,images.length-1)]} alt={alt} onClose={()=>setZoom(false)} onMove={images.length>1?move:undefined}/>}
-  {images.length>1&&<div className="carouselControls"><button type="button" onClick={()=>move(-1)} aria-label={`Imagen anterior de ${alt}`}><ChevronLeft size={18}/></button><span className="srOnly" aria-live="polite">Imagen {index+1} de {images.length}</span><button type="button" onClick={()=>move(1)} aria-label={`Imagen siguiente de ${alt}`}><ChevronRight size={18}/></button></div>}
+  {images.length>1&&<div className="carouselControls"><button type="button" onClick={()=>move(-1)} aria-label={`Imagen anterior de ${alt}`}><ChevronLeft size={18}/></button><span className="srOnly" aria-live="off">Imagen {index+1} de {images.length}</span><button type="button" onClick={()=>move(1)} aria-label={`Imagen siguiente de ${alt}`}><ChevronRight size={18}/></button></div>}
  </div>;
 }

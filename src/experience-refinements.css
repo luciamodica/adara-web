@@ -220,3 +220,16 @@
 
 .bookingRecovery{max-width:1120px;margin:18px auto;padding:18px;border:1px solid #d3dfef;border-radius:12px;background:#f1f7ff;color:#173457}.bookingRecovery p{font-size:13px;line-height:1.6}.bookingRecovery>div{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:9px}.bookingRecovery .outline{margin:5px 8px 5px 0}.store>.bookingRecovery{margin:18px max(18px,6vw)}
 .subscriptionOfferInput{margin:18px 0}.subscriptionOfferInput details>summary{cursor:pointer;min-height:44px;display:flex;align-items:center}.subscriptionOfferInput .couponApply{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.subscriptionOfferInput .couponApply input{flex:1;min-width:120px}.subscriptionOfferInput small{display:block;line-height:1.65}.platformOfferNotice{max-width:950px;margin:0 auto 25px;padding:16px 20px;background:#e4efff;border:1px solid #bbd4f5;border-radius:12px;color:#173457}.platformOfferNotice p{margin:0 0 7px;font-size:13px;line-height:1.6}.platformOfferNotice small{display:block;font-size:11px;line-height:1.6}.panel.form fieldset{border:0;min-width:0;padding:0;margin:0}
+/* Keep payment details close together, particularly on phones. */
+.bookingManage>.brand{display:block;width:max-content;max-width:100%;margin:0 0 14px;line-height:0}
+.bookingManage>.brand img{display:block;width:160px;height:auto;max-width:100%}
+.bookingManage>.kicker{display:block;font-size:10px}
+.bookingManage>h1{font-size:32px;line-height:1.2;margin:8px 0 16px}
+.bookingManage .paymentNotice{padding:12px 14px;margin:14px 0}
+.bookingManage .paymentNotice p{font-size:12px;line-height:1.55;margin-top:6px!important}
+.transferPayment{padding:18px;margin:16px auto}
+.transferPayment dl{margin:14px 0;padding:14px}
+.transferPayment dt{margin-top:12px}
+.transferPayment>label{margin:14px 0;gap:8px}
+.transferPayment input[type=file]{overflow:hidden}
+@media(max-width:700px){.manageBg:has(.bookingManage){padding:16px 12px 90px}.bookingManage{padding:18px 16px;border-radius:18px}.bookingManage>.brand img{width:140px}.bookingManage>h1{font-size:28px}.bookingManage .transferPayment{padding:14px;margin:14px 0}.bookingManage .transferPayment h3{font-size:22px;margin-bottom:12px}.bookingManage .transferPayment dd{flex-wrap:wrap;gap:8px}.bookingManage .transferPayment dd button{margin-left:auto}.bookingManage .manageSummary>div{padding:12px}.bookingManage .manageActions>div{padding:16px}}
