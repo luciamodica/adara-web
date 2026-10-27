@@ -1,11 +1,13 @@
 import {randomBytes} from 'node:crypto';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import jwt from 'jsonwebtoken';
-import {recentBookings,rememberBooking,forgetBooking,recoveryPath} from '../shared/booking-recovery.js';
+import {recentBookings,rememberBooking,forgetBooking,recoveryPath,needsBookingRecovery} from '../shared/booking-recovery.js';
 const dir=fs.mkdtempSync(path.join(os.tmpdir(),'adara-platform-improvements-'));
 Object.assign(process.env,{NODE_ENV:'test',DATA_DIR:dir,UPLOADS_DIR:path.join(dir,'uploads'),JWT_SECRET:randomBytes(32).toString('hex'),DISABLE_FEATURE_WORKER:'true',DEMO_PAYMENTS:'true',DEMO_SUBSCRIPTIONS:'true',MP_BILLING_ACCESS_TOKEN:'',MP_BILLING_WEBHOOK_SECRET:'',RESEND_API_KEY:'',SUPERADMIN_EMAIL:'',SUPERADMIN_PASSWORD:''});
 const {app}=await import('../server/index.js'),{db,getSetting}=await import('../server/db.js');const server=app.listen(0);await new Promise(r=>server.once('listening',r));const base=`http://127.0.0.1:${server.address().port}/api`;let checks=0;
 const check=fn=>{fn();checks++};
+const {suggestMapping}=await import('../server/client-imports.js');check(()=>assert.equal(suggestMapping(['Clienta','WhatsApp']).name,0));
+const future=new Date(Date.now()+60000).toISOString();for(const [status,method,deadline,wanted] of [['pending_payment','bank_transfer',future,true],['confirmed','bank_transfer',future,false],['cancelled','bank_transfer',future,false],['pending_payment','bank_transfer','2000-01-01',false],['pending_payment','mercadopago',future,false],['pending_payment','bank_transfer',null,false]])check(()=>assert.equal(needsBookingRecovery({status,payment_method:method,hold_expires_at:deadline}),wanted));
 async function req(route,method='GET',body,cookie='',status=200){const multipart=body instanceof FormData,r=await fetch(base+route,{method,headers:{...(!multipart?{'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{})},body:body===undefined?undefined:multipart?body:JSON.stringify(body)}),data=await r.json().catch(()=>({}));check(()=>assert.equal(r.status,status,JSON.stringify({route,data})));return data}
 function owner(n,role='owner'){const id=db.prepare("INSERT INTO users(name,email,password_hash,role,email_verified) VALUES(?,?,?,?,1)").run('Profesional ficticia',`improvements-${n}@fixture.example.test`,randomBytes(32).toString('hex'),role).lastInsertRowid,cookie='session='+jwt.sign({sub:String(id),role,sv:0},process.env.JWT_SECRET);if(role==='superadmin')return {id,cookie};const bid=db.prepare("INSERT INTO businesses(owner_id,name,slug,plan_slug,trial_ends_at) VALUES(?,?,?,'adara',?)").run(id,'Estudio ficticio '+n,'improvements-'+n,new Date(Date.now()+30*86400000).toISOString()).lastInsertRowid;return {id,cookie,b:db.prepare('SELECT * FROM businesses WHERE id=?').get(bid),root:'/businesses/'+bid}}
 try{

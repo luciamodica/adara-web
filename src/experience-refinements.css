@@ -240,3 +240,10 @@ html[data-color-mode=dark] .store .bookingWizard :is(.calendarDays,.slots) butto
 .platformHome.clearHome .trialHighlight strong{font-size:17px;font-weight:850;color:#064bb9}.platformHome.clearHome .trialHighlight svg{flex:none;color:#0758df}
 html[data-color-mode=dark] .platformHome.clearHome .clearHeroCopy>.trialHighlight{background:#17365b;border-color:#679ce5;color:#dbeaff!important}
 html[data-color-mode=dark] .platformHome.clearHome .trialHighlight :is(strong,span,svg){color:#dbeaff!important}
+/* Returning clients only need a compact recovery action, not another banner. */
+.bookingRecovery.compactRecovery{padding:8px 12px;margin:10px auto;max-width:1180px}
+.bookingRecovery.compactRecovery>div{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:0}
+.compactRecovery .outline{padding:8px 13px;min-height:40px;font-size:12px}.compactRecovery .link{min-height:40px;padding:8px;font-size:12px}
+.manageDateField{display:grid;gap:6px;margin:16px 0 12px;font-size:13px;font-weight:650}
+.manageActions .manageDateField input[type=date]{min-height:46px;min-width:0;max-width:100%;margin:0;color:inherit}
+@media(max-width:700px){.colorModeToggle{width:44px;height:44px;min-height:44px;padding:10px;justify-content:center;gap:0;left:12px;bottom:calc(12px + env(safe-area-inset-bottom))}.colorModeToggle>span{display:none}}

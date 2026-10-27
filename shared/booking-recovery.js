@@ -9,3 +9,5 @@ export function rememberBooking(storage,slug,booking,now=Date.now()){
 }
 export function forgetBooking(storage,token){try{storage.setItem(KEY,JSON.stringify(recentBookings(storage).filter(x=>x.token!==token)))}catch{}}
 export const recoveryPath=token=>'/mi-reserva/'+encodeURIComponent(token);
+
+export const needsBookingRecovery=(booking,now=Date.now())=>booking?.status==='pending_payment'&&booking.payment_method==='bank_transfer'&&Date.parse(booking.hold_expires_at)>now;

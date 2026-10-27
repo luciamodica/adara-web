@@ -3,22 +3,22 @@ import {normalizePhone} from './features-db.js';
 
 const failure=(message,status=400)=>Object.assign(new Error(message),{status});
 function contact(input,current={}){
- if(!input||typeof input!=='object'||Array.isArray(input))throw failure('Revisá los datos de la clienta.');
+ if(!input||typeof input!=='object'||Array.isArray(input))throw failure('Revisá los datos del cliente.');
  const result={};
  for(const [key,max] of Object.entries({name:120,email:254,phone:40,notes:4000})){
   const value=input[key]??current[key]??'';
-  if(typeof value!=='string'||value.length>max||/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(value))throw failure('Revisá el nombre, contacto y notas de la clienta.');
+  if(typeof value!=='string'||value.length>max||/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(value))throw failure('Revisá el nombre, contacto y notas del cliente.');
   result[key]=value.trim();
  }
  result.email=result.email.toLowerCase();result.phone_normalized=normalizePhone(result.phone);
- if(!result.name)throw failure('Completá el nombre de la clienta.');
+ if(!result.name)throw failure('Completá el nombre del cliente.');
  if(result.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(result.email))throw failure('Revisá el email.');
  if(result.phone&&(!/^[+\d\s().-]+$/.test(result.phone)||result.phone_normalized.length<7||result.phone_normalized.length>18))throw failure('Revisá el teléfono o WhatsApp.');
  return result;
 }
 function available(b,value,id=0){
  const match=db.prepare("SELECT archived_at FROM clients WHERE business_id=? AND id!=? AND ((?!='' AND lower(email)=?) OR (?!='' AND phone_normalized=?)) LIMIT 1").get(b.id,id,value.email,value.email,value.phone_normalized,value.phone_normalized);
- if(match)throw failure(match.archived_at?'Ese contacto está en Eliminadas. Restaurá su ficha para conservar el historial.':'Ese email o WhatsApp ya pertenece a otra clienta.',409);
+ if(match)throw failure(match.archived_at?'Ese contacto está en Eliminados. Restaurá su ficha para conservar el historial.':'Ese email o WhatsApp ya pertenece a otro cliente.',409);
 }
 function updateReminders(client,value){
  for(const job of db.prepare("SELECT j.* FROM notification_jobs j JOIN bookings bk ON bk.id=j.booking_id WHERE bk.client_id=? AND j.business_id=? AND j.kind='reminder' AND j.status IN ('pending','local','unconfigured')").all(client.id,client.business_id)){
@@ -28,7 +28,7 @@ function updateReminders(client,value){
 }
 export function registerClients(app,{auth,own}){
  const guard=fn=>(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);try{return fn(req,res,b)}catch(error){res.status(error.status||400).json({error:error.message})}};
- const existing=(b,id)=>{const c=db.prepare('SELECT * FROM clients WHERE business_id=? AND id=?').get(b.id,id);if(!c)throw failure('Clienta no encontrada.',404);return c};
+ const existing=(b,id)=>{const c=db.prepare('SELECT * FROM clients WHERE business_id=? AND id=?').get(b.id,id);if(!c)throw failure('Cliente no encontrado.',404);return c};
  // A new booking brings the same contact back without losing visits or payment history.
  db.exec(`CREATE TRIGGER IF NOT EXISTS client_restore_booking AFTER INSERT ON bookings BEGIN UPDATE clients SET archived_at=NULL WHERE id=NEW.client_id AND archived_at IS NOT NULL; END;
  CREATE TRIGGER IF NOT EXISTS client_restore_participant AFTER INSERT ON booking_participants BEGIN UPDATE clients SET archived_at=NULL WHERE id=NEW.client_id AND archived_at IS NOT NULL; END;`);
@@ -42,7 +42,7 @@ export function registerClients(app,{auth,own}){
   res.status(201).json({id});
  }));
  app.patch('/api/businesses/:id/clients/:cid',auth,guard((req,res,b)=>{
-  db.transaction(()=>{const c=existing(b,req.params.cid);if(c.archived_at)throw failure('Restaurá la clienta antes de editarla.',409);const value=contact(req.body,c);available(b,value,c.id);
+  db.transaction(()=>{const c=existing(b,req.params.cid);if(c.archived_at)throw failure('Restaurá el cliente antes de editarlo.',409);const value=contact(req.body,c);available(b,value,c.id);
    db.prepare('UPDATE clients SET name=?,email=?,phone=?,phone_normalized=?,notes=? WHERE id=? AND business_id=?').run(value.name,value.email||null,value.phone,value.phone_normalized,value.notes,c.id,b.id);
    updateReminders(c,value);
   }).immediate();res.json({ok:true});

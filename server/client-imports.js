@@ -33,11 +33,11 @@ export function validateWorkbookZip(bytes){
   if(actual.length!==length)throw Error('El Excel contiene tamaños inválidos.');
   if(/^xl\/worksheets\/[^/]+\.xml$/.test(filename)){
    const xml=actual.toString('utf8'),rows=xml.match(/<(?:\w+:)?row\b/g)||[];
-   if(rows.length>maxRows+1)throw Error('Importá hasta 2000 clientas por archivo.');
+   if(rows.length>maxRows+1)throw Error('Importá hasta 2000 clientes por archivo.');
    for(const match of xml.matchAll(/<(?:\w+:)?row\b[^>]*\br=["'](\d+)["']/g))if(Number(match[1])>maxRows+1)throw Error('La hoja debe usar las primeras 2001 filas. Quitá filas vacías o exportá como CSV.');
    for(const match of xml.matchAll(/<(?:\w+:)?c\b[^>]*\br=["']([A-Za-z]+)(\d+)["']/g)){
     const column=[...match[1].toUpperCase()].reduce((value,char)=>value*26+char.charCodeAt(0)-64,0);
-    if(column>maxColumns||Number(match[2])>maxRows+1)throw Error('La hoja admite hasta 40 columnas y 2000 clientas. Quitá celdas sobrantes o exportá como CSV.');
+    if(column>maxColumns||Number(match[2])>maxRows+1)throw Error('La hoja admite hasta 40 columnas y 2000 clientes. Quitá celdas sobrantes o exportá como CSV.');
    }
   }
   offset+=46+bytes.readUInt16LE(offset+28)+bytes.readUInt16LE(offset+30)+bytes.readUInt16LE(offset+32);
@@ -61,7 +61,7 @@ export function parseCsv(text){
  }
  const rows=[];let row=[],cell='',quoted=false,closed=false;
  const pushCell=()=>{row.push(cell);cell='';closed=false;if(row.length>maxColumns)throw Error('La planilla admite hasta 40 columnas.');};
- const pushRow=()=>{pushCell();if(row.some(value=>value.trim()))rows.push(row);row=[];if(rows.length>maxRows+1)throw Error('Importá hasta 2000 clientas por archivo.');};
+ const pushRow=()=>{pushCell();if(row.some(value=>value.trim()))rows.push(row);row=[];if(rows.length>maxRows+1)throw Error('Importá hasta 2000 clientes por archivo.');};
  for(let i=0;i<text.length;i++){
   const char=text[i];
   if(quoted){if(char==='"'){if(text[i+1]==='"'){cell+='"';i++;}else{quoted=false;closed=true;}}else cell+=char;}
@@ -100,7 +100,7 @@ function classify(input,index){
  const email=row.email?index.emails.get(row.email):null,phone=row.phone?index.phones.get(normalizePhone(row.phone)):null;
  if(email||phone)return {...row,status:'duplicate',reason:email&&phone&&email!==phone?'El email y el WhatsApp coinciden con fichas distintas. Revisalas antes de importar.':'Ese email o WhatsApp ya aparece en tus clientes o en otra fila del archivo.'};
  const key='row-'+row.row;if(row.email)index.emails.set(row.email,key);if(row.phone)index.phones.set(normalizePhone(row.phone),key);
- return {...row,status:'ready',reason:'Nueva clienta'};
+ return {...row,status:'ready',reason:'Nuevo cliente'};
 }
 export function previewClients(business,table,mapping){
  const index=indexFor(business),value=(row,key)=>mapping[key]>=0?String(row[mapping[key]]??'').trim():'';
@@ -114,7 +114,7 @@ export function previewClients(business,table,mapping){
 export function registerClientImports(app,{auth,own}){
  const upload=multer({storage:multer.memoryStorage(),limits:{fileSize:maxBytes,files:1,fields:1,fieldSize:4096}}).single('file');
  const owner=(req,res,next)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.status(403).json({error:'Acceso no autorizado.'});req.importBusiness=b;next();};
- app.get('/api/businesses/:id/clients/import/template',auth,owner,(_req,res)=>res.type('text/csv').attachment('plantilla-clientas.csv').send('\uFEFFNombre;Apellido;WhatsApp;Email;Notas\r\n'));
+ app.get('/api/businesses/:id/clients/import/template',auth,owner,(_req,res)=>res.type('text/csv').attachment('plantilla-clientes.csv').send('\uFEFFNombre;Apellido;WhatsApp;Email;Notas\r\n'));
  app.post('/api/businesses/:id/clients/import/preview',auth,owner,(req,res)=>{
   res.set('Cache-Control','no-store');upload(req,res,async error=>{
    if(error)return res.status(400).json({error:'Adjuntá un solo archivo CSV, TSV o Excel .xlsx de hasta 2 MB.'});
@@ -127,8 +127,8 @@ export function registerClientImports(app,{auth,own}){
     let table;
     if(extension==='.xlsx'){validateWorkbookZip(req.file.buffer);table=await readSheet(req.file.buffer,{parseNumber:string=>string});}else table=parseCsv(decode(req.file.buffer));
     table=table.filter(row=>row.some(value=>value!==null&&String(value).trim()!==''));
-    if(table.length<2)throw Error('La planilla debe tener encabezados y al menos una clienta.');
-    if(table.length>maxRows+1||table.some(row=>row.length>maxColumns))throw Error('Importá hasta 2000 clientas y 40 columnas por archivo.');
+    if(table.length<2)throw Error('La planilla debe tener encabezados y al menos una cliente.');
+    if(table.length>maxRows+1||table.some(row=>row.length>maxColumns))throw Error('Importá hasta 2000 clientes y 40 columnas por archivo.');
     if(table.some(row=>row.some(cell=>typeof cell==='object'&&cell!==null&&!(cell instanceof Date)||String(cell??'').length>4096)))throw Error('Usá texto en las columnas de nombre, teléfono, email y notas.');
     const columns=table[0].map(value=>String(value??'').trim().slice(0,120));
     const mapping=validateMapping(req.body.mapping?JSON.parse(req.body.mapping):suggestMapping(columns),columns);
