@@ -233,3 +233,10 @@
 .transferPayment>label{margin:14px 0;gap:8px}
 .transferPayment input[type=file]{overflow:hidden}
 @media(max-width:700px){.manageBg:has(.bookingManage){padding:16px 12px 90px}.bookingManage{padding:18px 16px;border-radius:18px}.bookingManage>.brand img{width:140px}.bookingManage>h1{font-size:28px}.bookingManage .transferPayment{padding:14px;margin:14px 0}.bookingManage .transferPayment h3{font-size:22px;margin-bottom:12px}.bookingManage .transferPayment dd{flex-wrap:wrap;gap:8px}.bookingManage .transferPayment dd button{margin-left:auto}.bookingManage .manageSummary>div{padding:12px}.bookingManage .manageActions>div{padding:16px}}
+/* Selected date/time must override generic palette surfaces. */
+html .store .bookingWizard :is(.calendarDays,.slots) button.selected[aria-pressed=true]{background:var(--palette-primary,var(--primary,#0758df))!important;color:var(--palette-button-text,#fff)!important;border-color:var(--palette-link,var(--primary,#0758df))!important;box-shadow:inset 0 0 0 2px var(--palette-button-text,#fff),0 0 0 2px var(--palette-link,var(--primary,#0758df));font-weight:800}
+html[data-color-mode=dark] .store .bookingWizard :is(.calendarDays,.slots) button.selected[aria-pressed=true]{background:var(--palette-primary,#b6d7ff)!important;color:var(--palette-button-text,#0b1424)!important;border-color:var(--palette-link,#b6d7ff)!important;box-shadow:inset 0 0 0 2px var(--palette-button-text,#0b1424),0 0 0 2px var(--palette-link,#b6d7ff)}
+.platformHome.clearHome .clearHeroCopy>.trialHighlight{display:inline-flex;align-items:center;flex-wrap:wrap;gap:8px 10px;padding:11px 15px;margin:4px 0 0;background:#e7f0ff;border:1px solid #b5ceff;border-radius:12px;color:#123e85;font-size:12px;line-height:1.45}
+.platformHome.clearHome .trialHighlight strong{font-size:17px;font-weight:850;color:#064bb9}.platformHome.clearHome .trialHighlight svg{flex:none;color:#0758df}
+html[data-color-mode=dark] .platformHome.clearHome .clearHeroCopy>.trialHighlight{background:#17365b;border-color:#679ce5;color:#dbeaff!important}
+html[data-color-mode=dark] .platformHome.clearHome .trialHighlight :is(strong,span,svg){color:#dbeaff!important}
