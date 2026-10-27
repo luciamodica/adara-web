@@ -1,3 +1,4 @@
+import {getSetting} from './db.js';
 export async function sendVerificationEmail({email,name,verifyUrl}) {
   if (!process.env.RESEND_API_KEY) return {sent:false, dev:true};
   const response = await fetch('https://api.resend.com/emails', {
@@ -92,6 +93,6 @@ export async function sendPasswordChangedEmail({email,name,supportUrl}) {
 
 export async function sendSupportEmail({name,email,message,id}) {
  if(!process.env.RESEND_API_KEY)return {sent:false};
- const r=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${process.env.RESEND_API_KEY}`,'Content-Type':'application/json','Idempotency-Key':`adara-support-${id}`},signal:AbortSignal.timeout(15000),body:JSON.stringify({from:process.env.EMAIL_FROM||'Adara Web <onboarding@resend.dev>',to:['adaraweb23@gmail.com'],reply_to:email,subject:`Consulta de soporte #${id} · Adara Web`,html:`<div style="font-family:Arial;padding:24px"><h2>Consulta desde el Home</h2><p><b>${escapeHtml(name)}</b> · ${escapeHtml(email)}</p><p style="white-space:pre-wrap">${escapeHtml(message)}</p><p>También disponible en Super Admin → Soporte.</p></div>`})});
+ const r=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${process.env.RESEND_API_KEY}`,'Content-Type':'application/json','Idempotency-Key':`adara-support-${id}`},signal:AbortSignal.timeout(15000),body:JSON.stringify({from:process.env.EMAIL_FROM||'Adara Web <onboarding@resend.dev>',to:[getSetting('support_email','adaraweb23@gmail.com')],reply_to:email,subject:`Consulta de soporte #${id} · Adara Web`,html:`<div style="font-family:Arial;padding:24px"><h2>Consulta desde el Home</h2><p><b>${escapeHtml(name)}</b> · ${escapeHtml(email)}</p><p style="white-space:pre-wrap">${escapeHtml(message)}</p><p>También disponible en Super Admin → Soporte.</p></div>`})});
  if(!r.ok)throw Error('No se pudo enviar el aviso de soporte.');return {sent:true};
 }

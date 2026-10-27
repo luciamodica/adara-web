@@ -17,7 +17,7 @@ db.exec('CREATE TABLE IF NOT EXISTS booking_transfer_receipts(booking_id INTEGER
 
 // One-time migration of the former default. Existing trial end dates are preserved.
 if(!db.prepare("SELECT 1 FROM platform_settings WHERE key='short_trial_migrated'").get())db.transaction(()=>{
- db.prepare("UPDATE platform_settings SET value='15' WHERE key='trial_days' AND value NOT IN ('7','15')").run();
+ db.prepare("UPDATE platform_settings SET value='30' WHERE key='trial_days' AND value NOT IN ('7','15','30')").run();
  db.prepare("INSERT INTO platform_settings(key,value) VALUES('short_trial_migrated','1')").run();
 })();
 for(const [name,def] of Object.entries({waitlist_enabled:'INTEGER NOT NULL DEFAULT 1',reminders_enabled:'INTEGER NOT NULL DEFAULT 1',reminder_hours_json:"TEXT NOT NULL DEFAULT '[48,24]'",reminder_email:'INTEGER NOT NULL DEFAULT 1',reminder_whatsapp:'INTEGER NOT NULL DEFAULT 0',terms_required:'INTEGER NOT NULL DEFAULT 0',booking_terms:"TEXT NOT NULL DEFAULT ''",no_show_threshold:'INTEGER NOT NULL DEFAULT 2',loyalty_enabled:'INTEGER NOT NULL DEFAULT 0',loyalty_points:'INTEGER NOT NULL DEFAULT 10',loyalty_redeem_points:'INTEGER NOT NULL DEFAULT 100',loyalty_discount_cents:'INTEGER NOT NULL DEFAULT 100000',ga_id:"TEXT NOT NULL DEFAULT ''",meta_pixel_id:"TEXT NOT NULL DEFAULT ''",google_access_enc:'TEXT',google_refresh_enc:'TEXT',google_expires_at:'TEXT',google_connected_at:'TEXT'}))add('businesses',name,def);

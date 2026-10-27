@@ -23,7 +23,7 @@ try{
  let config=(await req('/public/config')).data;check(()=>assert.equal(config.home_ga_id,''));check(()=>assert.equal(config.home_analytics_enabled,false));
  await req('/admin/settings','PUT',{home_ga_id:'G-HOMETEST12',home_analytics_enabled:true},'',401);await req('/admin/settings','PUT',{home_ga_id:'G-HOMETEST12',home_analytics_enabled:true},owner,403);
  for(const bad of [{home_ga_id:'G-<script>'},{home_ga_id:'UA-123-1'},{home_ga_id:'G-'},{home_ga_id:null},{home_ga_id:123},{home_analytics_enabled:'true'},{home_ga_id:'',home_analytics_enabled:true}])await req('/admin/settings','PUT',{trial_days:7,...bad},admin,400);
- config=(await req('/public/config')).data;check(()=>assert.equal(config.trial_days,15));check(()=>assert.equal(config.home_ga_id,''));
+ config=(await req('/public/config')).data;check(()=>assert.equal(config.trial_days,30));check(()=>assert.equal(config.home_ga_id,''));
  await req('/admin/settings','PUT',{home_ga_id:' G-HOMETEST12 ',home_analytics_enabled:true},admin);config=(await req('/public/config')).data;check(()=>assert.equal(config.home_ga_id,'G-HOMETEST12'));check(()=>assert.equal(config.home_analytics_enabled,true));
  const frameResponse=await fetch(base+'/public/home-analytics/frame?id=G-HOMETEST12&channel=home-http-test'),frameHtml=await frameResponse.text();
  check(()=>assert.equal(frameResponse.status,200));check(()=>assert.match(frameResponse.headers.get('content-type'),/text\/html/));check(()=>assert.equal(frameResponse.headers.get('cache-control'),'no-store'));check(()=>assert.equal(frameResponse.headers.get('x-frame-options'),'SAMEORIGIN'));

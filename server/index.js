@@ -225,7 +225,7 @@ async function emailProfessional(booking,event='new'){
 
 // ---------- Planes públicos ----------
 app.get('/api/public/plans',(_req,res)=>res.json(db.prepare('SELECT * FROM plans WHERE active=1 AND public_enabled=1 ORDER BY display_order,id').all().map(publicPlan)));
-app.get('/api/public/config',(_req,res)=>res.json({subscription_transfer_available:transferConfiguration().configured,trial_days:Number(getSetting('trial_days','15')),...homeContact()}));
+app.get('/api/public/config',(_req,res)=>res.json({subscription_transfer_available:transferConfiguration().configured,trial_days:Number(getSetting('trial_days','30')),...homeContact()}));
 registerHomeAnalytics(app,{getSetting});
 registerHomeMeta(app,{getSetting});
 registerPlatformFaqs(app,{auth,superOnly});
@@ -245,7 +245,7 @@ app.post('/api/auth/register',async(req,res)=>{
     const vt=crypto.randomBytes(32).toString('hex');
     const expiry=new Date(Date.now()+24*60*60*1000).toISOString();
     const u=db.prepare('INSERT INTO users(name,email,password_hash,verify_token,verify_expires_at) VALUES(?,?,?,?,?)').run(String(name).trim(),String(email).trim().toLowerCase(),bcrypt.hashSync(password,10),vt,expiry);
-    const trialDays=Math.max(0,Number(getSetting('trial_days','15')));
+    const trialDays=Math.max(0,Number(getSetting('trial_days','30')));
     const trialEnd=new Date(Date.now()+trialDays*86400000).toISOString();
     const b=db.prepare(`INSERT INTO businesses(owner_id,name,slug,category,trial_ends_at,plan_slug,billing_cycle) VALUES(?,?,?,?,?,?,?)`).run(u.lastInsertRowid,String(businessName).trim(),uniqueSlug(businessName),category||'Servicios profesionales',trialEnd,selectedPlan.slug,billingCycle);
     const starter=TEMPLATES.find(t=>t.id==='atlas');
@@ -676,7 +676,7 @@ app.put('/api/admin/plans/:slug',auth,superOnly,(req,res)=>{
   db.prepare(`UPDATE plans SET name=?,description=?,monthly_price_cents=?,annual_price_cents=?,max_services=?,max_promotions=?,max_posts=?,max_coupons=?,analytics_enabled=?,template_level=?,features_json=?,active=?,public_enabled=?,highlighted=?,display_order=?,max_staff=?,team_enabled=? WHERE slug=?`).run(x.name||p.name,x.description??p.description,cents(x.monthly_price??p.monthly_price_cents/100),cents(x.annual_price??p.annual_price_cents/100),Math.max(1,Number(x.max_services??p.max_services)),Math.max(0,Number(x.max_promotions??p.max_promotions)),Math.max(0,Number(x.max_posts??p.max_posts)),Math.max(0,Number(x.max_coupons??p.max_coupons)),x.analytics_enabled===undefined?p.analytics_enabled:(x.analytics_enabled?1:0),Math.max(1,Math.min(3,Number(x.template_level??p.template_level))),JSON.stringify(Array.isArray(x.features)?x.features:publicPlan(p).features),nextActive,nextPublic,x.highlighted===undefined?p.highlighted:(x.highlighted?1:0),Number(x.display_order??p.display_order),Math.max(1,Number(x.max_staff??p.max_staff??1)),Math.max(1,Number(x.max_staff??p.max_staff??1))>1?1:0,p.slug);if(x.basic_only!==undefined)db.prepare('UPDATE plans SET basic_only=? WHERE slug=?').run(x.basic_only?1:0,p.slug);res.json({ok:true});
 });
 app.delete('/api/admin/plans/:slug',auth,superOnly,(req,res)=>{const p=db.prepare('SELECT * FROM plans WHERE slug=?').get(req.params.slug);if(!p)return res.sendStatus(404);const used=db.prepare('SELECT count(*) n FROM businesses WHERE plan_slug=?').get(p.slug).n;const contracted=db.prepare('SELECT 1 FROM platform_subscriptions WHERE plan_slug=? LIMIT 1').get(p.slug);if(used||contracted)return res.status(409).json({error:'No podés eliminar un plan que ya tiene cuentas. Podés ocultarlo o desactivarlo.'});const visible=db.prepare('SELECT count(*) n FROM plans WHERE slug!=? AND active=1 AND public_enabled=1').get(p.slug).n;if(p.active&&p.public_enabled&&!visible)return res.status(400).json({error:'Debe quedar al menos un plan público'});db.prepare('DELETE FROM plans WHERE slug=?').run(p.slug);res.json({ok:true})});
-app.get('/api/admin/settings',auth,superOnly,(_req,res)=>res.json({trial_days:Number(getSetting('trial_days','15')),...homeContact(),billing:billingConfiguration(),demo_payments:DEMO_PAYMENTS,mp_oauth_configured:oauthConfigured(),email_configured:Boolean(process.env.RESEND_API_KEY)}));
+app.get('/api/admin/settings',auth,superOnly,(_req,res)=>res.json({trial_days:Number(getSetting('trial_days','30')),...homeContact(),billing:billingConfiguration(),demo_payments:DEMO_PAYMENTS,mp_oauth_configured:oauthConfigured(),email_configured:Boolean(process.env.RESEND_API_KEY)}));
 app.put('/api/admin/settings',auth,superOnly,(req,res)=>{try{savePlatformSettings(req.body||{});res.json({ok:true})}catch(e){res.status(400).json({error:e.message})}});
 
 registerManualPayments(app,{auth,own,bookingDetails,cleanupExpiredHolds,emailBooking,emailProfessional});

@@ -439,3 +439,6 @@ if(!getSetting('starter_plan_added'))db.transaction(()=>{
  VALUES('adara-inicial','Adara Inicial','Para empezar con tu página y una agenda, con lo esencial.',990000,9900000,10,0,0,0,0,1,?,1,1,0,0,1,0,1)`).run(JSON.stringify(['Página con tu marca','Una agenda y reservas online','Hasta 10 servicios con imágenes','Plantillas esenciales','Clientes y reseñas moderadas','Cobros en tu cuenta','Sin promociones, cupones ni novedades']));
  db.prepare("INSERT INTO platform_settings(key,value) VALUES('starter_plan_added','1')").run();
 })();
+
+// Set the requested default for new registrations, without changing existing trial end dates.
+if(!db.prepare("SELECT 1 FROM platform_settings WHERE key='trial_30_days_v1'").get())db.transaction(()=>{db.prepare("INSERT INTO platform_settings(key,value) VALUES('trial_days','30') ON CONFLICT(key) DO UPDATE SET value='30'").run();db.prepare("INSERT INTO platform_settings(key,value) VALUES('trial_30_days_v1','1')").run()})();

@@ -59,3 +59,6 @@
   .panelLayout .cardsList img,.panelLayout .cardsList .imagePlaceholder{width:70px;height:84px}
   .panelLayout .cardsList article>div{min-width:0;overflow-wrap:anywhere}
 }
+
+.panelLayout .panelSidebar{min-height:0;overflow:hidden}.panelLayout .panelNavigation{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-right:3px}.panelLayout .panelSidebarHeading,.panelLayout .panelSidebar>.business,.panelLayout .panelSidebar>.superTag{flex-shrink:0}.panelLayout .panelSidebar .panelLogout{flex:0 0 auto;min-height:46px;margin-top:10px;border:1px solid #43678f;color:#fff;background:#153f73}.panelLayout .panelContent{padding-bottom:90px}
+body:has(.panelLayout) .colorModeToggle{left:auto;right:16px}
