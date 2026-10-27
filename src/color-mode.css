@@ -89,3 +89,15 @@ html[data-color-mode=dark] .platformHome .testimonialGrid a{color:var(--mode-lin
 html[data-color-mode=dark] .bookingRecovery{background:var(--mode-raised);border-color:var(--mode-line);color:var(--mode-ink)}
 html[data-color-mode=dark] .platformOfferNotice{background:var(--mode-raised);border-color:var(--mode-line);color:var(--mode-ink)}
 html[data-color-mode=dark] .subscriptionOfferInput summary{color:var(--mode-link)}
+/* Transfer pages also render outside .store, on the persistent reservation URL. */
+html[data-color-mode=dark] .transferPayment{background:var(--mode-surface)!important;color:var(--mode-ink)!important;border-color:var(--mode-line)!important}
+html[data-color-mode=dark] .transferPayment dl{background:var(--mode-raised)!important;color:var(--mode-ink)!important;border-color:var(--mode-line)!important}
+html[data-color-mode=dark] .transferPayment :is(h3,dd,dd b,label){color:inherit!important}
+html[data-color-mode=dark] .transferPayment dt{color:var(--mode-muted)!important}
+html[data-color-mode=dark] .transferPayment :is(p,.transferInstructions){color:var(--mode-muted)!important}
+html[data-color-mode=dark] .transferPayment input[type=file]{background:var(--mode-raised)!important;color:var(--mode-ink)!important;border-color:var(--mode-line)!important}
+html[data-color-mode=dark] .transferPayment input[type=file]::file-selector-button{background:var(--mode-surface);color:var(--mode-ink);border:1px solid var(--mode-line);border-radius:6px;padding:7px 9px;margin-right:8px}
+html[data-color-mode=dark] .transferPayment>.storeButton{background:#a7cdff!important;color:#10243a!important}
+html[data-color-mode=dark] .bookingManage .paymentNotice :is(b,p){color:#ffe2a7!important}
+html[data-color-mode=dark] .bookingManage .paymentNotice.expired :is(b,p){color:var(--mode-muted)!important}
+html[data-color-mode=dark] .bookingManage .manageSummary span{color:var(--mode-muted)!important}
