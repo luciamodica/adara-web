@@ -1,3 +1,4 @@
+import {readPagePalettes} from '../shared/page-palettes.js';
 import {readSections} from './page-layout.js';
 export function readGallery(json,fallback='') {
  let images=[];try{images=JSON.parse(json||'[]')}catch{}
@@ -17,4 +18,4 @@ export function galleryFromRequest(input,key,legacyKey,current={}) {
 }
 
 export const serviceGallery=s=>({...s,images:readGallery(s.images_json,s.image_url)});
-export const businessGallery=b=>({...b,section_order:readSections(b.section_order_json),hero_images:readGallery(b.hero_images_json,b.hero_image)});
+export const businessGallery=b=>{const{color_palettes_json,...rest}=b;return {...rest,color_palettes:readPagePalettes(color_palettes_json),section_order:readSections(b.section_order_json),hero_images:readGallery(b.hero_images_json,b.hero_image)}};

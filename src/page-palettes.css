@@ -1,0 +1,41 @@
+.pagePaletteEditor{margin-top:22px;border-top:1px solid var(--adara-line);padding-top:20px}
+.pagePaletteEditor h3{margin:0 0 8px}.pagePaletteEditor>p{font-size:13px;line-height:1.6}.pagePaletteEditor>small{display:block;margin-top:14px;font-size:12px;line-height:1.6}
+.paletteModeTabs,.palettePreviewControls{display:flex;gap:8px;margin:16px 0;flex-wrap:wrap}
+.paletteModeTabs button,.palettePreviewControls button{min-height:44px;border:1px solid var(--adara-line);border-radius:10px;padding:10px 16px;background:var(--adara-background);color:var(--adara-ink);font-weight:650;font-size:13px}
+.paletteModeTabs button[aria-pressed=true],.palettePreviewControls button[aria-pressed=true]{background:#0758df;color:#fff;border-color:#0758df}
+.paletteModeTabs button:focus-visible,.palettePreviewControls button:focus-visible{outline:3px solid #79b5ff;outline-offset:3px}
+.paletteColorGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.paletteColorField{min-width:0}.paletteColorField>label{margin:0 0 7px!important}.paletteColorField>div{display:flex;gap:8px;min-width:0;align-items:center}
+.paletteColorField input[type=color]{flex:0 0 46px;width:46px!important;height:44px;min-height:44px;padding:3px!important;cursor:pointer}
+.paletteColorField input[type=text]{width:100%;min-width:0;height:44px;font-family:monospace;letter-spacing:.02em;text-transform:uppercase}
+.pagePaletteEditor .paletteContrastHint{font-size:12px}.palettePreviewControls{position:sticky;top:0;z-index:5;background:var(--adara-background);padding:8px 0;margin:0}
+/* Independent tokens let previews and visitor choice use the same stored palettes. */
+.store[data-page-palettes],.livePreview[data-preview-mode]{--palette-primary:var(--page-light-primary);--palette-accent:var(--page-light-accent);--palette-bg:var(--page-light-background);--palette-surface:var(--page-light-surface);--palette-text:var(--page-light-text);--palette-muted:var(--page-light-muted);--palette-link:var(--page-light-link);--palette-raised:var(--page-light-raised);--palette-line:var(--page-light-line);--palette-button-text:var(--page-light-buttonText);--palette-scheme:var(--page-light-scheme)}
+html[data-color-mode=dark] .store[data-page-palettes],.livePreview[data-preview-mode=dark]{--palette-primary:var(--page-dark-primary);--palette-accent:var(--page-dark-accent);--palette-bg:var(--page-dark-background);--palette-surface:var(--page-dark-surface);--palette-text:var(--page-dark-text);--palette-muted:var(--page-dark-muted);--palette-link:var(--page-dark-link);--palette-raised:var(--page-dark-raised);--palette-line:var(--page-dark-line);--palette-button-text:var(--page-dark-buttonText);--palette-scheme:var(--page-dark-scheme)}
+html .store[data-page-palettes],.livePreview[data-preview-mode]{--primary:var(--palette-primary)!important;--accent:var(--palette-accent)!important;--surface:var(--palette-bg)!important;--p:var(--palette-primary)!important;--a:var(--palette-accent)!important;--bg:var(--palette-bg)!important;--mode-bg:var(--palette-bg);--mode-surface:var(--palette-surface);--mode-raised:var(--palette-raised);--mode-ink:var(--palette-text);--mode-muted:var(--palette-muted);--mode-line:var(--palette-line);--mode-link:var(--palette-link);background:var(--palette-bg)!important;color:var(--palette-text)!important}
+html .store[data-page-palettes] :is(.storeNav,.storeLinks.open,.storeMenuToggle,.bookingWizard,.bookingSuccess,.serviceGrid article,.newsGrid article,.promoCards article,.compactContent article,.reviewGrid article,.reviewForm,.bookingPaymentMethods,.storeFooter),.livePreview[data-preview-mode] :is(.lpNav,.lpCards>div,.lpTurnos,.lpContentSample,.lpFaq,.lpFooter){background:var(--palette-surface)!important;color:var(--palette-text)!important;border-color:var(--palette-line)!important}
+html .store[data-page-palettes] :is(.storeSection,.bookingArea,.promoArea,.soft,.faqPublic){background:transparent!important;color:var(--palette-text)!important;border-color:var(--palette-line)!important}
+html .store[data-page-palettes] :is(h1,h2,h3,b,strong,label,legend,summary),.livePreview[data-preview-mode] :is(h3,h4,b){color:var(--palette-text)!important}
+html .store[data-page-palettes] :is(p,small,.bookingSummary span,.bookingFooter span,.serviceCopy>span,.weekdays),.livePreview[data-preview-mode] :is(p,small,span){color:var(--palette-muted)!important}
+html .store[data-page-palettes] :is(.sectionLabel,.readMore,.contentShowAll,.serviceCopy a,.bookingStep>span,.choiceGrid button em,.storeNav .storeLinks>a:not(.storeCta)){color:var(--palette-link)!important}
+html .store[data-page-palettes] :is(input,select,textarea,.outline,.choiceGrid button,.bookingPromotions>div:first-of-type>button,.selectedPromotion,.bookingSummary,.bookingTerms,.couponBox,.summaryGrid>div,.groupDiscountBox,.participantSummary,.transferPayment,.transferPayment dl,.bookingPaymentMethods label,.staffPublicGrid button,.partyPicker button,.calendarNav button,.calendarDays button,.slots button,.waitingForm,.confirmationNote,.publicGroupBadge){background:var(--palette-raised)!important;color:var(--palette-text)!important;border-color:var(--palette-line)!important}
+html .store[data-page-palettes] :is(input,textarea)::placeholder{color:var(--palette-muted);opacity:1}
+html .store[data-page-palettes] :is(.storeCta,.storeHero a,.storeButton),.livePreview[data-preview-mode] :is(.lpHeroCopy button,.lpTurnos button){background:var(--palette-primary)!important;color:var(--palette-button-text)!important}
+html .store[data-page-palettes] :is(.choiceGrid button.selected,.bookingPromotions>div:first-of-type>button.selected,.staffPublicGrid button.selected,.bookingPaymentMethods label.selected){background:var(--palette-raised)!important;border-color:var(--palette-link)!important;box-shadow:inset 0 0 0 1px var(--palette-link)}
+html .store[data-page-palettes] .choiceGrid button.selected .choiceCheck{background:var(--palette-primary)!important;color:var(--palette-button-text)!important;border-color:var(--palette-link)!important}
+html .store[data-page-palettes] :is(.calendarDays button.selected,.slots button.selected,.partyPicker button.selected){background:var(--palette-primary)!important;color:var(--palette-button-text)!important;border-color:var(--palette-link)!important}
+html .store[data-page-palettes] :is(.bookingStep,.bookingFooter,.faqPublic details){border-color:var(--palette-line)!important}
+html .store[data-page-palettes] .storeHero:not(.hasImage),.livePreview[data-preview-mode] .lpHero{background:var(--palette-bg)!important}
+html .store[data-page-palettes] .storeHeroCopy{background:transparent!important}
+html .store[data-page-palettes].hero-centered.hasImage .storeHeroCopy{background:var(--palette-surface)!important}
+html .store[data-page-palettes]:is(.hero-overlay,.hero-cinematic).hasImage .storeHeroCopy :is(h1,p,span){color:#fff!important}
+.livePreview[data-preview-mode] :is(.lpHeroCopy,.lpHeroCopy h3){color:var(--palette-text)!important}
+.livePreview[data-preview-mode]:is(.preview-overlay,.preview-cinematic) .lpHero:has(.carouselImage) .lpHeroCopy :is(h3,p,small){color:#fff!important}
+.store[data-page-palettes],.livePreview[data-preview-mode]{color-scheme:var(--palette-scheme)}
+@media(max-width:500px){.paletteColorGrid{grid-template-columns:minmax(0,1fr)}}
+html .store[data-page-palettes] .storeHeroCopy :is(h1,p,span){color:var(--palette-text)!important}
+html .store[data-page-palettes]:is(.hero-overlay,.hero-cinematic).hasImage .storeHeroCopy :is(h1,p,span){color:#fff!important}
+html .store[data-page-palettes] .promoTopBanner{background:var(--palette-primary)!important;color:var(--palette-button-text)!important}
+html .store[data-page-palettes] .promoTopBanner :is(b,span){color:var(--palette-button-text)!important}
+
+html .store[data-page-palettes] .reviewGrid article>span[aria-label]{color:var(--palette-link)!important}

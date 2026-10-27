@@ -256,6 +256,7 @@ addColumn('services','group_discount_percent','INTEGER NOT NULL DEFAULT 0');
 
 addColumn('users','session_version','INTEGER NOT NULL DEFAULT 0');
 addColumn('businesses','show_service_duration','INTEGER NOT NULL DEFAULT 1');
+addColumn('businesses','color_palettes_json',"TEXT NOT NULL DEFAULT '{}'");
 db.exec(`
 CREATE TABLE IF NOT EXISTS password_reset_tokens(
  token_hash TEXT PRIMARY KEY,
