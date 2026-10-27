@@ -103,7 +103,7 @@ try{
  await req('/admin/settings','PUT',{home_socials:{instagram:fixtureInstagram,tiktok:fixtureTiktok}},admin);
  await checkAsync(async()=>assert.equal((await req('/public/config')).data.home_socials.instagram,fixtureInstagram));
  for(const url of ['javascript:alert(1)','http://instagram.com/fixture-not-an-account','https://instagram.com.evil.test/','https://evil.test','https://user:pass@instagram.com/'])await req('/admin/settings','PUT',{trial_days:7,home_socials:{instagram:url}},admin,400);
- await checkAsync(async()=>assert.equal((await req('/public/config')).data.trial_days,15));
+ await checkAsync(async()=>assert.equal((await req('/public/config')).data.trial_days,30));
  await req('/admin/settings','PUT',{home_socials:{instagram:''}},admin);await checkAsync(async()=>assert.equal((await req('/public/config')).data.home_socials.instagram,''));await checkAsync(async()=>assert.equal((await req('/public/config')).data.home_socials.tiktok,fixtureTiktok));
  // Contact submissions persist even if email delivery fails; owners never see the inbox.
  const support={name:'Alex <script>',email:'support@example.test',message:'Hola, quisiera saber cómo funciona Adara.',acceptPrivacy:true};

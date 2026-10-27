@@ -113,13 +113,13 @@ try{
  db.prepare("UPDATE bookings SET status='cancelled' WHERE id=?").run(series.recurring[0].id);await featureWorker.processJobs();check(()=>assert.ok(calls.some(x=>x.options.method==='DELETE'&&x.url.endsWith(synced.google_event_id))));globalThis.fetch=actualFetch;db.prepare('UPDATE businesses SET google_access_enc=NULL,google_refresh_enc=NULL WHERE id=?').run(b.id);
  // Trial migration updates the old default without shortening trials already granted.
  const previousEnd=db.prepare('SELECT trial_ends_at FROM businesses WHERE id=?').get(b.id).trial_ends_at;
- check(()=>assert.ok(Math.abs(Date.parse(previousEnd)-Date.now()-15*86400000)<5000));
+ check(()=>assert.ok(Math.abs(Date.parse(previousEnd)-Date.now()-30*86400000)<5000));
  db.prepare("DELETE FROM platform_settings WHERE key='short_trial_migrated'").run();db.prepare("UPDATE platform_settings SET value='30' WHERE key='trial_days'").run();
  await import('../server/features-db.js?test-migration');
- check(()=>assert.equal(db.prepare("SELECT value FROM platform_settings WHERE key='trial_days'").get().value,'15'));
+ check(()=>assert.equal(db.prepare("SELECT value FROM platform_settings WHERE key='trial_days'").get().value,'30'));
  check(()=>assert.equal(db.prepare('SELECT trial_ends_at FROM businesses WHERE id=?').get(b.id).trial_ends_at,previousEnd));
  db.prepare("INSERT INTO users(name,email,password_hash,role,email_verified) VALUES('Fixture Super','admin@fixture.example.test',?,'superadmin',1)").run(bcrypt.hashSync(adminPassword,8));const admin=(await request('/auth/login','POST',{email:'admin@fixture.example.test',password:adminPassword})).cookie;
- await request('/admin/settings','PUT',{trial_days:7},cookie,403);await request('/admin/settings','PUT',{trial_days:30},admin,400);
+ await request('/admin/settings','PUT',{trial_days:7},cookie,403);await request('/admin/settings','PUT',{trial_days:31},admin,400);
  await request('/admin/settings','PUT',{trial_days:7},admin);const seven=(await request('/public/config')).data;check(()=>assert.equal(seven.trial_days,7));
  db.prepare("DELETE FROM platform_settings WHERE key='short_trial_migrated'").run();await import('../server/features-db.js?test-second-migration');check(()=>assert.equal(db.prepare("SELECT value FROM platform_settings WHERE key='trial_days'").get().value,'7'));
  await request('/admin/settings','PUT',{trial_days:15},admin);

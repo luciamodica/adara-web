@@ -1,3 +1,4 @@
+import {subscriptionOfferQuote,recordOfferUse} from './platform-offers.js';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -48,7 +49,7 @@ export function registerSubscriptionTransfers(app,{auth,own,superOnly,lock,billi
   const cycle=x.billing_cycle||b.billing_cycle;if(!['monthly','annual'].includes(cycle))throw Error('Elegí mensual o anual.');
   const plan=db.prepare('SELECT * FROM plans WHERE slug=? AND active=1').get(x.plan_slug||b.plan_slug);if(!plan||!plan.public_enabled&&plan.slug!==b.plan_slug)throw Error('El plan no está disponible.');
   if(Number(plan.max_staff||1)<db.prepare('SELECT count(*) n FROM staff WHERE business_id=? AND active=1').get(b.id).n)throw Error('Desactivá integrantes antes de elegir un plan con menos agendas.');
-  const special=plan.slug===b.plan_slug?(cycle==='annual'?b.custom_annual_price_cents:b.custom_monthly_price_cents):null,amount=special??(cycle==='annual'?plan.annual_price_cents:plan.monthly_price_cents);
+  const pendingContract=active(b.id),quote=subscriptionOfferQuote(b,plan,cycle,x.coupon_code||'',pendingContract?.id||''),amount=quote.amount_cents;
   if(!Number.isSafeInteger(amount)||amount<=0)throw Error('El importe a pagar debe ser mayor a cero.');
   if(x.expected_amount_cents!==amount)throw Object.assign(Error('El precio cambió. Actualizá y revisá el importe antes de continuar.'),{status:409});
   const live=active(b.id);if(live){
@@ -60,6 +61,7 @@ export function registerSubscriptionTransfers(app,{auth,own,superOnly,lock,billi
   db.transaction(()=>{
    db.prepare("INSERT INTO platform_subscriptions(id,business_id,plan_slug,plan_name,billing_cycle,amount_cents,provider,status,start_date,created_at,updated_at) VALUES(?,?,?,?,?,?,'bank_transfer','pending',?,?,?)").run(sid,b.id,plan.slug,plan.name,cycle,amount,created,created,created);
    db.prepare("INSERT INTO platform_subscription_transfers(id,business_id,subscription_id,bank_details_json,created_at) VALUES(?,?,?,?,?)").run(id,b.id,sid,JSON.stringify({alias:config.alias,account:config.account,holder:config.holder,bank:config.bank,instructions:config.instructions}),created);
+   recordOfferUse(quote,sid,b,plan,cycle,x.coupon_code||'');
    recordLegalAcceptance(consent,b.owner_id,b.id,'subscription',sid);
   }).immediate();res.status(201).json({transfer:publicTransfer(get(id))});
  }));

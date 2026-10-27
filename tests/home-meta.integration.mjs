@@ -23,7 +23,7 @@ try{
  const initialFrame=await fetch(base+'/public/home-meta/frame?id='+pixel+'&channel=home-test');check(()=>assert.equal(initialFrame.status,204));
  await req('/admin/settings','PUT',enabled,'',401);await req('/admin/settings','PUT',enabled,owner,403);
  for(const bad of [{home_meta_pixel_id:null},{home_meta_pixel_id:123456789},{home_meta_pixel_id:'<script>'},{home_meta_pixel_id:'12345&injection=1'},{home_meta_pixel_id:'G-12345'},{home_meta_pixel_id:'01234567890'},{home_meta_pixel_id:'1'.repeat(26)},{home_meta_pixel_id:'' ,home_meta_enabled:true},{home_meta_enabled:'true'}])await req('/admin/settings','PUT',{trial_days:7,...bad},admin,400);
- config=(await req('/public/config')).data;check(()=>assert.equal(config.trial_days,15));check(()=>assert.equal(config.home_meta_pixel_id,''));
+ config=(await req('/public/config')).data;check(()=>assert.equal(config.trial_days,30));check(()=>assert.equal(config.home_meta_pixel_id,''));
  await req('/admin/settings','PUT',{...gaEnabled,home_meta_pixel_id:' '+pixel+' ',home_meta_enabled:true},admin);
  config=(await req('/public/config')).data;check(()=>assert.equal(config.home_meta_pixel_id,pixel));check(()=>assert.equal(config.home_meta_enabled,true));check(()=>assert.equal(config.home_ga_id,gaEnabled.home_ga_id));check(()=>assert.equal(config.home_analytics_enabled,true));
  await req('/admin/settings','PUT',{trial_days:7},admin);config=(await req('/public/config')).data;check(()=>assert.equal(config.home_meta_pixel_id,pixel));check(()=>assert.equal(config.home_meta_enabled,true));

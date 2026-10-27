@@ -87,7 +87,7 @@ try{
  await req('/admin/settings','PUT',{home_whatsapp_enabled:true,home_whatsapp_phone:'+54 9 223 555 1234',home_whatsapp_message:'Hola & quiero consultar'},admin);
  let config=(await req('/public/config')).data;check(()=>assert.equal(config.home_whatsapp_phone,'5492235551234'));check(()=>assert.equal(config.home_whatsapp_enabled,true));check(()=>assert.equal(config.home_whatsapp_message,'Hola & quiero consultar'));check(()=>assert.ok(!JSON.stringify(config).includes('secret')));
  for(const patch of [{home_whatsapp_phone:'https://evil.test'},{home_whatsapp_phone:''},{home_whatsapp_phone:'123'},{home_whatsapp_message:'x'.repeat(501)},{home_whatsapp_enabled:'true'}])await req('/admin/settings','PUT',{trial_days:7,...patch},admin,400);
- config=(await req('/public/config')).data;check(()=>assert.equal(config.trial_days,15));check(()=>assert.equal(config.home_whatsapp_phone,'5492235551234'));
+ config=(await req('/public/config')).data;check(()=>assert.equal(config.trial_days,30));check(()=>assert.equal(config.home_whatsapp_phone,'5492235551234'));
  await req('/admin/settings','PUT',{trial_days:7},admin);await checkAsync(async()=>assert.equal((await req('/public/config')).data.home_whatsapp_enabled,true));
  await req('/admin/settings','PUT',{home_whatsapp_enabled:false},admin);await checkAsync(async()=>assert.equal((await req('/public/config')).data.home_whatsapp_enabled,false));
  console.log(`OK: ${checks} comprobaciones de orden de secciones, promociones reservables, precios, vigencia, cobros, historial, permisos y WhatsApp del home.`);

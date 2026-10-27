@@ -82,3 +82,10 @@ html[data-color-mode=dark] .dash .selectedTemplatePreview small:not(:where(.temp
 /* Darken promotional banners with the business hue, keeping their title and price readable. */
 html[data-color-mode=dark] .store .promoTopBanner{background:color-mix(in srgb,var(--primary) 30%,#142137)!important;color:var(--mode-ink)!important}
 html[data-color-mode=dark] .store .promoTopBanner :is(b,span){color:var(--mode-ink)!important}
+
+html[data-color-mode=dark] .platformHome .testimonialGrid :is(blockquote,figcaption b){color:var(--mode-ink)!important}
+html[data-color-mode=dark] .platformHome .testimonialGrid :is(figcaption span,figcaption small){color:var(--mode-muted)!important}
+html[data-color-mode=dark] .platformHome .testimonialGrid a{color:var(--mode-link)!important}
+html[data-color-mode=dark] .bookingRecovery{background:var(--mode-raised);border-color:var(--mode-line);color:var(--mode-ink)}
+html[data-color-mode=dark] .platformOfferNotice{background:var(--mode-raised);border-color:var(--mode-line);color:var(--mode-ink)}
+html[data-color-mode=dark] .subscriptionOfferInput summary{color:var(--mode-link)}
