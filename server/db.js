@@ -309,6 +309,7 @@ addColumn('businesses','seo_description',"TEXT NOT NULL DEFAULT ''");
 addColumn('businesses','notification_email',"TEXT NOT NULL DEFAULT ''");
 addColumn('businesses','cancellation_policy',"TEXT NOT NULL DEFAULT ''");
 addColumn('businesses','confirmation_message',"TEXT NOT NULL DEFAULT ''");
+addColumn('businesses','booking_available_until','TEXT');
 addColumn('businesses','booking_notice_min','INTEGER NOT NULL DEFAULT 120');
 addColumn('businesses','cancellation_hours','INTEGER NOT NULL DEFAULT 24');
 addColumn('businesses','allow_group_bookings','INTEGER NOT NULL DEFAULT 1');

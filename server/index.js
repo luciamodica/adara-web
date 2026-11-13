@@ -1,3 +1,4 @@
+import {publicBookingEnd} from '../shared/booking-calendar.js';
 import {validatePagePalettes} from '../shared/page-palettes.js';
 import './production-env.js';
 import {transferConfiguration} from './subscription-transfers.js';
@@ -130,10 +131,10 @@ function activeBookingsForDate(businessId,date,excludeBookingId=0,staffId=null){
   if(staffId)return db.prepare(`SELECT COALESCE(bp.start_time,bk.start_time) start_time,COALESCE(bp.end_time,bk.end_time) end_time FROM bookings bk LEFT JOIN booking_participants bp ON bp.booking_id=bk.id WHERE bk.business_id=? AND bk.date=? AND bk.status IN ('confirmed','pending_payment') AND bk.id!=? AND bk.staff_id=?`).all(businessId,date,Number(excludeBookingId||0),Number(staffId));
   return db.prepare(`SELECT COALESCE(bp.start_time,bk.start_time) start_time,COALESCE(bp.end_time,bk.end_time) end_time FROM bookings bk LEFT JOIN booking_participants bp ON bp.booking_id=bk.id WHERE bk.business_id=? AND bk.date=? AND bk.status IN ('confirmed','pending_payment') AND bk.id!=? AND bk.staff_id IS NULL`).all(businessId,date,Number(excludeBookingId||0));
 }
-function availabilityFor({business,date,services,partySize=1,excludeBookingId=0,staffId=null,manual=false,overrideSchedule=false,time=null}){
+function availabilityFor({business,date,services,partySize=1,excludeBookingId=0,staffId=null,manual=false,overrideSchedule=false,time=null,ignorePublicCutoff=false}){
   if(!date||!services?.length)return [];
   const selected=new Date(`${date}T12:00:00`);if(Number.isNaN(selected.getTime()))return [];
-  const today=dateOnly(new Date());if(date<today||(!manual&&date>addDays(today,Number(business.booking_horizon_days||90))))return [];
+  const today=dateOnly(new Date());if(date<today||(!manual&&!ignorePublicCutoff&&date>publicBookingEnd(business,today)))return [];
   const weekday=selected.getDay();let sch;
   if(staffId){const staff=db.prepare('SELECT * FROM staff WHERE id=? AND business_id=? AND active=1').get(Number(staffId),business.id);if(!staff)return [];if(!staffCanDoServices(staff.id,services.map(x=>x.id)))return [];sch=db.prepare('SELECT * FROM staff_schedules WHERE staff_id=? AND weekday=? AND active=1').get(staff.id,weekday)}
   else sch=db.prepare('SELECT * FROM schedules WHERE business_id=? AND weekday=? AND active=1').get(business.id,weekday);
@@ -390,8 +391,8 @@ app.patch('/api/businesses/:id/bookings/:bid',auth,(req,res)=>{
   if(!items.length)return res.status(409).json({error:'El turno no tiene servicios válidos para calcular su duración'});
   let group;try{group=shiftedGroup(current,date,startTime)}catch(e){return res.status(400).json({error:e.message})}
   if(date!==current.date||startTime!==current.start_time||(!['confirmed','pending_payment'].includes(current.status)&&['confirmed','pending_payment'].includes(status))){
-    if(group){try{validateGroupAvailability(group,{business:b,date,services:items,excludeBookingId:current.id,staffId:current.staff_id||null,manual:current.booking_source==='manual',overrideSchedule:!!current.manual_override},availabilityFor)}catch(e){return res.status(409).json({error:e.message})}}
-    const slots=availabilityFor({business:b,date,services:items,partySize:group?1:current.party_size,excludeBookingId:current.id,staffId:current.staff_id||null,manual:current.booking_source==='manual',overrideSchedule:!!current.manual_override});
+    if(group){try{validateGroupAvailability(group,{business:b,date,services:items,excludeBookingId:current.id,staffId:current.staff_id||null,manual:current.booking_source==='manual',ignorePublicCutoff:true,overrideSchedule:!!current.manual_override},availabilityFor)}catch(e){return res.status(409).json({error:e.message})}}
+    const slots=availabilityFor({business:b,date,services:items,partySize:group?1:current.party_size,excludeBookingId:current.id,staffId:current.staff_id||null,manual:current.booking_source==='manual',ignorePublicCutoff:true,overrideSchedule:!!current.manual_override});
     if(!slots.includes(startTime))return res.status(409).json({error:'Ese horario no está disponible para la duración completa del turno'});
   }
   const duration=items.reduce((sum,z)=>sum+Number(z.duration_min||0),0)*Math.max(1,Number(current.party_size||1));
@@ -433,12 +434,15 @@ app.put('/api/businesses/:id/staff/:sid/schedule',auth,(req,res)=>{
 app.delete('/api/businesses/:id/staff/:sid',auth,(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);db.prepare('UPDATE staff SET active=0 WHERE id=? AND business_id=?').run(req.params.sid,b.id);res.json({ok:true})});
 
 app.get('/api/businesses/:id/schedule',auth,(req,res)=>{
-  const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);res.json({schedule:businessSchedule(b.id),blocks:db.prepare('SELECT * FROM blocks WHERE business_id=? AND date>=? ORDER BY date,start_time').all(b.id,dateOnly(new Date())),slot_interval_min:b.slot_interval_min,booking_horizon_days:b.booking_horizon_days});
+  const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);res.json({schedule:businessSchedule(b.id),blocks:db.prepare('SELECT * FROM blocks WHERE business_id=? AND date>=? ORDER BY date,start_time').all(b.id,dateOnly(new Date())),slot_interval_min:b.slot_interval_min,booking_horizon_days:b.booking_horizon_days,booking_available_until:b.booking_available_until});
 });
 app.put('/api/businesses/:id/schedule',auth,(req,res)=>{
   const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);const rows=Array.isArray(req.body?.schedule)?req.body.schedule:[];
   let interval;try{interval=validateSlotInterval(req.body?.slot_interval_min,b.slot_interval_min)}catch(e){return res.status(400).json({error:e.message})}
-  const tx=db.transaction(()=>{for(const row of rows){if(Number(row.weekday)<0||Number(row.weekday)>6)continue;db.prepare(`INSERT INTO schedules(business_id,weekday,start_time,end_time,active) VALUES(?,?,?,?,?) ON CONFLICT(business_id,weekday) DO UPDATE SET start_time=excluded.start_time,end_time=excluded.end_time,active=excluded.active`).run(b.id,Number(row.weekday),row.start_time||'09:00',row.end_time||'18:00',row.active?1:0)}db.prepare('UPDATE businesses SET slot_interval_min=?,booking_horizon_days=? WHERE id=?').run(interval,Math.max(7,Math.min(365,Number(req.body?.booking_horizon_days||90))),b.id);db.prepare('UPDATE services SET duration_min=? WHERE business_id=? AND duration_auto=1').run(interval,b.id)});tx();markSetup(b.id,'schedule');res.json({ok:true})
+  const requested=req.body?.booking_available_until;
+  const until=requested===undefined?b.booking_available_until:requested===''||requested===null?null:requested;
+  if(requested!==undefined&&until!==null&&(!validDate(until)||(until!==b.booking_available_until&&until<dateOnly(new Date()))))return res.status(400).json({error:'Elegí una fecha límite válida, desde hoy en adelante.'});
+  const tx=db.transaction(()=>{for(const row of rows){if(Number(row.weekday)<0||Number(row.weekday)>6)continue;db.prepare(`INSERT INTO schedules(business_id,weekday,start_time,end_time,active) VALUES(?,?,?,?,?) ON CONFLICT(business_id,weekday) DO UPDATE SET start_time=excluded.start_time,end_time=excluded.end_time,active=excluded.active`).run(b.id,Number(row.weekday),row.start_time||'09:00',row.end_time||'18:00',row.active?1:0)}db.prepare('UPDATE businesses SET slot_interval_min=?,booking_horizon_days=?,booking_available_until=? WHERE id=?').run(interval,Math.max(7,Math.min(365,Number(req.body?.booking_horizon_days??b.booking_horizon_days??90))),until,b.id);db.prepare('UPDATE services SET duration_min=? WHERE business_id=? AND duration_auto=1').run(interval,b.id)});tx();markSetup(b.id,'schedule');res.json({ok:true})
 });
 app.post('/api/businesses/:id/blocks',auth,(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);const x=req.body||{};if(!validDate(x.date))return res.status(400).json({error:'Elegí una fecha válida'});if(!x.all_day&&(!validTime(x.start_time)||!validTime(x.end_time)||x.start_time>=x.end_time))return res.status(400).json({error:'El horario hasta debe ser posterior al horario desde'});const r=db.prepare('INSERT INTO blocks(business_id,date,start_time,end_time,all_day,reason) VALUES(?,?,?,?,?,?)').run(b.id,x.date,x.all_day?null:x.start_time||null,x.all_day?null:x.end_time||null,x.all_day?1:0,x.reason||'');res.json({id:r.lastInsertRowid})});
 app.delete('/api/businesses/:id/blocks/:bid',auth,(req,res)=>{const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);db.prepare('DELETE FROM blocks WHERE id=? AND business_id=?').run(req.params.bid,b.id);res.json({ok:true})});
