@@ -144,6 +144,7 @@ function availabilityFor({business,date,services,partySize=1,excludeBookingId=0,
   if(!sch)return [];
   const allDay=db.prepare('SELECT 1 FROM blocks WHERE business_id=? AND date=? AND all_day=1').get(business.id,date);if(allDay)return [];
   const duration=services.reduce((sum,x)=>sum+Number(x.duration_min||0),0)*Math.max(1,Math.min(10,Number(partySize)||1));
+  if(!Number.isFinite(duration)||duration<=0)return [];
   const busy=activeBookingsForDate(business.id,date,excludeBookingId,staffId),blocks=db.prepare('SELECT start_time,end_time FROM blocks WHERE business_id=? AND date=? AND all_day=0').all(business.id,date),occupied=[...busy,...blocks];
   const step=Math.max(5,Number(business.slot_interval_min||30)),start=toMinutes(sch.start_time),end=toMinutes(sch.end_time),out=[];
   const candidates=manual&&time?[toMinutes(time)]:Array.from({length:Math.max(0,Math.floor((end-start-duration)/step)+1)},(_,i)=>start+i*step);
@@ -160,6 +161,7 @@ function calculatePayment(business,totalCents){
 }
 
 function computeQuote({business,services,partySize=1,couponCode='',promotionId,date='',packCode='',rewardCode=''}){
+  if(!services.some(s=>Number(s.duration_min)>0))throw new Error('Los extras se reservan junto con un servicio principal.');
   if(getBusinessPlan(business).basic_only&&(promotionId||couponCode||packCode||rewardCode))throw new Error('Promociones, cupones y beneficios avanzados están disponibles desde Adara Individual.');
   const promotion=resolvePromotion(business,services,promotionId,date);
   if(promotion&&partySize!==undefined&&!Number.isInteger(Number(partySize)))throw new Error('Elegí una cantidad entera de personas.');
@@ -326,20 +328,24 @@ app.get('/api/businesses/:id/services',auth,(req,res)=>{const b=own(req.user.sub
 app.post('/api/businesses/:id/services',auth,(req,res)=>{
   const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);if(!enforceCountLimit(res,b,'services','max_services'))return;
   const x=req.body||{};if(!x.name)return res.status(400).json({error:'Escribí el nombre del servicio'});
-  const auto=x.duration_auto===true||x.duration_auto===1;
+  const extra=x.no_extra_time===true;
+  if(x.no_extra_time!==undefined&&typeof x.no_extra_time!=='boolean')return res.status(400).json({error:'Revisá la opción de extra.'});
+  const auto=!extra&&(x.duration_auto===true||x.duration_auto===1);
   if(x.duration_auto!==undefined&&![true,false,0,1].includes(x.duration_auto))return res.status(400).json({error:'Revisá la duración automática.'});
   let images;try{images=galleryFromRequest(x,'images','image_url')}catch(e){return res.status(400).json({error:e.message})}
-  const r=db.prepare(`INSERT INTO services(business_id,name,description,image_url,price_cents,duration_min,active,group_discount_enabled,group_min_people,group_discount_percent,images_json) VALUES(?,?,?,?,?,?,1,?,?,?,?)`).run(b.id,String(x.name).trim(),x.description||'',images[0]||'',cents(x.price),auto?Number(b.slot_interval_min||30):Math.max(5,Number(x.duration||60)),x.group_discount_enabled?1:0,Math.max(2,Number(x.group_min_people||2)),Math.max(0,Math.min(100,Number(x.group_discount_percent||0))),JSON.stringify(images));
+  const r=db.prepare(`INSERT INTO services(business_id,name,description,image_url,price_cents,duration_min,active,group_discount_enabled,group_min_people,group_discount_percent,images_json) VALUES(?,?,?,?,?,?,1,?,?,?,?)`).run(b.id,String(x.name).trim(),x.description||'',images[0]||'',cents(x.price),extra?0:auto?Number(b.slot_interval_min||30):Math.max(5,Number(x.duration)||60),x.group_discount_enabled?1:0,Math.max(2,Number(x.group_min_people||2)),Math.max(0,Math.min(100,Number(x.group_discount_percent||0))),JSON.stringify(images));
   db.prepare('UPDATE services SET duration_auto=? WHERE id=?').run(auto?1:0,r.lastInsertRowid);
   res.json({id:r.lastInsertRowid});
 });
 app.put('/api/businesses/:id/services/:sid',auth,(req,res)=>{
   const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);const x=req.body||{},current=db.prepare('SELECT * FROM services WHERE id=? AND business_id=?').get(req.params.sid,b.id);if(!current)return res.status(404).json({error:'Servicio no encontrado'});
-  const auto=x.duration_auto===undefined?Boolean(current.duration_auto):x.duration_auto===true||x.duration_auto===1;
+  const extra=x.no_extra_time??(current.duration_min===0);
+  if(x.no_extra_time!==undefined&&typeof x.no_extra_time!=='boolean')return res.status(400).json({error:'Revisá la opción de extra.'});
+  const auto=!extra&&(x.duration_auto===undefined?Boolean(current.duration_auto):x.duration_auto===true||x.duration_auto===1);
   if(x.duration_auto!==undefined&&![true,false,0,1].includes(x.duration_auto))return res.status(400).json({error:'Revisá la duración automática.'});
   let images;try{images=galleryFromRequest(x,'images','image_url',current)}catch(e){return res.status(400).json({error:e.message})}
   if(!String(x.name||'').trim())return res.status(400).json({error:'Escribí el nombre del servicio'});
-  db.prepare(`UPDATE services SET name=?,description=?,image_url=?,price_cents=?,duration_min=?,active=?,group_discount_enabled=?,group_min_people=?,group_discount_percent=?,images_json=? WHERE id=? AND business_id=?`).run(x.name,x.description||'',images[0]||'',cents(x.price),auto?Number(b.slot_interval_min||30):Math.max(5,Number(x.duration||60)),x.active===false?0:1,x.group_discount_enabled?1:0,Math.max(2,Number(x.group_min_people||2)),Math.max(0,Math.min(100,Number(x.group_discount_percent||0))),JSON.stringify(images),req.params.sid,b.id);db.prepare('UPDATE services SET duration_auto=? WHERE id=? AND business_id=?').run(auto?1:0,req.params.sid,b.id);res.json({ok:true});
+  db.prepare(`UPDATE services SET name=?,description=?,image_url=?,price_cents=?,duration_min=?,active=?,group_discount_enabled=?,group_min_people=?,group_discount_percent=?,images_json=? WHERE id=? AND business_id=?`).run(x.name,x.description||'',images[0]||'',cents(x.price),extra?0:auto?Number(b.slot_interval_min||30):Math.max(5,Number(x.duration)||60),x.active===false?0:1,x.group_discount_enabled?1:0,Math.max(2,Number(x.group_min_people||2)),Math.max(0,Math.min(100,Number(x.group_discount_percent||0))),JSON.stringify(images),req.params.sid,b.id);db.prepare('UPDATE services SET duration_auto=? WHERE id=? AND business_id=?').run(auto?1:0,req.params.sid,b.id);res.json({ok:true});
 });
 app.delete('/api/businesses/:id/services/:sid',auth,(req,res)=>{
   const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);
@@ -387,7 +393,7 @@ app.patch('/api/businesses/:id/bookings/:bid',auth,(req,res)=>{
   if(current.status==='cancelled'&&current.payment_status==='expired'&&status!=='cancelled')return res.status(409).json({error:'El plazo de pago venció. Creá una nueva reserva para verificar la disponibilidad.'});
   if(current.status==='cancelled'&&status!=='cancelled'&&(db.prepare('SELECT 1 FROM pack_uses WHERE booking_id=?').get(current.id)||current.loyalty_discount_cents>0))return res.status(409).json({error:'Este turno devolvió un beneficio al cancelarse. Creá una nueva reserva para aplicar el beneficio disponible.'});
   const date=String(x.date||current.date),startTime=String(x.start_time||current.start_time);
-  const items=db.prepare(`SELECT s.* FROM booking_items bi JOIN services s ON s.id=bi.service_id WHERE bi.booking_id=? ORDER BY bi.id`).all(current.id);
+  const items=db.prepare(`SELECT bi.service_id AS id,bi.duration_min FROM booking_items bi WHERE bi.booking_id=? ORDER BY bi.id`).all(current.id);
   if(!items.length)return res.status(409).json({error:'El turno no tiene servicios válidos para calcular su duración'});
   let group;try{group=shiftedGroup(current,date,startTime)}catch(e){return res.status(400).json({error:e.message})}
   if(date!==current.date||startTime!==current.start_time||(!['confirmed','pending_payment'].includes(current.status)&&['confirmed','pending_payment'].includes(status))){
