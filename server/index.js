@@ -147,7 +147,7 @@ function availabilityFor({business,date,services,partySize=1,excludeBookingId=0,
   const busy=activeBookingsForDate(business.id,date,excludeBookingId,staffId),blocks=db.prepare('SELECT start_time,end_time FROM blocks WHERE business_id=? AND date=? AND all_day=0').all(business.id,date),occupied=[...busy,...blocks];
   const step=Math.max(5,Number(business.slot_interval_min||30)),start=toMinutes(sch.start_time),end=toMinutes(sch.end_time),out=[];
   const candidates=manual&&time?[toMinutes(time)]:Array.from({length:Math.max(0,Math.floor((end-start-duration)/step)+1)},(_,i)=>start+i*step);
-  for(const m of candidates){if(!Number.isFinite(m)||m<start||m+duration>end)continue;const finish=m+duration,overlaps=occupied.some(x=>m<toMinutes(x.end_time||'23:59')&&finish>toMinutes(x.start_time||'00:00'));if(!overlaps){const startIso=new Date(`${date}T${fromMinutes(m)}:00-03:00`);if(startIso.getTime()>Date.now()+Math.max(0,Number(manual?0:business.booking_notice_min||120))*60*1000)out.push(fromMinutes(m))}}
+  for(const m of candidates){if(!Number.isFinite(m)||m<start||m+duration>end)continue;const finish=m+duration,overlaps=occupied.some(x=>m<toMinutes(x.end_time||'23:59')&&finish>toMinutes(x.start_time||'00:00'));if(!overlaps){const startIso=new Date(`${date}T${fromMinutes(m)}:00-03:00`);if(startIso.getTime()>Date.now()+Math.max(0,Number(manual?0:(business.booking_notice_min??120)))*60*1000)out.push(fromMinutes(m))}}
   return out;
 }
 function calculatePayment(business,totalCents){
