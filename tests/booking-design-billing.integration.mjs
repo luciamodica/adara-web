@@ -47,6 +47,18 @@ try{
  await request(schedule,'PUT',{booking_available_until:null},a.cookie);
  const restoredDay=(await availability(afterLimit)).data;
  check(()=>assert.ok((restoredDay).slots.includes('10:00')));
+ // A zero-minute notice must not fall back to two hours.
+ const realNow=Date.now,fixtureNow=Date.parse(tomorrow+'T09:15:00-03:00');
+ try{
+  Date.now=()=>fixtureNow;
+  db.prepare('UPDATE businesses SET booking_notice_min=0 WHERE id=?').run(a.b.id);
+  const withoutNotice=(await availability(tomorrow)).data.slots;
+  check(()=>assert.ok(withoutNotice.includes('10:00')));
+  check(()=>assert.ok(!withoutNotice.includes('09:00')));
+  db.prepare('UPDATE businesses SET booking_notice_min=120 WHERE id=?').run(a.b.id);
+  const withNotice=(await availability(tomorrow)).data.slots;
+  check(()=>assert.ok(!withNotice.includes('10:00')&&withNotice.includes('11:30')));
+ }finally{Date.now=realNow;}
  await request(a.root+'/payment-settings','PUT',{payment_mode:'total',payment_methods:['bank_transfer'],bank_alias:'fixture.adara',bank_holder:'Titular de prueba'},a.cookie);
  const settings=(await request(a.root+'/payment-settings','GET',undefined,a.cookie)).data;check(()=>assert.equal(settings.mercadopago_enabled,true));check(()=>assert.deepEqual(settings.payment_methods,['bank_transfer']));
  await request(a.root+'/payment-settings','PUT',{payment_mode:'total',payment_methods:['mercadopago','bank_transfer']},a.cookie);await request(a.root+'/payment-settings','PUT',{payment_mode:'total',payment_methods:['bank_transfer']},a.cookie);
