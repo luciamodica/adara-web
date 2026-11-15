@@ -5,7 +5,7 @@ const day=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Argentina/Bueno
 const idsOf=p=>{try{return JSON.parse(p.service_ids_json||'[]')}catch{return []}};
 export function publicPromotion(p){
  const ids=idsOf(p),services=ids.map(id=>db.prepare('SELECT id,name,price_cents,duration_min,duration_auto FROM services WHERE id=? AND business_id=? AND active=1').get(id,p.business_id));
- const available=ids.length>0&&services.every(Boolean),base=available?services.reduce((s,x)=>s+x.price_cents,0):null;
+ const available=ids.length>0&&services.every(Boolean)&&services.some(s=>s.duration_min>0),base=available?services.reduce((s,x)=>s+x.price_cents,0):null;
  const after=p.pricing_mode==='fixed'?p.price_after_cents:base===null?null:base-Math.round(base*p.discount_percent/100);
  const before=p.price_before_cents??base;
  const percent=before>0&&after!==null?Math.max(0,Math.round((before-after)*100/before)):p.discount_percent;
@@ -20,6 +20,7 @@ function validate(b,x,current={}){
  const ids=x.service_ids===undefined?idsOf(current):x.service_ids;
  if(!Array.isArray(ids)||ids.length>20||new Set(ids).size!==ids.length||ids.some(id=>!Number.isInteger(id)||id<=0))throw new Error('Revisá los servicios de la promoción.');
  const existing=idsOf(current),services=ids.map(id=>db.prepare('SELECT * FROM services WHERE id=? AND business_id=?').get(id,b.id));if(services.some(s=>!s||!s.active&&!existing.includes(s.id)))throw new Error('Elegí servicios activos de tu negocio.');
+ if(ids.length&&!services.some(s=>s.duration_min>0))throw new Error('Incluí al menos un servicio principal en la promoción.');
  const before=money('price_before','price_before_cents'),after=money('price_after','price_after_cents');
  if(mode==='fixed'&&after===null)throw new Error('Ingresá el precio promocional.');
  if(mode==='fixed'&&before!==null&&after>before)throw new Error('El precio de ahora no puede superar el precio anterior.');
