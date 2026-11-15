@@ -131,7 +131,7 @@ function activeBookingsForDate(businessId,date,excludeBookingId=0,staffId=null){
   if(staffId)return db.prepare(`SELECT COALESCE(bp.start_time,bk.start_time) start_time,COALESCE(bp.end_time,bk.end_time) end_time FROM bookings bk LEFT JOIN booking_participants bp ON bp.booking_id=bk.id WHERE bk.business_id=? AND bk.date=? AND bk.status IN ('confirmed','pending_payment') AND bk.id!=? AND bk.staff_id=?`).all(businessId,date,Number(excludeBookingId||0),Number(staffId));
   return db.prepare(`SELECT COALESCE(bp.start_time,bk.start_time) start_time,COALESCE(bp.end_time,bk.end_time) end_time FROM bookings bk LEFT JOIN booking_participants bp ON bp.booking_id=bk.id WHERE bk.business_id=? AND bk.date=? AND bk.status IN ('confirmed','pending_payment') AND bk.id!=? AND bk.staff_id IS NULL`).all(businessId,date,Number(excludeBookingId||0));
 }
-function availabilityFor({business,date,services,partySize=1,excludeBookingId=0,staffId=null,manual=false,overrideSchedule=false,time=null,ignorePublicCutoff=false}){
+function availabilityFor({business,date,services,partySize=1,excludeBookingId=0,staffId=null,manual=false,overrideSchedule=false,time=null,ignorePublicCutoff=false,durationOverride=null}){
   if(!date||!services?.length)return [];
   const selected=new Date(`${date}T12:00:00`);if(Number.isNaN(selected.getTime()))return [];
   const today=dateOnly(new Date());if(date<today||(!manual&&!ignorePublicCutoff&&date>publicBookingEnd(business,today)))return [];
@@ -143,12 +143,12 @@ function availabilityFor({business,date,services,partySize=1,excludeBookingId=0,
   if(manual&&overrideSchedule)sch={start_time:'00:00',end_time:'24:00'};
   if(!sch)return [];
   const allDay=db.prepare('SELECT 1 FROM blocks WHERE business_id=? AND date=? AND all_day=1').get(business.id,date);if(allDay)return [];
-  const duration=services.reduce((sum,x)=>sum+Number(x.duration_min||0),0)*Math.max(1,Math.min(10,Number(partySize)||1));
+  const duration=durationOverride??(services.reduce((sum,x)=>sum+Number(x.duration_min||0),0)*Math.max(1,Math.min(10,Number(partySize)||1)));
   if(!Number.isFinite(duration)||duration<=0)return [];
   const busy=activeBookingsForDate(business.id,date,excludeBookingId,staffId),blocks=db.prepare('SELECT start_time,end_time FROM blocks WHERE business_id=? AND date=? AND all_day=0').all(business.id,date),occupied=[...busy,...blocks];
   const step=Math.max(5,Number(business.slot_interval_min||30)),start=toMinutes(sch.start_time),end=toMinutes(sch.end_time),out=[];
-  const candidates=manual&&time?[toMinutes(time)]:Array.from({length:Math.max(0,Math.floor((end-start-duration)/step)+1)},(_,i)=>start+i*step);
-  for(const m of candidates){if(!Number.isFinite(m)||m<start||m+duration>end)continue;const finish=m+duration,overlaps=occupied.some(x=>m<toMinutes(x.end_time||'23:59')&&finish>toMinutes(x.start_time||'00:00'));if(!overlaps){const startIso=new Date(`${date}T${fromMinutes(m)}:00-03:00`);if(startIso.getTime()>Date.now()+Math.max(0,Number(manual?0:business.booking_notice_min||120))*60*1000)out.push(fromMinutes(m))}}
+  const candidates=(manual||ignorePublicCutoff)&&time?[toMinutes(time)]:Array.from({length:Math.max(0,Math.floor((end-start-duration)/step)+1)},(_,i)=>start+i*step);
+  for(const m of candidates){if(!Number.isFinite(m)||m<start||m+duration>end)continue;const finish=m+duration,overlaps=occupied.some(x=>m<toMinutes(x.end_time||'23:59')&&finish>toMinutes(x.start_time||'00:00'));if(!overlaps){const startIso=new Date(`${date}T${fromMinutes(m)}:00-03:00`);if(startIso.getTime()>Date.now()+Math.max(0,Number(manual||ignorePublicCutoff?0:business.booking_notice_min||120))*60*1000)out.push(fromMinutes(m))}}
   return out;
 }
 function calculatePayment(business,totalCents){
@@ -379,7 +379,7 @@ app.post('/api/businesses/:id/upload',auth,(req,res,next)=>upload.single('image'
 
 app.get('/api/businesses/:id/bookings',auth,(req,res)=>{
   const b=own(req.user.sub,req.params.id);if(!b)return res.sendStatus(403);cleanupExpiredHolds(b.id);
-  const rows=db.prepare(`SELECT bk.*,c.name client,c.phone,c.email,s.name staff_name FROM bookings bk JOIN clients c ON c.id=bk.client_id LEFT JOIN staff s ON s.id=bk.staff_id WHERE bk.business_id=? ORDER BY bk.date DESC,bk.start_time DESC`).all(b.id).map(x=>({...x,participants:participantsFor(x.id),items:db.prepare('SELECT service_id,service_name,price_cents,duration_min,quantity,line_subtotal_cents,line_discount_cents FROM booking_items WHERE booking_id=?').all(x.id)}));
+  const rows=db.prepare(`SELECT bk.*,c.name client,c.phone,c.email,s.name staff_name,EXISTS(SELECT 1 FROM pack_uses WHERE booking_id=bk.id) AS has_pack FROM bookings bk JOIN clients c ON c.id=bk.client_id LEFT JOIN staff s ON s.id=bk.staff_id WHERE bk.business_id=? ORDER BY bk.date DESC,bk.start_time DESC`).all(b.id).map(x=>({...x,participants:participantsFor(x.id),items:db.prepare('SELECT service_id,service_name,price_cents,duration_min,quantity,line_subtotal_cents,line_discount_cents FROM booking_items WHERE booking_id=?').all(x.id)}));
   res.json(rows.map(decoratePayment));
 });
 app.patch('/api/businesses/:id/bookings/:bid',auth,(req,res)=>{
@@ -393,21 +393,47 @@ app.patch('/api/businesses/:id/bookings/:bid',auth,(req,res)=>{
   if(current.status==='cancelled'&&current.payment_status==='expired'&&status!=='cancelled')return res.status(409).json({error:'El plazo de pago venció. Creá una nueva reserva para verificar la disponibilidad.'});
   if(current.status==='cancelled'&&status!=='cancelled'&&(db.prepare('SELECT 1 FROM pack_uses WHERE booking_id=?').get(current.id)||current.loyalty_discount_cents>0))return res.status(409).json({error:'Este turno devolvió un beneficio al cancelarse. Creá una nueva reserva para aplicar el beneficio disponible.'});
   const date=String(x.date||current.date),startTime=String(x.start_time||current.start_time);
-  const items=db.prepare(`SELECT bi.service_id AS id,bi.duration_min FROM booking_items bi WHERE bi.booking_id=? ORDER BY bi.id`).all(current.id);
-  if(!items.length)return res.status(409).json({error:'El turno no tiene servicios válidos para calcular su duración'});
-  let group;try{group=shiftedGroup(current,date,startTime)}catch(e){return res.status(400).json({error:e.message})}
-  if(date!==current.date||startTime!==current.start_time||(!['confirmed','pending_payment'].includes(current.status)&&['confirmed','pending_payment'].includes(status))){
-    if(group){try{validateGroupAvailability(group,{business:b,date,services:items,excludeBookingId:current.id,staffId:current.staff_id||null,manual:current.booking_source==='manual',ignorePublicCutoff:true,overrideSchedule:!!current.manual_override},availabilityFor)}catch(e){return res.status(409).json({error:e.message})}}
-    const slots=availabilityFor({business:b,date,services:items,partySize:group?1:current.party_size,excludeBookingId:current.id,staffId:current.staff_id||null,manual:current.booking_source==='manual',ignorePublicCutoff:true,overrideSchedule:!!current.manual_override});
-    if(!slots.includes(startTime))return res.status(409).json({error:'Ese horario no está disponible para la duración completa del turno'});
+  if(!validDate(date)||!validTime(startTime))return res.status(400).json({error:'Revisá la fecha y el horario de inicio.'});
+  const originalItems=db.prepare('SELECT * FROM booking_items WHERE booking_id=? ORDER BY id').all(current.id);
+  const originalDuration=toMinutes(current.end_time)-toMinutes(current.start_time);
+  const hasGroup=Number(current.party_size||1)>1||participantsFor(current.id).length>0;
+  const changesServices=x.service_ids!==undefined;
+  const canEditDetails=current.status==='confirmed'&&status==='confirmed'&&!hasGroup;
+  if((changesServices||x.end_time!==undefined)&&!canEditDetails)return res.status(409).json({error:'Solo se pueden cambiar los servicios y la finalización de turnos individuales confirmados.'});
+  let items=originalItems.map(z=>({...z,id:z.service_id}));
+  if(changesServices){
+    if(current.promotion_id||current.coupon_id||current.loyalty_discount_cents||db.prepare('SELECT 1 FROM pack_uses WHERE booking_id=?').get(current.id))return res.status(409).json({error:'Este turno tiene un beneficio aplicado. Podés ajustar la finalización y conservar sus servicios.'});
+    const ids=x.service_ids;
+    if(!Array.isArray(ids)||!ids.length||ids.length>100||ids.some(id=>!Number.isSafeInteger(id)||id<=0)||new Set(ids).size!==ids.length)return res.status(400).json({error:'Elegí los servicios del turno.'});
+    const lookup=db.prepare('SELECT id,name,price_cents,duration_min FROM services WHERE id=? AND business_id=? AND active=1');
+    items=ids.map(id=>{const kept=items.find(z=>z.id===id);if(kept)return kept;const svc=lookup.get(id,b.id);return svc&&{id:svc.id,service_name:svc.name,price_cents:svc.price_cents,duration_min:svc.duration_min,quantity:1,line_subtotal_cents:svc.price_cents,line_discount_cents:0}});
+    if(items.some(z=>!z)||!items.some(z=>z.duration_min>0))return res.status(400).json({error:'Elegí al menos un servicio principal disponible.'});
+    if(current.staff_id&&!staffCanDoServices(current.staff_id,ids))return res.status(409).json({error:'El profesional no realiza todos los servicios seleccionados.'});
   }
-  const duration=items.reduce((sum,z)=>sum+Number(z.duration_min||0),0)*Math.max(1,Number(current.party_size||1));
+  if(!items.length)return res.status(409).json({error:'El turno no tiene servicios válidos para calcular su duración'});
+  if(x.end_time!==undefined&&(!validTime(x.end_time)&&x.end_time!=='24:00'||toMinutes(x.end_time)<=toMinutes(startTime)))return res.status(400).json({error:'La hora de finalización tiene que ser posterior al inicio.'});
+  let group;try{group=shiftedGroup(current,date,startTime)}catch(e){return res.status(400).json({error:e.message})}
+  const duration=x.end_time!==undefined?toMinutes(x.end_time)-toMinutes(startTime):changesServices?items.reduce((sum,z)=>sum+z.duration_min,0):originalDuration;
   const endTime=group?.end||fromMinutes(toMinutes(startTime)+duration);
+  if(!group&&(!Number.isFinite(duration)||duration<=0||toMinutes(startTime)+duration>1440))return res.status(400).json({error:'El turno debe terminar después del inicio y dentro del mismo día.'});
+  const moved=date!==current.date||startTime!==current.start_time;
+  const reopens=!['confirmed','pending_payment'].includes(current.status)&&['confirmed','pending_payment'].includes(status);
+  if(moved||reopens||duration>originalDuration){
+    const args={business:b,date,services:items,excludeBookingId:current.id,staffId:current.staff_id||null,manual:current.booking_source==='manual',ignorePublicCutoff:true,overrideSchedule:!!current.manual_override};
+    if(group){try{validateGroupAvailability(group,args,availabilityFor)}catch(e){return res.status(409).json({error:e.message})}}
+    else if(!availabilityFor({...args,time:startTime,durationOverride:duration}).includes(startTime))return res.status(409).json({error:'Ese horario no está disponible para la duración completa del turno'});
+  }
   const client=db.prepare('SELECT * FROM clients WHERE id=? AND business_id=?').get(current.client_id,b.id);
   const email=String(x.email??client?.email??'').trim().toLowerCase();if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return res.status(400).json({error:'Revisá el email del cliente'});
   const tx=db.transaction(()=>{
     moveParticipants(current.id,group);
-    db.prepare('UPDATE bookings SET date=?,start_time=?,end_time=?,status=?,notes=? WHERE id=? AND business_id=?').run(date,startTime,endTime,status,String(x.notes??current.notes??''),current.id,b.id);
+    if(changesServices){
+      db.prepare('DELETE FROM booking_items WHERE booking_id=?').run(current.id);
+      const insert=db.prepare('INSERT INTO booking_items(booking_id,service_id,service_name,price_cents,duration_min,quantity,line_subtotal_cents,line_discount_cents) VALUES(?,?,?,?,?,?,?,?)');
+      for(const item of items)insert.run(current.id,item.id,item.service_name,item.price_cents,item.duration_min,item.quantity,item.line_subtotal_cents,item.line_discount_cents);
+    }
+    const summary=changesServices?items.map(z=>z.service_name).join(' + '):current.selection_summary;
+    db.prepare('UPDATE bookings SET date=?,start_time=?,end_time=?,status=?,notes=?,selection_summary=? WHERE id=? AND business_id=?').run(date,startTime,endTime,status,String(x.notes??current.notes??''),summary,current.id,b.id);
     if(client)db.prepare('UPDATE clients SET name=?,phone=?,email=? WHERE id=? AND business_id=?').run(String(x.client_name??client.name??'').trim(),String(x.phone??client.phone??'').trim(),email||null,client.id,b.id);
   });
   try{tx()}catch(e){return res.status(409).json({error:'No se pudo actualizar el turno. Revisá que el email no pertenezca a otro cliente.'})}
@@ -602,7 +628,7 @@ app.get('/api/public/manage-booking/:token/availability',(req,res)=>{
   const ids=[...new Set(booking.items.map(x=>Number(x.service_id)).filter(Boolean))];
   const marks=ids.map(()=>'?').join(',');const services=ids.length?db.prepare(`SELECT * FROM services WHERE business_id=? AND id IN (${marks})`).all(booking.business_id,...ids):[];
   if(services.length!==ids.length)return res.status(409).json({error:'Uno de los servicios ya no está disponible'});
-  const group=participantsFor(booking.id).length>0;let slots=availabilityFor({business,date:String(req.query.date||''),services,partySize:group?1:booking.party_size,excludeBookingId:booking.id,staffId:booking.staff_id||null});if(group)slots=slots.filter(time=>{try{validateGroupAvailability(shiftedGroup(booking,String(req.query.date||''),time),{business,date:String(req.query.date||''),services,excludeBookingId:booking.id,staffId:booking.staff_id||null},availabilityFor);return true}catch{return false}});
+  const group=participantsFor(booking.id).length>0;let slots=availabilityFor({business,date:String(req.query.date||''),services,partySize:group?1:booking.party_size,durationOverride:group?null:toMinutes(booking.end_time)-toMinutes(booking.start_time),excludeBookingId:booking.id,staffId:booking.staff_id||null});if(group)slots=slots.filter(time=>{try{validateGroupAvailability(shiftedGroup(booking,String(req.query.date||''),time),{business,date:String(req.query.date||''),services,excludeBookingId:booking.id,staffId:booking.staff_id||null},availabilityFor);return true}catch{return false}});
   res.json({slots});
 });
 app.post('/api/public/manage-booking/:token/cancel',async(req,res)=>{
@@ -621,8 +647,8 @@ app.post('/api/public/manage-booking/:token/reschedule',async(req,res)=>{
   const business=db.prepare('SELECT * FROM businesses WHERE id=?').get(booking.business_id),ids=[...new Set(booking.items.map(x=>Number(x.service_id)).filter(Boolean))];
   const marks=ids.map(()=>'?').join(',');const services=ids.length?db.prepare(`SELECT * FROM services WHERE business_id=? AND id IN (${marks})`).all(booking.business_id,...ids):[];
   if(services.length!==ids.length)return res.status(409).json({error:'Uno de los servicios ya no está disponible'});
-  let group;try{group=shiftedGroup(booking,date,time);if(group)validateGroupAvailability(group,{business,date,services,excludeBookingId:booking.id,staffId:booking.staff_id||null},availabilityFor)}catch(e){return res.status(409).json({error:e.message})}const slots=availabilityFor({business,date,services,partySize:group?1:booking.party_size,excludeBookingId:booking.id,staffId:booking.staff_id||null});if(!slots.includes(time))return res.status(409).json({error:'Ese horario ya no está disponible'});
-  const duration=services.reduce((sum,x)=>sum+Number(x.duration_min||0),0)*Math.max(1,Number(booking.party_size||1)),end=group?.end||fromMinutes(toMinutes(time)+duration);
+  let group;try{group=shiftedGroup(booking,date,time);if(group)validateGroupAvailability(group,{business,date,services,excludeBookingId:booking.id,staffId:booking.staff_id||null},availabilityFor)}catch(e){return res.status(409).json({error:e.message})}const slots=availabilityFor({business,date,services,partySize:group?1:booking.party_size,durationOverride:group?null:toMinutes(booking.end_time)-toMinutes(booking.start_time),excludeBookingId:booking.id,staffId:booking.staff_id||null});if(!slots.includes(time))return res.status(409).json({error:'Ese horario ya no está disponible'});
+  const duration=toMinutes(booking.end_time)-toMinutes(booking.start_time),end=group?.end||fromMinutes(toMinutes(time)+duration);
   db.transaction(()=>{moveParticipants(booking.id,group);
   db.prepare('UPDATE bookings SET date=?,start_time=?,end_time=?,attendance_confirmed_at=NULL WHERE id=?').run(date,time,end,booking.id)})();
   const updated=bookingDetails(booking.id);await emailBooking(updated);await emailProfessional(updated,'rescheduled');res.json({ok:true,booking:{...updated,can_change:bookingCanChange(updated)}});
