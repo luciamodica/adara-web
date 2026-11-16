@@ -37,10 +37,14 @@ export function refreshBillingState(id){
  db.prepare('UPDATE businesses SET subscription_status=? WHERE id=?').run(status,id);if(status==='past_due'&&b.subscription_paid_until)notice('expired:'+id+':'+b.subscription_paid_until,id,'Revisá la renovación de tu plan Adara','Tu período pagado terminó. Revisá el cobro pendiente desde Plan y facturación. Conservamos tus datos y turnos existentes.');
 }
 export function subscriptionExpiryNotice(b){
- const deadline=b.subscription_paid_until||(b.subscription_status==='trialing'?b.trial_ends_at:null),remaining=Date.parse(deadline)-Date.now();
- if(!deadline||!Number.isFinite(remaining)||remaining<=0||remaining>7*86400000)return null;
+ const deadline=b.subscription_paid_until||(['trialing','past_due'].includes(b.subscription_status)?b.trial_ends_at:null),remaining=Date.parse(deadline)-Date.now();
+ if(!deadline||!Number.isFinite(remaining)||remaining>7*86400000)return null;
  const days=Math.max(1,Math.ceil(remaining/86400000)),subscription=latest(b.id),automatic=subscription?.provider==='mercadopago'&&['authorized','paused'].includes(subscription.status),trial=!b.subscription_paid_until;
- const pending=db.prepare("SELECT 1 FROM platform_subscription_transfers WHERE business_id=? AND status IN ('pending','receipt_submitted')").get(b.id);
+ const pending=db.prepare("SELECT status FROM platform_subscription_transfers WHERE business_id=? AND status IN ('pending','receipt_submitted') ORDER BY status='receipt_submitted' DESC LIMIT 1").get(b.id);
+ if(remaining<=0){
+  const submitted=pending?.status==='receipt_submitted';
+  return {deadline,days:0,kind:trial?'trial_ended':'expired',title:trial?'Tu prueba de Adara terminó':'Tu plan de Adara venció',message:submitted?'Recibimos tu comprobante. Podés seguir el estado desde Plan.':pending?'Tenés una renovación por transferencia iniciada. Podés completarla desde Plan.':automatic?'Revisá el estado del cobro de tu renovación desde Plan.':'Entrá a Plan para renovar y seguir usando Adara.',transfer_pending:Boolean(pending)};
+ }
  return {deadline,days,kind:trial?'trial':automatic?'renewal':'expiry',title:trial?`Tu prueba termina en ${days} ${days===1?'día':'días'}`:automatic?`Tu próxima renovación es en ${days} ${days===1?'día':'días'}`:`Tu plan vence en ${days} ${days===1?'día':'días'}`,message:pending?'Tenés un pago por transferencia en proceso. Revisá su estado desde Plan.':automatic?'Revisá el estado y el medio de pago de tu renovación desde Plan.':'Podés renovar desde Plan para seguir recibiendo reservas.',transfer_pending:Boolean(pending)};
 }
 export function addBillingMonths(date,months){const d=new Date(date);if(!Number.isFinite(d.getTime()))throw Error('Fecha de cobro inválida');const day=d.getUTCDate();d.setUTCDate(1);d.setUTCMonth(d.getUTCMonth()+months);const last=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0)).getUTCDate();d.setUTCDate(Math.min(day,last));return d.toISOString()}
