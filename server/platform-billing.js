@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import {legalConsent,recordLegalAcceptance} from './platform-legal.js';
 import {db,getSetting} from './db.js';
 
-for(const [name,definition] of Object.entries({subscription_paid_until:'TEXT',subscription_managed:'INTEGER NOT NULL DEFAULT 0'}))if(!db.prepare('PRAGMA table_info(businesses)').all().some(c=>c.name===name))db.exec(`ALTER TABLE businesses ADD COLUMN ${name} ${definition}`);
+for(const [name,definition] of Object.entries({subscription_paid_until:'TEXT',manual_renewal_date:'TEXT',subscription_managed:'INTEGER NOT NULL DEFAULT 0'}))if(!db.prepare('PRAGMA table_info(businesses)').all().some(c=>c.name===name))db.exec(`ALTER TABLE businesses ADD COLUMN ${name} ${definition}`);
 db.exec(`CREATE TABLE IF NOT EXISTS platform_subscriptions(
  id TEXT PRIMARY KEY,business_id INTEGER NOT NULL REFERENCES businesses(id),plan_slug TEXT NOT NULL,plan_name TEXT NOT NULL,billing_cycle TEXT NOT NULL,amount_cents INTEGER NOT NULL,payer_email TEXT,provider TEXT NOT NULL,mp_id TEXT UNIQUE,status TEXT NOT NULL DEFAULT 'creating',checkout_url TEXT,activated_at TEXT,start_date TEXT NOT NULL,next_payment_date TEXT,last_error TEXT,created_at TEXT NOT NULL,updated_at TEXT NOT NULL);
  CREATE UNIQUE INDEX IF NOT EXISTS platform_one_subscription ON platform_subscriptions(business_id) WHERE status IN ('creating','pending','authorized','paused');
@@ -37,9 +37,10 @@ export function refreshBillingState(id){
  db.prepare('UPDATE businesses SET subscription_status=? WHERE id=?').run(status,id);if(status==='past_due'&&b.subscription_paid_until)notice('expired:'+id+':'+b.subscription_paid_until,id,'Revisá la renovación de tu plan Adara','Tu período pagado terminó. Revisá el cobro pendiente desde Plan y facturación. Conservamos tus datos y turnos existentes.');
 }
 export function subscriptionExpiryNotice(b){
- const deadline=b.subscription_paid_until||(['trialing','past_due'].includes(b.subscription_status)?b.trial_ends_at:null),remaining=Date.parse(deadline)-Date.now();
+ const manualDate=!b.subscription_managed&&['active','past_due'].includes(b.subscription_status)?b.manual_renewal_date:null;
+ const deadline=(manualDate?manualDate+'T23:59:59.999-03:00':b.subscription_paid_until)||(['trialing','past_due'].includes(b.subscription_status)?b.trial_ends_at:null),remaining=Date.parse(deadline)-Date.now();
  if(!deadline||!Number.isFinite(remaining)||remaining>7*86400000)return null;
- const days=Math.max(1,Math.ceil(remaining/86400000)),subscription=latest(b.id),automatic=subscription?.provider==='mercadopago'&&['authorized','paused'].includes(subscription.status),trial=!b.subscription_paid_until;
+ const days=Math.max(1,Math.ceil(remaining/86400000)),subscription=latest(b.id),automatic=subscription?.provider==='mercadopago'&&['authorized','paused'].includes(subscription.status),trial=!manualDate&&!b.subscription_paid_until;
  const pending=db.prepare("SELECT status FROM platform_subscription_transfers WHERE business_id=? AND status IN ('pending','receipt_submitted') ORDER BY status='receipt_submitted' DESC LIMIT 1").get(b.id);
  if(remaining<=0){
   const submitted=pending?.status==='receipt_submitted';
