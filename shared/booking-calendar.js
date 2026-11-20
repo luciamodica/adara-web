@@ -17,3 +17,10 @@ export function bookingSection(booking,now=Date.now()){
  const end=Date.parse(booking.date+'T'+(booking.end_time||booking.start_time)+':00-03:00');
  return end<=now?'past':'upcoming';
 }
+
+// A selected date includes both active statuses, independently of the history tabs.
+export function filterBookings(bookings,filter,selectedDate='',now=Date.now()){
+ return bookings.filter(booking=>selectedDate
+  ? booking.date===selectedDate&&['confirmed','pending_payment'].includes(booking.status)
+  : bookingSection(booking,now)===filter);
+}
