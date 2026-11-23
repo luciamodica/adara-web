@@ -7,3 +7,8 @@
 .dash .notificationItem{display:grid;gap:5px;text-align:left;width:100%;padding:12px 8px;border:0;border-radius:8px;background:transparent;color:inherit;white-space:normal}
 .notificationItem span,.notificationItem small{font-size:13px}.notificationItem b{font-size:14px}.notificationItem.unread{background:#3977e014}.notificationDot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#3984ff;margin-right:7px}
 .manualClientSearch>span{display:flex;align-items:center;gap:7px}
+
+.manualClientResults{list-style:none;padding:0;margin:0 0 16px;max-height:260px;overflow:auto;display:grid;gap:6px}
+.dash .manualBookingForm .manualClientResult{width:100%;min-height:52px;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;white-space:normal;padding:10px 12px;border-radius:10px}
+.manualClientResult>span:first-child{display:grid;gap:4px;min-width:0;overflow-wrap:anywhere}.manualClientResult small{font-size:12px}.manualClientSelect{font-size:12px;font-weight:700;flex-shrink:0}
+.manualClientResult:focus-visible{outline:3px solid #3984ff;outline-offset:2px}
