@@ -4,10 +4,10 @@ import ClientPaymentRule from './ClientPaymentRule';
 import React,{useEffect,useState} from 'react';
 import {api,money,fmtDate} from './api';
 import CalendarPeriods from './CalendarPeriods';
-const sections=['Lista de espera','Recordatorios','Packs y abonos','Clientes y puntos','Compartir mi página','Estadísticas','Integraciones'];
+const sections=['Recordatorios','Packs y abonos','Clientes y puntos','Compartir mi página','Estadísticas','Integraciones'];
 const labels:any={sent:'Enviado al proveedor',pending:'Pendiente',local:'Vista previa local',unconfigured:'Falta conectar proveedor',failed:'Falló el envío',cancelled:'Cancelado',waiting:'Esperando',notified:'Aviso preparado',closed:'Cerrado',reminder:'Recordatorio',waitlist:'Lista de espera'};
 export function Tools({b,mode='tools'}:any){
- const[d,setD]=useState<any>(),[section,setSection]=useState(mode==='agenda'?'Agenda especial':new URLSearchParams(location.search).has('google')?'Integraciones':sections[0]),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[history,setHistory]=useState<any>(),[series,setSeries]=useState<any>({booking_id:'',interval_days:21,count:1,frequency:'days'}),[pack,setPack]=useState<any>({name:'',service_id:'',sessions:4,price:''}),[grant,setGrant]=useState<any>({client_id:'',pack_id:'',expires_at:'',payment_received:false});
+ const[d,setD]=useState<any>(),[section,setSection]=useState(mode==='waitlist'?'Lista de espera':mode==='agenda'?'Agenda especial':new URLSearchParams(location.search).has('google')?'Integraciones':sections[0]),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[history,setHistory]=useState<any>(),[series,setSeries]=useState<any>({booking_id:'',interval_days:21,count:1,frequency:'days'}),[pack,setPack]=useState<any>({name:'',service_id:'',sessions:4,price:''}),[grant,setGrant]=useState<any>({client_id:'',pack_id:'',expires_at:'',payment_received:false});
  const root=`/businesses/${b.id}/tools`;
  const load=()=>api(root).then((x:any)=>{x.settings.reminder_hours=JSON.parse(x.settings.reminder_hours_json);x.settings.loyalty_discount=x.settings.loyalty_discount_cents/100;setD(x)});
  useEffect(()=>{load().catch(e=>setError(e.message));if(new URLSearchParams(location.search).get('google')==='error')setError('No se pudo conectar Google. Revisá los permisos e intentá nuevamente.')},[b.id]);
