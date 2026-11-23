@@ -1,5 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
-import {Plus,Pencil,Trash2,Undo2} from 'lucide-react';
+import {Plus,Pencil,Trash2,Undo2,CalendarPlus} from 'lucide-react';
 import ClientImport from './ClientImport';
 import ClientPaymentRule from './ClientPaymentRule';
 import {api,fmtDate,money} from './api';
@@ -16,7 +16,7 @@ function ClientEditor({client,onSave,onCancel}:any){
   </fieldset>
  </form>;
 }
-export default function Clients({b}:any){
+export default function Clients({b,onBook}:any){
  const[list,setList]=useState<any[]>([]),[search,setSearch]=useState(''),[archived,setArchived]=useState(false),[editing,setEditing]=useState<any>(),[removing,setRemoving]=useState<number|null>(null),[error,setError]=useState(''),[message,setMessage]=useState(''),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),requestId=useRef(0);
  const root=`/businesses/${b.id}/clients`;
  const load=async()=>{const id=++requestId.current;setLoading(true);try{const data=await api(root+(archived?'?archived=1':''));if(requestId.current===id)setList(data)}catch(e:any){if(requestId.current===id)setError(e.message)}finally{if(requestId.current===id)setLoading(false)}};
@@ -30,7 +30,7 @@ export default function Clients({b}:any){
   <div className="clientToolbar"><ClientImport b={b} onImported={load}/>{!b.basic_only&&<a className="outline" href="/admin?tab=Herramientas">Ver historial, ausencias y puntos</a>}</div>
   <div className="panel clientFilters"><div role="group" aria-label="Estado de los clientes"><button type="button" className={archived?'outline':'dark'} aria-pressed={!archived} onClick={()=>{setArchived(false);setEditing(undefined);setRemoving(null)}}>Activos</button><button type="button" className={archived?'dark':'outline'} aria-pressed={archived} onClick={()=>{setArchived(true);setEditing(undefined);setRemoving(null)}}>Eliminados</button></div><label>Buscar cliente<input placeholder="Nombre, email o teléfono…" value={search} onChange={e=>setSearch(e.target.value)}/></label></div>
   {loading?<p role="status">Cargando clientes…</p>:<div className="clientGrid managedClientGrid">{shown.map(x=><article className="managedClient" key={x.id}><div className="clientIdentity"><div className="avatar" aria-hidden="true">{x.name?.[0]?.toUpperCase()}</div><div><h3>{x.name}</h3><p>{x.phone||'Sin teléfono'} · {x.email||'Sin email'}</p><span>{x.booking_count} turnos · Último: {x.last_booking?fmtDate(x.last_booking):'—'}</span><small>Total cobrado: {money(x.paid_cents)}</small>{x.notes&&<p className="clientNotes">{x.notes}</p>}</div></div>
-   {archived?<button className="outline" disabled={busy} onClick={()=>mutate(()=>api(root+'/'+x.id+'/restore',{method:'POST'}),'Cliente restaurado.')}><Undo2 size={15}/>Restaurar cliente</button>:<><div className="clientActions"><button className="outline" disabled={busy} onClick={()=>{setEditing(x);setRemoving(null);setMessage('')}}><Pencil size={15}/>Editar</button><button className="outline clientDelete" disabled={busy} aria-label={'Eliminar a '+x.name} onClick={()=>setRemoving(x.id)}><Trash2 size={15}/>Eliminar</button></div>{!b.basic_only&&<ClientPaymentRule client={x} b={b} refresh={load}/>}</>}
+   {archived?<button className="outline" disabled={busy} onClick={()=>mutate(()=>api(root+'/'+x.id+'/restore',{method:'POST'}),'Cliente restaurado.')}><Undo2 size={15}/>Restaurar cliente</button>:<><div className="clientActions"><button className="dark" disabled={busy||b.subscription_access===false} onClick={()=>onBook(x.id)}><CalendarPlus size={15}/>Agregar turno</button><button className="outline" disabled={busy} onClick={()=>{setEditing(x);setRemoving(null);setMessage('')}}><Pencil size={15}/>Editar</button><button className="outline clientDelete" disabled={busy} aria-label={'Eliminar a '+x.name} onClick={()=>setRemoving(x.id)}><Trash2 size={15}/>Eliminar</button></div>{!b.basic_only&&<ClientPaymentRule client={x} b={b} refresh={load}/>}</>}
    {removing===x.id&&<div className="clientDeleteConfirm" role="alertdialog" aria-labelledby={'remove-client-'+x.id}><b id={'remove-client-'+x.id}>¿Eliminar a {x.name} de la lista?</b><p>Sus turnos y cobros se conservarán. Podés restaurar su ficha desde Eliminados.</p><div className="clientActions"><button className="dark" disabled={busy} onClick={()=>mutate(()=>api(root+'/'+x.id,{method:'DELETE'}),'Cliente eliminado de la lista. Podés restaurarlo desde Eliminados.')}>{busy?'Eliminando…':'Confirmar eliminación'}</button><button className="outline" disabled={busy} onClick={()=>setRemoving(null)}>Cancelar</button></div></div>}
   </article>)}</div>}
   {!loading&&!shown.length&&<div className="panel emptyState">{search?'No hay clientes que coincidan con la búsqueda.':archived?'No hay clientes eliminados.':'Todavía no hay clientes. Podés agregar el primero desde acá.'}</div>}

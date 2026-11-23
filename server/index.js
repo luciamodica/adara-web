@@ -1,3 +1,4 @@
+import {registerOwnerNotifications} from './owner-notifications.js';
 import {publicBookingEnd} from '../shared/booking-calendar.js';
 import {validatePagePalettes} from '../shared/page-palettes.js';
 import './production-env.js';
@@ -719,6 +720,7 @@ app.get('/api/admin/settings',auth,superOnly,(_req,res)=>res.json({trial_days:Nu
 app.put('/api/admin/settings',auth,superOnly,(req,res)=>{try{savePlatformSettings(req.body||{});res.json({ok:true})}catch(e){res.status(400).json({error:e.message})}});
 
 registerManualPayments(app,{auth,own,bookingDetails,cleanupExpiredHolds,emailBooking,emailProfessional});
+registerOwnerNotifications(app,{db,auth,own});
 registerManualBookings(app,{auth,own,availabilityFor,bookingDetails,getBusinessPlan,staffCanDoServices,computeQuote});
 registerPlatformSupport(app,{auth,superOnly});
 export const featureWorker=registerFeatures(app,{auth,own,availabilityFor,bookingDetails,staffCanDoServices});

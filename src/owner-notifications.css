@@ -1,0 +1,9 @@
+.ownerNotificationBar{display:flex;justify-content:flex-end;margin:0 0 8px}
+.ownerNotifications{position:relative}
+.dash .notificationBell{position:relative;width:44px;height:44px;padding:10px;display:flex;justify-content:center;align-items:center}
+.notificationBadge{position:absolute;top:-5px;right:-5px;background:#0758df;color:#fff;border-radius:20px;min-width:20px;height:20px;padding:0 4px;font-size:11px;display:grid;place-items:center;font-weight:700}
+.dash .notificationDropdown{position:absolute;right:0;top:50px;z-index:60;width:min(380px,calc(100vw - 32px));padding:18px;box-shadow:0 12px 40px #0003;max-height:min(70vh,600px);overflow:auto;margin:0}
+.notificationDropdown h2{font-size:20px;margin:0}.notificationDropdown ul{list-style:none;padding:0;margin:12px 0 0}.notificationDropdown li+li{border-top:1px solid #8192a644}
+.dash .notificationItem{display:grid;gap:5px;text-align:left;width:100%;padding:12px 8px;border:0;border-radius:8px;background:transparent;color:inherit;white-space:normal}
+.notificationItem span,.notificationItem small{font-size:13px}.notificationItem b{font-size:14px}.notificationItem.unread{background:#3977e014}.notificationDot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#3984ff;margin-right:7px}
+.manualClientSearch>span{display:flex;align-items:center;gap:7px}
